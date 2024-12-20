@@ -27,7 +27,7 @@ COMMIT := $(shell git rev-parse $(TAG))
 LDFLAGS := '-X "main.version=$(TAG)" -X "main.commit=$(COMMIT)" -X "main.date=$(DATE)"'
 
 ## Builds all project binaries
-build-all: build-api build-api-linux build-client build-client-linux build-cli build-cli-linux
+build-all: build-api build-api-linux 
 
 ## Builds API code into a binary
 build-api:
@@ -36,22 +36,6 @@ build-api:
 ## Builds API code using linux architecture into a binary
 build-api-linux:
 	cd api && GOOS=linux GOARCH=amd64 $(GO) build -ldflags $(LDFLAGS) -o "$(HUSKYCI-API-BIN)" server.go
-
-## Builds client code into a binary
-build-client:
-	cd client/cmd && $(GO) build -ldflags $(LDFLAGS) -o "$(HUSKYCI-CLIENT-BIN)" main.go
-
-## Builds client code using linux architecture into a binary
-build-client-linux:
-	cd client/cmd && GOOS=linux GOARCH=amd64 $(GO) build -ldflags $(LDFLAGS) -o "$(HUSKYCI-CLIENT-BIN)" main.go
-
-## Builds cli code into a binary
-build-cli:
-	cd cli && $(GO) build -ldflags $(LDFLAGS) -o "$(HUSKYCI-CLI-BIN)" main.go
-
-## Builds cli code using linux architecture into a binary
-build-cli-linux:
-	cd cli && GOOS=linux GOARCH=amd64 $(GO) build -ldflags $(LDFLAGS) -o "$(HUSKYCI-CLI-BIN)" main.go
 
 ## Builds all securityTest containers locally with the latest tags
 build-containers:
@@ -82,12 +66,12 @@ check-containers-version:
 
 ## Composes huskyCI environment using docker-compose
 compose:
-	docker-compose -f deployments/docker-compose.yml down -v
-	docker-compose -f deployments/docker-compose.yml up -d --build --force-recreate
+	docker compose -f deployments/docker-compose.yml down -v
+	docker compose -f deployments/docker-compose.yml up -d --build --force-recreate
 
 ## Composes down
 compose-down:
-	docker-compose -f deployments/docker-compose.yml down -v
+	docker compose -f deployments/docker-compose.yml down -v
 
 ## Creates certs and sets all config to huskyCI_Docker_API
 create-certs:
@@ -142,39 +126,11 @@ restart-huskyci-api:
 	chmod +x deployments/scripts/restart-huskyci-api.sh
 	./deployments/scripts/restart-huskyci-api.sh
 
-## Runs huskyci-client
-run-cli: build-cli
-	./cli/"$(HUSKYCI-CLI-BIN)" run
-
-## Run huskyci-client compiling it in Linux arch
-run-cli-linux: build-cli-linux
-	./cli/"$(HUSKYCI-CLI-BIN)" run
-
-## Runs huskyci-client
-run-client: build-client
-	./client/cmd/"$(HUSKYCI-CLIENT-BIN)"
-
-## Runs huskyci-client with JSON output
-run-client-json: build-client
-	./client/cmd/"$(HUSKYCI-CLIENT-BIN)" JSON
-
-## Run huskyci-client compiling it in Linux arch
-run-client-linux: build-client-linux
-	./client/cmd/"$(HUSKYCI-CLIENT-BIN)"
-
-## Run huskyci-client compiling it in Linux arch with JSON output
-run-client-linux-json: build-client-linux
-	./client/cmd/"$(HUSKYCI-CLIENT-BIN)" JSON
-
 ## Performs all unit tests using ginkgo
 test:
 	cd api && $(GO) test -coverprofile=c.out ./...
 	cd api && $(GO) tool cover -func=c.out
 	cd api && $(GO) tool cover -html=c.out -o coverage.html
-	cd client && $(GO) test -coverprofile=d.out ./...
-	cd client && $(GO) tool cover -func=d.out
-	cd cli && $(GO) test -coverprofile=e.out ./...
-	cd cli && $(GO) tool cover -func=e.out
 
 ## Builds and push securityTest containers with the latest tags
 update-containers: build-containers push-containers
