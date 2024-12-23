@@ -22,20 +22,22 @@ jobs:
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
 
-#      - name: Set up Go
-#        uses: actions/setup-go@v5
-#        with:
-#          go-version: '^1.13.1'
-#      - run: go version
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '^1.13.1'
+      - run: go version
 
       - name: HuskyCI Client Download and Build
         run: |
-          apk add --update --no-cache make
-          make -v
+          apk add --update --no-cache make tcl-dev gettext
+          curl -SL https://github.com/docker/compose/releases/download/v2.32.0/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
+          chmod +x /usr/local/bin/docker-compose
           wget -O - https://github.com/githubanotaai/huskyci-api/archive/main.tar.gz | tar xz --strip=2 "huskyci-api-main"
+          git config --global --add safe.directory /__w/huskyci-api/huskyci-api
+          cd client/cmd
           ls -la
-          make build-client-linux
-          make run-client-linux
+          go build -ldflags "-s -w" -o huskyci-client main.go
 
       - name: HuskyCI Client Run
         run: |
