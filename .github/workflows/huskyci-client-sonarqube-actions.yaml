@@ -32,7 +32,7 @@ jobs:
         run: |
           apt install -y make
           wget -O - https://github.com/githubanotaai/huskyci-api/archive/main.tar.gz | tar xz --strip=2 "huskyci-api-main/client"
-          make build-client-linux
+          make run-client-linux
 
       - name: HuskyCI Client Run
         run: |
