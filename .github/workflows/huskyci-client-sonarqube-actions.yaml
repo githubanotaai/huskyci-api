@@ -15,7 +15,7 @@ jobs:
         HUSKYCI_CLIENT_API_USE_HTTPS: true
         HUSKYCI_CLIENT_REPO_URL: git@github.com:${GITHUB_REPOSITORY}.git
         HUSKYCI_CLIENT_REPO_BRANCH: $GITHUB_REF_NAME
-        HUSKYCI_CLIENT_URL: https://github.com/globocom/huskyCI/releases/latest/download
+        HUSKYCI_CLIENT_URL: https://github.com/globocom/huskyCI
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
