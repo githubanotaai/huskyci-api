@@ -29,7 +29,9 @@ jobs:
       - run: go version
 
       - name: HuskyCI Client Download
-        run: wget $HUSKYCI_CLIENT_URL/huskyci-client
+        run: |
+          print $HUSKYCI_CLIENT_URL/client
+          wget $HUSKYCI_CLIENT_URL/client
 
       - name: HuskyCI Client Run
         run: |
