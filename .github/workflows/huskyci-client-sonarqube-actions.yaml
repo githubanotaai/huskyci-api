@@ -35,12 +35,14 @@ jobs:
           chmod +x /usr/local/bin/docker-compose
           wget -O - https://github.com/githubanotaai/huskyci-api/archive/main.tar.gz | tar xz --strip=2 "huskyci-api-main"
           git config --global --add safe.directory /__w/huskyci-api/huskyci-api
-          make run-client
+          cd client/cmd
+          go build -ldflags "-s -w" -o huskyci-client main.go
+          ls -la
 
-          #      - name: HuskyCI Client Run
-          #        run: |
-          #chmod +x huskyci-client
-          #./huskyci-client
+      - name: HuskyCI Client Run
+        run: |
+          chmod +x huskyci-client
+          ./huskyci-client
 
       - name: HuskyCI Output
         uses: actions/upload-artifact@v4
