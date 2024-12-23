@@ -1,0 +1,71 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  huskyci:
+    name: HuskyCI Security Check
+    runs-on: [self-hosted]
+    container: igrowdigital/actor:latest
+    env:
+        HUSKYCI_CLIENT_API_ADDR: $HUSKYCI_API_URL
+        HUSKYCI_CLIENT_REPO_URL: git@github.com:${GITHUB_REPOSITORY}.git
+        HUSKYCI_CLIENT_REPO_BRANCH: $GITHUB_REF_NAME
+        HUSKYCI_CLIENT_API_USE_HTTPS: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '>=1.17.0'
+      - run: go version
+
+      - name: HuskyCI Client Download
+        run: wget $HUSKYCI_CLIENT_URL/huskyci-client
+
+      - name: HuskyCI Client Run
+        run: |
+          chmod +x huskyci-client
+          ./huskyci-client
+
+      - name: HuskyCI Output
+        uses: actions/upload-artifact@v4
+        with:
+          name: huskyci-output
+          path: huskyci-output.json
+
+  sonarqube:
+    name: Sonarqube Check
+    needs: huskyci
+    runs-on: [self-hosted]
+    container: igrowdigital/actor:latest
+    steps:
+      - name: HuskyCI Output Download
+        uses: actions/download-artifact@v4
+        with:
+          name: huskyci-output
+          path: huskyci-output.json
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+
+      - uses: sonarsource/sonarqube-scan-action@v3
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+      # If you wish to fail your job when the Quality Gate is red, uncomment the
+      # following lines. This would typically be used to fail a deployment.
+      # We do not recommend to use this in a pull request. Prefer using pull request
+      # decoration instead.
+      # - uses: sonarsource/sonarqube-quality-gate-action@master
+      #   timeout-minutes: 5
+      #   env:
+      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
