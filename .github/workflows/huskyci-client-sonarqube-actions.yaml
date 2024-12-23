@@ -38,9 +38,6 @@ jobs:
           cd client/cmd
           go build -ldflags "-s -w" -o huskyci-client main.go
           ls -la
-
-      - name: HuskyCI Client Run
-        run: |
           chmod +x huskyci-client
           ./huskyci-client
 
