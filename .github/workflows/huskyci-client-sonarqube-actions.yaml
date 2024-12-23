@@ -22,16 +22,19 @@ jobs:
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '>=1.17.0'
-      - run: go version
+#      - name: Set up Go
+#        uses: actions/setup-go@v5
+#        with:
+#          go-version: '^1.13.1'
+#      - run: go version
 
       - name: HuskyCI Client Download and Build
         run: |
-          wget -O - https://github.com/githubanotaai/huskyci-api/archive/main.tar.gz | tar xz --strip=2 "huskyci-api-main/client"
-          make build
+          apk add --update --no-cache make
+          make -v
+          wget -O - https://github.com/githubanotaai/huskyci-api/archive/main.tar.gz | tar xz --strip=2 "huskyci-api-main"
+          ls -la
+          make build-client-linux
           make run-client-linux
 
       - name: HuskyCI Client Run
