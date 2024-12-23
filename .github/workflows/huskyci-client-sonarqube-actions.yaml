@@ -31,6 +31,7 @@ jobs:
       - name: HuskyCI Client Download and Build
         run: |
           wget -O - https://github.com/githubanotaai/huskyci-api/archive/main.tar.gz | tar xz --strip=2 "huskyci-api-main/client"
+          make build
           make run-client-linux
 
       - name: HuskyCI Client Run
