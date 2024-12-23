@@ -30,7 +30,7 @@ jobs:
 
       - name: HuskyCI Client Download and Build
         run: |
-          apk add --update --no-cache make tcl-dev gettext
+          apk add --update --no-cache make tcl-dev gettext curl-dev
           curl -SL https://github.com/docker/compose/releases/download/v2.32.0/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
           chmod +x /usr/local/bin/docker-compose
           wget -O - https://github.com/githubanotaai/huskyci-api/archive/main.tar.gz | tar xz --strip=2 "huskyci-api-main"
