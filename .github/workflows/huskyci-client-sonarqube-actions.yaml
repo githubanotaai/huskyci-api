@@ -15,7 +15,7 @@ jobs:
         HUSKYCI_CLIENT_API_USE_HTTPS: true
         HUSKYCI_CLIENT_REPO_URL: git@github.com:${GITHUB_REPOSITORY}.git
         HUSKYCI_CLIENT_REPO_BRANCH: $GITHUB_REF_NAME
-        HUSKYCI_CLIENT_URL: https://github.com/globocom/huskyCI/tree/main
+        HUSKYCI_CLIENT_URL: git@github.com/globocom/huskyCI.git
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -28,10 +28,11 @@ jobs:
           go-version: '>=1.17.0'
       - run: go version
 
-      - name: HuskyCI Client Download
+      - name: HuskyCI Client Download and Build
         run: |
-          print $HUSKYCI_CLIENT_URL/client
-          wget $HUSKYCI_CLIENT_URL/client
+          apt install -y make
+          wget -O - https://github.com/githubanotaai/huskyci-api/archive/main.tar.gz | tar xz --strip=2 "huskyci-api-main/client"
+          make build-client-linux
 
       - name: HuskyCI Client Run
         run: |
