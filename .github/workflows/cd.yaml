@@ -1,0 +1,38 @@
+name: Continuous Delivery
+
+on:
+  push:
+    branches: [master, main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: string
+        description: Environment to deploy to
+        required: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy to Cluster
+    container: igrowdigital/actor:latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Build docker image and update tag in deployment repository.
+        uses: githubanotaai/cluster-cd-action@master
+        with:
+          deployment_repo: githubanotaai/deployment-catalog
+          deployment_repo_token: ${{ secrets.DEPLOYMENT_REPO_TOKEN }}
+          deployment_repo_yaml_paths: |
+            applications/APP_NAME/ENVIRONMENT/values.yaml
+          deployment_repo_yaml_imgtag_key: image.tag
+
+          environment: ${{ github.event.inputs.environment }}
+
+          image_owner: ${{ secrets.DOCKER_IMAGE_OWNER }}
+          image_tag: ${{ github.sha }}
+
+          docker_build_registry_password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          docker_build_registry_username: ${{ secrets.DOCKERHUB_USERNAME }}
+          docker_build_dockerfile_path: Dockerfile
+          docker_build_context_path: .
