@@ -7,9 +7,9 @@ package db
 import (
 	"time"
 
-	mongoHuskyCI "github.com/globocom/huskyCI/api/db/mongo"
-	"github.com/globocom/huskyCI/api/types"
-	"gopkg.in/mgo.v2/bson"
+	mongoHuskyCI "github.com/githubanotaai/huskyci-api/api/db/mongo"
+	"github.com/githubanotaai/huskyci-api/api/types"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 // ConnectDB will call Connect function
