@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	apiContext "github.com/globocom/huskyCI/api/context"
-	"github.com/globocom/huskyCI/api/log"
+	apiContext "github.com/githubanotaai/huskyci-api/api/context"
+	"github.com/githubanotaai/huskyci-api/api/log"
 	goContext "golang.org/x/net/context"
 
 	core "k8s.io/api/core/v1"
