@@ -7,9 +7,9 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "github.com/globocom/huskyCI/api/context"
-	"github.com/globocom/huskyCI/api/db"
-	"github.com/globocom/huskyCI/api/types"
+	. "github.com/githubanotaai/huskyci-api/api/context"
+	"github.com/githubanotaai/huskyci-api/api/db"
+	"github.com/githubanotaai/huskyci-api/api/types"
 )
 
 type FakeCaller struct {
