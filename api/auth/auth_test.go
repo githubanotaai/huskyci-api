@@ -7,7 +7,7 @@ package auth_test
 import (
 	"errors"
 
-	. "github.com/globocom/huskyCI/api/auth"
+	. "github.com/githubaanotaai/huskyci-api/api/auth"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
