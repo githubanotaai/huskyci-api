@@ -12,7 +12,7 @@ import (
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 
-	"github.com/globocom/huskyCI/api/auth"
+	"github.com/githubanotaai/huskyci-api/api/auth"
 	apiContext "github.com/githubanotaai/huskyci-api/api/context"
 	"github.com/githubanotaai/huskyci-api/log"
 	"github.com/githubanotaai/huskyci-api/api/routes"
