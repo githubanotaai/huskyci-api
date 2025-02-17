@@ -7,12 +7,12 @@ package analysis
 import (
 	"time"
 
-	apiContext "github.com/globocom/huskyCI/api/context"
-	"github.com/globocom/huskyCI/api/log"
-	"github.com/globocom/huskyCI/api/securitytest"
-	"github.com/globocom/huskyCI/api/types"
-	apiUtil "github.com/globocom/huskyCI/api/util/api"
-	"gopkg.in/mgo.v2/bson"
+	apiContext "github.com/githubanotaai/huskyci-api/api/context"
+	"github.com/githubanotaai/huskyci-api/api/log"
+	"github.com/githubanotaai/huskyci-api/api/securitytest"
+	"github.com/githubanotaai/huskyci-api/api/types"
+	apiUtil "github.com/githubanotaai/huskyci-api/api/util/api"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 const logActionStart = "StartAnalysis"
