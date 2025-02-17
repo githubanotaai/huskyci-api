@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"time"
 
-	mongoHuskyCI "github.com/globocom/huskyCI/api/db/mongo"
-	"github.com/globocom/huskyCI/api/util"
-	"gopkg.in/mgo.v2/bson"
+	mongoHuskyCI "github.com/githubanotaai/huskyci-api/api/db/mongo"
+	"github.com/githubanotaai/huskyci-api/api/util"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 const timeRangeQS = "time_range"
