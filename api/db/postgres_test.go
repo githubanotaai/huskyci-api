@@ -4,8 +4,8 @@ import (
 	"errors"
 	"time"
 
-	. "github.com/globocom/huskyCI/api/db"
-	"github.com/globocom/huskyCI/api/types"
+	. "github.com/githubanotaai/huskyci-api/api/db"
+	"github.com/githubanotaai/huskyci-api/api/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
