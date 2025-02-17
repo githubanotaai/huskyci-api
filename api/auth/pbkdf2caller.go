@@ -13,8 +13,8 @@ import (
 	"os"
 	"strconv"
 
-	apiContext "github.com/globocom/huskyCI/api/context"
-	"github.com/globocom/huskyCI/api/types"
+	apiContext "github.com/githubanotaai/huskyci-api/api/context"
+	"github.com/githubanotaai/huskyci-api/api/types"
 	"golang.org/x/crypto/pbkdf2"
 )
 
