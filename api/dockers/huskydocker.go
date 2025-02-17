@@ -11,7 +11,7 @@ import (
 
 	"regexp"
 
-	"github.com/globocom/huskyCI/api/log"
+	"github.com/githubanotaai/huskyci-api/api/log"
 )
 
 const logActionRun = "DockerRun"
