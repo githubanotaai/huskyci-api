@@ -3,8 +3,8 @@ package db
 import (
 	"time"
 
-	postgres "github.com/globocom/huskyCI/api/db/postgres"
-	"github.com/globocom/huskyCI/api/types"
+	postgres "github.com/githubanotaai/huskyci-api/api/db/postgres"
+	"github.com/githubanotaai/huskyci-api/api/types"
 )
 
 // Requests defines all functions
