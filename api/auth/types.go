@@ -7,7 +7,7 @@ package auth
 import (
 	"hash"
 
-	"github.com/globocom/huskyCI/api/types"
+	"github.com/githubanotaai/huskyci-api/api/types"
 )
 
 // UserCredsHandler is the User handler used in auth.
