@@ -12,9 +12,9 @@ import (
 
 	cache "github.com/patrickmn/go-cache"
 
-	"github.com/globocom/huskyCI/api/db"
-	postgres "github.com/globocom/huskyCI/api/db/postgres"
-	"github.com/globocom/huskyCI/api/types"
+	"github.com/githubanotaai/huskyci-api/api/db"
+	postgres "github.com/githubanotaai/huskyci-api/api/db/postgres"
+	"github.com/githubanotaai/huskyci-api/api/types"
 )
 
 // APIConfiguration holds all API configuration.
