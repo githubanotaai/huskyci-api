@@ -7,8 +7,8 @@ package securitytest
 import (
 	"encoding/json"
 
-	"github.com/globocom/huskyCI/api/log"
-	"github.com/globocom/huskyCI/api/util"
+	"github.com/githubanotaai/huskyci-api/api/log"
+	"github.com/githubanotaai/huskyci-api/api/util"
 )
 
 // GitAuthorsOutput is the struct that holds all commit authors from a branch.

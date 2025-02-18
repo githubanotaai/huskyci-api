@@ -9,9 +9,9 @@ import (
 	"encoding/base64"
 	"time"
 
-	apiContext "github.com/globocom/huskyCI/api/context"
-	"github.com/globocom/huskyCI/api/types"
-	"github.com/globocom/huskyCI/api/util"
+	apiContext "github.com/githubanotaai/huskyci-api/api/context"
+	"github.com/githubanotaai/huskyci-api/api/types"
+	"github.com/githubanotaai/huskyci-api/api/util"
 	"github.com/google/uuid"
 )
 

@@ -5,8 +5,8 @@
 package routes_test
 
 import (
-	apiContext "github.com/globocom/huskyCI/api/context"
-	"github.com/globocom/huskyCI/api/routes"
+	apiContext "github.com/githubanotaai/huskyci-api/api/context"
+	"github.com/githubanotaai/huskyci-api/api/routes"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

@@ -3,9 +3,9 @@ package util_test
 import (
 	"errors"
 
+	apiContext "github.com/githubanotaai/huskyci-api/api/context"
+	apiUtil "github.com/githubanotaai/huskyci-api/api/util/api"
 	"github.com/globocom/glbgelf"
-	apiContext "github.com/globocom/huskyCI/api/context"
-	apiUtil "github.com/globocom/huskyCI/api/util/api"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

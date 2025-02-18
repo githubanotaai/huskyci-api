@@ -12,9 +12,9 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 
-	"github.com/globocom/huskyCI/api/auth"
-	apiContext "github.com/globocom/huskyCI/api/context"
-	"github.com/globocom/huskyCI/api/types"
+	"github.com/githubanotaai/huskyci-api/api/auth"
+	apiContext "github.com/githubanotaai/huskyci-api/api/context"
+	"github.com/githubanotaai/huskyci-api/api/types"
 	"golang.org/x/crypto/pbkdf2"
 )
 

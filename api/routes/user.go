@@ -10,11 +10,12 @@ import (
 	"encoding/base64"
 	"hash"
 
-	"github.com/globocom/huskyCI/api/auth"
-	apiContext "github.com/globocom/huskyCI/api/context"
-	"github.com/globocom/huskyCI/api/log"
-	"github.com/globocom/huskyCI/api/types"
+	"github.com/githubanotaai/huskyci-api/api/auth"
+	apiContext "github.com/githubanotaai/huskyci-api/api/context"
+	"github.com/githubanotaai/huskyci-api/api/log"
+	"github.com/githubanotaai/huskyci-api/api/types"
 	"github.com/labstack/echo"
+	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/pbkdf2"
 	"gopkg.in/mgo.v2"
 )
@@ -92,7 +93,7 @@ func UpdateUser(c echo.Context) error {
 
 	// step 5.2: update user
 	if err := apiContext.APIConfiguration.DBInstance.UpdateOneDBUser(userQuery, updatedUser); err != nil {
-		if err == mgo.ErrNotFound || err.Error() == "No data found" {
+		if err == mongo.ErrNoDocuments || err.Error() == "No data found" {
 			reply := map[string]interface{}{"success": false, "error": "user not found"}
 			return c.JSON(http.StatusNotFound, reply)
 		}

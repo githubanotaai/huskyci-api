@@ -14,7 +14,7 @@ import (
 
 	"github.com/githubanotaai/huskyci-api/api/auth"
 	apiContext "github.com/githubanotaai/huskyci-api/api/context"
-	"github.com/githubanotaai/huskyci-api/log"
+	"github.com/githubanotaai/huskyci-api/api/log"
 	"github.com/githubanotaai/huskyci-api/api/routes"
 	"github.com/githubanotaai/huskyci-api/api/util"
 	apiUtil "github.com/githubanotaai/huskyci-api/api/util/api"

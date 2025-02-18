@@ -73,7 +73,7 @@ func GetValidHashFunction(hashStr string) (hash.Hash, bool) {
 func (cM *ClientPbkdf2) GetHashedPass(password string) (string, error) {
 	hashFunction, isValid := GetValidHashFunction(cM.HashFunction)
 	if cM.Salt == "" || cM.Iterations == 0 || cM.KeyLen == 0 || !isValid {
-		return "", errors.New("Failed to generate a hash! It doesn't meet all criteria")
+		return "", errors.New("failed to generate a hash! it doesn't meet all criteria")
 	}
 	salt, err := cM.HashGen.DecodeSaltValue(cM.Salt)
 	if err != nil {

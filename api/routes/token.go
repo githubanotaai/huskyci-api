@@ -7,10 +7,10 @@ package routes
 import (
 	"net/http"
 
-	"github.com/globocom/huskyCI/api/auth"
-	"github.com/globocom/huskyCI/api/log"
-	"github.com/globocom/huskyCI/api/token"
-	"github.com/globocom/huskyCI/api/types"
+	"github.com/githubanotaai/huskyci-api/api/auth"
+	"github.com/githubanotaai/huskyci-api/api/log"
+	"github.com/githubanotaai/huskyci-api/api/token"
+	"github.com/githubanotaai/huskyci-api/api/types"
 	"github.com/labstack/echo"
 )
 

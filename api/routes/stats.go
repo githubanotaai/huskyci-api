@@ -11,8 +11,8 @@ import (
 	"github.com/labstack/echo"
 	"github.com/patrickmn/go-cache"
 
-	apiContext "github.com/globocom/huskyCI/api/context"
-	"github.com/globocom/huskyCI/api/log"
+	apiContext "github.com/githubanotaai/huskyci-api/api/context"
+	"github.com/githubanotaai/huskyci-api/api/log"
 )
 
 const logActionGetMetric = "GetMetric"

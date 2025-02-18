@@ -8,15 +8,15 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/globocom/huskyCI/api/analysis"
-	"github.com/globocom/huskyCI/api/auth"
-	apiContext "github.com/globocom/huskyCI/api/context"
-	"github.com/globocom/huskyCI/api/log"
-	"github.com/globocom/huskyCI/api/token"
-	"github.com/globocom/huskyCI/api/types"
-	"github.com/globocom/huskyCI/api/util"
+	"github.com/githubanotaai/huskyci-api/api/analysis"
+	"github.com/githubanotaai/huskyci-api/api/auth"
+	apiContext "github.com/githubanotaai/huskyci-api/api/context"
+	"github.com/githubanotaai/huskyci-api/api/log"
+	"github.com/githubanotaai/huskyci-api/api/token"
+	"github.com/githubanotaai/huskyci-api/api/types"
+	"github.com/githubanotaai/huskyci-api/api/util"
 	"github.com/labstack/echo"
-	mgo "gopkg.in/mgo.v2"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 var (
@@ -55,9 +55,9 @@ func GetAnalysis(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, reply)
 	}
 	if err != nil {
-		if err == mgo.ErrNotFound || err.Error() == "No data found" {
+		if err == mongo.ErrNoDocuments || err.Error() == "No data found" {
 			log.Warning(logActionGetAnalysis, logInfoAnalysis, 106, RID)
-			reply := map[string]interface{}{"success": false, "error": "analysis not found"}
+			reply := map[string]interface{}{"success": false, "error": "user not found"}
 			return c.JSON(http.StatusNotFound, reply)
 		}
 		log.Error(logActionGetAnalysis, logInfoAnalysis, 1020, err)
@@ -97,7 +97,7 @@ func ReceiveRequest(c echo.Context) error {
 	repositoryQuery := map[string]interface{}{"repositoryURL": repository.URL}
 	_, err = apiContext.APIConfiguration.DBInstance.FindOneDBRepository(repositoryQuery)
 	if err != nil {
-		if err == mgo.ErrNotFound || err.Error() == "No data found" {
+		if err == mongo.ErrNoDocuments || err.Error() == "No data found" {
 			// step-02-o1: repository not found! insert it into MongoDB
 			repository.CreatedAt = time.Now()
 			err = apiContext.APIConfiguration.DBInstance.InsertDBRepository(repository)
@@ -117,7 +117,7 @@ func ReceiveRequest(c echo.Context) error {
 		analysisQuery := map[string]interface{}{"repositoryURL": repository.URL, "repositoryBranch": repository.Branch}
 		analysisResult, err := apiContext.APIConfiguration.DBInstance.FindOneDBAnalysis(analysisQuery)
 		if err != nil {
-			if err == mgo.ErrNotFound || err.Error() == "No data found" {
+			if err == mongo.ErrNoDocuments || err.Error() == "No data found" {
 				// nice! we can start this analysis!
 			} else {
 				// step-03-err: another error searching for analysisQuery

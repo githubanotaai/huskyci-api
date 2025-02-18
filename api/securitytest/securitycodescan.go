@@ -10,10 +10,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/globocom/huskyCI/api/util"
+	"github.com/githubanotaai/huskyci-api/api/util"
 
-	"github.com/globocom/huskyCI/api/log"
-	"github.com/globocom/huskyCI/api/types"
+	"github.com/githubanotaai/huskyci-api/api/log"
+	"github.com/githubanotaai/huskyci-api/api/types"
 )
 
 // SecurityCodeScanOutput is the struct that holds all data from SecurityCodeScan output.

@@ -7,11 +7,11 @@ package routes
 import (
 	"net/http"
 
-	apiContext "github.com/globocom/huskyCI/api/context"
+	apiContext "github.com/githubanotaai/huskyci-api/api/context"
 	"github.com/labstack/echo"
 )
 
-//GetAPIVersion returns the API version
+// GetAPIVersion returns the API version
 func GetAPIVersion(c echo.Context) error {
 	configAPI := apiContext.APIConfiguration
 	return c.JSON(http.StatusOK, GetRequestResult(configAPI))

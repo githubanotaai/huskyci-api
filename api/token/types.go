@@ -7,8 +7,8 @@ package token
 import (
 	"time"
 
-	"github.com/globocom/huskyCI/api/auth"
-	"github.com/globocom/huskyCI/api/types"
+	"github.com/githubanotaai/huskyci-api/api/auth"
+	"github.com/githubanotaai/huskyci-api/api/types"
 )
 
 // ExternalCalls defines a group of functions

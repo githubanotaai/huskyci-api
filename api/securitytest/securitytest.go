@@ -6,12 +6,12 @@ import (
 	"strings"
 	"time"
 
-	apiContext "github.com/globocom/huskyCI/api/context"
-	huskydocker "github.com/globocom/huskyCI/api/dockers"
-	huskykube "github.com/globocom/huskyCI/api/kubernetes"
-	"github.com/globocom/huskyCI/api/log"
-	"github.com/globocom/huskyCI/api/types"
-	"github.com/globocom/huskyCI/api/util"
+	apiContext "github.com/githubanotaai/huskyci-api/api/context"
+	huskydocker "github.com/githubanotaai/huskyci-api/api/dockers"
+	huskykube "github.com/githubanotaai/huskyci-api/api/kubernetes"
+	"github.com/githubanotaai/huskyci-api/api/log"
+	"github.com/githubanotaai/huskyci-api/api/types"
+	"github.com/githubanotaai/huskyci-api/api/util"
 )
 
 var securityTestAnalyze = map[string]func(scanInfo *SecTestScanInfo) error{

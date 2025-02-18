@@ -9,9 +9,9 @@ import (
 	"errors"
 	"reflect"
 
-	"github.com/globocom/huskyCI/api/log"
-	"github.com/globocom/huskyCI/api/types"
-	"github.com/globocom/huskyCI/api/util"
+	"github.com/githubanotaai/huskyci-api/api/log"
+	"github.com/githubanotaai/huskyci-api/api/types"
+	"github.com/githubanotaai/huskyci-api/api/util"
 )
 
 // EnryOutput is the struct that holds all data from Gosec output.

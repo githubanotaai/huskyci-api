@@ -9,14 +9,14 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/globocom/huskyCI/api/log"
-	"github.com/globocom/huskyCI/api/types"
-	"github.com/globocom/huskyCI/api/util"
+	"github.com/githubanotaai/huskyci-api/api/log"
+	"github.com/githubanotaai/huskyci-api/api/types"
+	"github.com/githubanotaai/huskyci-api/api/util"
 )
 
 // BrakemanOutput is the struct that holds issues and stats found on a Brakeman scan.
 type BrakemanOutput struct {
-	Warnings []WarningItem `json:"warnings"`
+	Warnings        []WarningItem `json:"warnings"`
 	IgnoredWarnings []WarningItem `json:"ignored_warnings"`
 }
 
