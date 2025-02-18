@@ -34,5 +34,5 @@ jobs:
 
           docker_build_registry_password: ${{ secrets.DOCKERHUB_PASSWORD }}
           docker_build_registry_username: ${{ secrets.DOCKERHUB_USERNAME }}
-          docker_build_dockerfile_path: Dockerfile
+          docker_build_dockerfile_path: deployments/dockerfiles/api.Dockerfile
           docker_build_context_path: .
