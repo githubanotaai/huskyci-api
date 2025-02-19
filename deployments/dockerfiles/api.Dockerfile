@@ -1,7 +1,7 @@
 FROM golang:1.20-alpine as builder
 
-ADD api/ /go/src/github.com/globocom/huskyCI/api/
-WORKDIR /go/src/github.com/globocom/huskyCI/api/
+COPY api/ /go/src/github.com/githubanotaai/huskyci-api/api/
+WORKDIR /go/src/github.com/githubanotaai/huskyci-api/api/
 
 RUN go build -o huskyci-api-bin server.go
 
