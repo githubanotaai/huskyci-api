@@ -8,6 +8,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/labstack/echo v3.3.10+incompatible
 	github.com/lib/pq v1.10.9
+	go.mongodb.org/mongo-driver v1.17.2
 	github.com/onsi/ginkgo v1.14.0
 	github.com/onsi/gomega v1.27.4
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -72,7 +73,6 @@ require (
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
-	go.mongodb.org/mongo-driver v1.17.2 // indirect
 	golang.org/x/mod v0.17.0 // indirect
 	golang.org/x/oauth2 v0.8.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect

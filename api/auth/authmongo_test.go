@@ -65,8 +65,9 @@ var _ = Describe("Authmongo", func() {
 				HashFunction: "sha1",
 			}
 			hashVal, err := pbkdf2Client.GetHashedPass("mypass")
+			print(hashVal)
 			Expect(hashVal).To(Equal(""))
-			Expect(err).To(Equal(errors.New("Failed to generate a hash! It doesn't meet all criteria")))
+			Expect(err).To(Equal(errors.New("failed to generate a hash! it doesn't meet all criteria")))
 		})
 	})
 	Context("When hash algorithm chosen is valid", func() {
@@ -188,7 +189,7 @@ var _ = Describe("Authmongo", func() {
 			}
 			hashVal, err := pbkdf2Client.GetHashedPass("mypass")
 			Expect(hashVal).To(Equal(""))
-			Expect(err).To(Equal(errors.New("Failed to generate a hash! It doesn't meet all criteria")))
+			Expect(err).To(Equal(errors.New("failed to generate a hash! it doesn't meet all criteria")))
 		})
 		It("Should return an the expected error and an empty hash for a 0 iteration", func() {
 			fakeGen := FakeGen{
@@ -202,7 +203,7 @@ var _ = Describe("Authmongo", func() {
 			}
 			hashVal, err := pbkdf2Client.GetHashedPass("mypass")
 			Expect(hashVal).To(Equal(""))
-			Expect(err).To(Equal(errors.New("Failed to generate a hash! It doesn't meet all criteria")))
+			Expect(err).To(Equal(errors.New("failed to generate a hash! it doesn't meet all criteria")))
 		})
 		It("Should return an the expected error and an empty hash for a 0 keyLength", func() {
 			fakeGen := FakeGen{
@@ -217,7 +218,7 @@ var _ = Describe("Authmongo", func() {
 			}
 			hashVal, err := pbkdf2Client.GetHashedPass("mypass")
 			Expect(hashVal).To(Equal(""))
-			Expect(err).To(Equal(errors.New("Failed to generate a hash! It doesn't meet all criteria")))
+			Expect(err).To(Equal(errors.New("failed to generate a hash! it doesn't meet all criteria")))
 		})
 	})
 	Context("When GetCredsFromDB return an error for GetPassFromDB", func() {

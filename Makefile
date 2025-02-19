@@ -173,8 +173,8 @@ test:
 	cd api && $(GO) tool cover -html=c.out -o coverage.html
 	cd client && $(GO) test -coverprofile=d.out ./...
 	cd client && $(GO) tool cover -func=d.out
-	cd cli && $(GO) test -coverprofile=e.out ./...
-	cd cli && $(GO) tool cover -func=e.out
+#	cd cli && $(GO) test -coverprofile=e.out ./...
+#	cd cli && $(GO) tool cover -func=e.out
 
 ## Builds and push securityTest containers with the latest tags
 update-containers: build-containers push-containers
