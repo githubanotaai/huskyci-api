@@ -14,4 +14,3 @@ COPY api/config.yaml .
 # COPY api/api-tls-key.pem .
 
 RUN chmod +x huskyci-api-bin
-CMD ["sh", "-c", "tail -f /dev/null"]
