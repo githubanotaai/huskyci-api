@@ -9,13 +9,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 
-	"github.com/globocom/huskyCI/client/config"
-	"github.com/globocom/huskyCI/client/types"
-	"github.com/globocom/huskyCI/client/util"
+	"github.com/githubanotaai/huskyci-api/client/config"
+	"github.com/githubanotaai/huskyci-api/client/types"
+	"github.com/githubanotaai/huskyci-api/client/util"
 )
 
 // StartAnalysis starts a container and returns its RID and error.
@@ -25,8 +25,8 @@ func StartAnalysis() (string, error) {
 	huskyStartAnalysisURL := config.HuskyAPI + "/analysis"
 
 	requestPayload := types.JSONPayload{
-		RepositoryURL:    config.RepositoryURL,
-		RepositoryBranch: config.RepositoryBranch,
+		RepositoryURL:      config.RepositoryURL,
+		RepositoryBranch:   config.RepositoryBranch,
 		LanguageExclusions: config.LanguageExclusions,
 	}
 
@@ -103,7 +103,7 @@ func GetAnalysis(RID string) (types.Analysis, error) {
 
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return analysis, err
 	}

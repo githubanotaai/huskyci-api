@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/globocom/huskyCI/client/types"
-	"github.com/globocom/huskyCI/client/util"
+	"github.com/githubanotaai/huskyci-api/client/types"
+	"github.com/githubanotaai/huskyci-api/client/util"
 )
 
 const goContainerBasePath = `/go/src/code/`
