@@ -5,7 +5,6 @@
 package config
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -88,7 +87,7 @@ func TestCheckAndCreateConfigFolder(t *testing.T) {
 		"Test CheckAndCreateConfigFolder()",
 		func(t *testing.T) {
 			// Create temp dir
-			dir, err := ioutil.TempDir("", "TestCheckAndCreateConfigFolder")
+			dir, err := os.MkdirTemp("", "TestCheckAndCreateConfigFolder")
 			if err != nil {
 				t.Fatalf("CONFIG: (pre-test) fail to create config folder (%v)", err)
 			}
@@ -105,7 +104,7 @@ func TestCheckAndCreateConfigFolder(t *testing.T) {
 		"Test CheckAndCreateConfigFolder() without permissions",
 		func(t *testing.T) {
 			// Create temp dir
-			dir, err := ioutil.TempDir("", "TestCheckAndCreateConfigFolder")
+			dir, err := os.MkdirTemp("", "TestCheckAndCreateConfigFolder")
 			if err != nil {
 				t.Fatalf("CONFIG: (pre-test) fail to create config folder (%v)", err)
 			}
@@ -135,7 +134,7 @@ func TestCreateConfigFile(t *testing.T) {
 		"Test CreateConfigFile()",
 		func(t *testing.T) {
 			// Create temp dir
-			dir, err := ioutil.TempDir("", "TestCreateConfigFile")
+			dir, err := os.MkdirTemp("", "TestCreateConfigFile")
 			if err != nil {
 				t.Fatalf("CONFIG: (pre-test) fail to create config folder (%v)", err)
 			}
