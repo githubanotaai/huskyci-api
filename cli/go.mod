@@ -1,4 +1,4 @@
-module github.com/globocom/huskyCI/cli
+module github.com/githubanotaai/huskyci-api/cli
 
 go 1.20
 

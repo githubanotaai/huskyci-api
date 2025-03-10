@@ -15,7 +15,7 @@ import (
 	"github.com/pkg/browser"
 	"github.com/spf13/cobra"
 
-	"github.com/globocom/huskyCI/cli/pkg/github"
+	"github.com/githubanotaai/huskyci-api/cli/pkg/github"
 )
 
 var loginCmd = &cobra.Command{

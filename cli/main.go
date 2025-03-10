@@ -5,8 +5,8 @@
 package main
 
 import (
-	"github.com/globocom/huskyCI/cli/cmd"
-	"github.com/globocom/huskyCI/cli/errorcli"
+	"github.com/githubanotaai/huskyci-api/cli/cmd"
+	"github.com/githubanotaai/huskyci-api/cli/errorcli"
 )
 
 func main() {

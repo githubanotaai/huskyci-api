@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/globocom/huskyCI/cli/config"
-	"github.com/globocom/huskyCI/cli/errorcli"
-	"github.com/globocom/huskyCI/cli/util"
-	"github.com/globocom/huskyCI/cli/vulnerability"
+	"github.com/githubanotaai/huskyci-api/cli/config"
+	"github.com/githubanotaai/huskyci-api/cli/errorcli"
+	"github.com/githubanotaai/huskyci-api/cli/util"
+	"github.com/githubanotaai/huskyci-api/cli/vulnerability"
 	"github.com/google/uuid"
 	"github.com/src-d/enry/v2"
 )

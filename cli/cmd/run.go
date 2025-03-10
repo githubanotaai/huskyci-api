@@ -8,8 +8,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/globocom/huskyCI/cli/analysis"
-	"github.com/globocom/huskyCI/cli/errorcli"
+	"github.com/githubanotaai/huskyci-api/cli/analysis"
+	"github.com/githubanotaai/huskyci-api/cli/errorcli"
 	"github.com/spf13/cobra"
 )
 

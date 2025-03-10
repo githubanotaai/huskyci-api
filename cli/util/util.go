@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/globocom/huskyCI/cli/config"
-	"github.com/globocom/huskyCI/cli/errorcli"
+	"github.com/githubanotaai/huskyci-api/cli/config"
+	"github.com/githubanotaai/huskyci-api/cli/errorcli"
 	"github.com/mholt/archiver"
 )
 
