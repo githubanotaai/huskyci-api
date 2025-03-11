@@ -180,10 +180,13 @@ func (cH *CheckUtils) checkDefaultUser(configAPI *apiContext.APIConfig) error {
 	return nil
 }
 
-func FormatDockerHostAddress(dockerHost types.DockerAPIAddresses, configAPI *apiContext.APIConfig) string {
+func FormatDockerHostAddress(dockerHost types.DockerAPIAddresses, configAPI *apiContext.APIConfig) (string, error) {
+	if len(dockerHost.HostList) == 0 {
+		return "", errors.New("HostList is empty")
+	}
 	hostIndex := dockerHost.CurrentHostIndex % len(dockerHost.HostList)
 	host := dockerHost.HostList[hostIndex]
-	return fmt.Sprintf("https://%s:%d", host, configAPI.DockerHostsConfig.DockerAPIPort)
+	return fmt.Sprintf("https://%s:%d", host, configAPI.DockerHostsConfig.DockerAPIPort), nil
 }
 
 func checkSecurityTest(securityTestName string, configAPI *apiContext.APIConfig) error {
