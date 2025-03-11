@@ -49,7 +49,11 @@ func StartAnalysis(RID string, repository types.Repository) {
 		log.Error(logActionStart, logInfoAnalysis, 2011, err)
 	}
 
-	dockerHost := apiUtil.FormatDockerHostAddress(dockerAPIHost, configAPI)
+	dockerHost, err := apiUtil.FormatDockerHostAddress(dockerAPIHost, configAPI)
+	if err != nil {
+		log.Error(logActionStart, logInfoAnalysis, 2011, err)
+		return
+	}
 
 	log.Info("StartAnalysisTest", dockerHost, 2012, RID)
 
