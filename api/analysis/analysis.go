@@ -1,10 +1,8 @@
-// Copyright 2018 Globo.com authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
-
 package analysis
 
 import (
+	"errors"
+	"os"
 	"time"
 
 	apiContext "github.com/githubanotaai/huskyci-api/api/context"
@@ -39,25 +37,46 @@ func StartAnalysis(RID string, repository types.Repository) {
 		}
 	}()
 
-	dockerAPIHost, err := apiContext.APIConfiguration.DBInstance.FindAndModifyDockerAPIAddresses()
-	if err != nil {
-		log.Error(logActionStart, logInfoAnalysis, 2011, err)
-	}
-
-	configAPI, err := apiContext.DefaultConf.GetAPIConfig()
-	if err != nil {
-		log.Error(logActionStart, logInfoAnalysis, 2011, err)
-	}
-
-	dockerHost, err := apiUtil.FormatDockerHostAddress(dockerAPIHost, configAPI)
-	if err != nil {
+	infrastructureSelected, hasSelected := os.LookupEnv("HUSKYCI_INFRASTRUCTURE_USE")
+	if !hasSelected {
+		err := errors.New("HUSKYCI_INFRASTRUCTURE_USE environment variable not set")
 		log.Error(logActionStart, logInfoAnalysis, 2011, err)
 		return
 	}
 
-	log.Info("StartAnalysisTest", dockerHost, 2012, RID)
+	var apiHost string
 
-	if err := enryScan.New(RID, repository.URL, repository.Branch, enryScan.SecurityTestName, repository.LanguageExclusions, dockerHost); err != nil {
+	if infrastructureSelected == "docker" {
+		dockerAPIHost, err := apiContext.APIConfiguration.DBInstance.FindAndModifyDockerAPIAddresses()
+		if err != nil {
+			log.Error(logActionStart, logInfoAnalysis, 2011, err)
+			return
+		}
+
+		configAPI, err := apiContext.DefaultConf.GetAPIConfig()
+		if err != nil {
+			log.Error(logActionStart, logInfoAnalysis, 2011, err)
+			return
+		}
+
+		apiHost, err = apiUtil.FormatDockerHostAddress(dockerAPIHost, configAPI)
+		if err != nil {
+			log.Error(logActionStart, logInfoAnalysis, 2011, err)
+			return
+		}
+	} else if infrastructureSelected == "kubernetes" {
+		// Assume that the Kubernetes host is set properly in the configuration or environment variables
+		// Implement any specific logic to get the Kubernetes API host if needed
+		apiHost = "kubernetes.default.svc" // Example host, replace with actual logic if needed
+	} else {
+		err := errors.New("invalid HUSKYCI_INFRASTRUCTURE_USE value")
+		log.Error(logActionStart, logInfoAnalysis, 2011, err)
+		return
+	}
+
+	log.Info("StartAnalysisTest", apiHost, 2012, RID)
+
+	if err := enryScan.New(RID, repository.URL, repository.Branch, enryScan.SecurityTestName, repository.LanguageExclusions, apiHost); err != nil {
 		log.Error(logActionStart, logInfoAnalysis, 2011, err)
 		return
 	}
@@ -90,7 +109,6 @@ func registerNewAnalysis(RID string, repository types.Repository) error {
 		return err
 	}
 
-	// log.Info("registerNewAnalysis", logInfoAnalysis, 2012
 	return nil
 }
 

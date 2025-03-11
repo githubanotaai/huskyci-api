@@ -2,7 +2,6 @@ package util
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -16,7 +15,7 @@ func GetAllAllowedFilesAndDirsFromPath(path string) ([]string, error) {
 
 	var allFilesAndDirNames []string
 
-	filesAndDirs, err := ioutil.ReadDir(path)
+	filesAndDirs, err := os.ReadDir(path)
 	if err != nil {
 		return allFilesAndDirNames, err
 	}
