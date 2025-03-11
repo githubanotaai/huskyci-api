@@ -8,11 +8,11 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/labstack/echo v3.3.10+incompatible
 	github.com/lib/pq v1.10.9
-	go.mongodb.org/mongo-driver v1.17.2
 	github.com/onsi/ginkgo v1.14.0
 	github.com/onsi/gomega v1.27.4
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/spf13/viper v1.15.0
+	go.mongodb.org/mongo-driver v1.17.2
 	golang.org/x/crypto v0.26.0
 	golang.org/x/net v0.25.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22
