@@ -66,9 +66,10 @@ func StartAnalysis(RID string, repository types.Repository) {
 		}
 	} else if infrastructureSelected == "kubernetes" {
 		// Assume that the Kubernetes host is set properly in the configuration or environment variables
+		// Implement any specific logic to get the Kubernetes API host if needed
 		apiHost = "kubernetes.default.svc" // Example host, replace with actual logic if needed
 	} else {
-		err := errors.New("Invalid HUSKYCI_INFRASTRUCTURE_USE value")
+		err := errors.New("invalid HUSKYCI_INFRASTRUCTURE_USE value")
 		log.Error(logActionStart, logInfoAnalysis, 2011, err)
 		return
 	}
@@ -119,17 +120,8 @@ func registerFinishedAnalysis(RID string, allScanResults *securitytest.RunAllInf
 	} else {
 		errorString = ""
 	}
-
-	// Determine the final status based on scan results
-	finalStatus := "completed"
-	if allScanResults.ErrorFound != nil {
-		finalStatus = "failed"
-	} else if hasCriticalVulnerabilities(allScanResults.HuskyCIResults) {
-		finalStatus = "failed"
-	}
-
 	updateAnalysisQuery := bson.M{
-		"status":         finalStatus,
+		"status":         allScanResults.Status,
 		"commitAuthors":  allScanResults.CommitAuthors,
 		"result":         allScanResults.FinalResult,
 		"containers":     allScanResults.Containers,
@@ -144,21 +136,4 @@ func registerFinishedAnalysis(RID string, allScanResults *securitytest.RunAllInf
 		return err
 	}
 	return nil
-}
-
-func hasCriticalVulnerabilities(results types.HuskyCIResults) bool {
-	return hasCriticalVulnerabilitiesInOutput(results.GoResults.HuskyCIGosecOutput) ||
-		hasCriticalVulnerabilitiesInOutput(results.PythonResults.HuskyCIBanditOutput) ||
-		hasCriticalVulnerabilitiesInOutput(results.PythonResults.HuskyCISafetyOutput) ||
-		hasCriticalVulnerabilitiesInOutput(results.JavaScriptResults.HuskyCINpmAuditOutput) ||
-		hasCriticalVulnerabilitiesInOutput(results.JavaScriptResults.HuskyCIYarnAuditOutput) ||
-		hasCriticalVulnerabilitiesInOutput(results.JavaResults.HuskyCISpotBugsOutput) ||
-		hasCriticalVulnerabilitiesInOutput(results.RubyResults.HuskyCIBrakemanOutput) ||
-		hasCriticalVulnerabilitiesInOutput(results.HclResults.HuskyCITFSecOutput) ||
-		hasCriticalVulnerabilitiesInOutput(results.CSharpResults.HuskyCISecurityCodeScanOutput) ||
-		hasCriticalVulnerabilitiesInOutput(results.GenericResults.HuskyCIGitleaksOutput)
-}
-
-func hasCriticalVulnerabilitiesInOutput(output types.HuskyCISecurityTestOutput) bool {
-	return len(output.HighVulns) > 0 || len(output.MediumVulns) > 0
 }
