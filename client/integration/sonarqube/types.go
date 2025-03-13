@@ -9,15 +9,15 @@ type HuskyCISonarOutput struct {
 	Issues []SonarIssue `json:"issues"`
 }
 
-// SonarIssue is the struct that holds a single Sonar issue
+// SonarIssue represents a single issue in the SonarQube Generic Issue Import Format
 type SonarIssue struct {
 	EngineID           string          `json:"engineId"`
 	RuleID             string          `json:"ruleId"`
-	PrimaryLocation    SonarLocation   `json:"primaryLocation"`
-	Type               string          `json:"type"`
 	Severity           string          `json:"severity"`
-	EffortMinutes      int             `json:"effortMinutes,omitempty"`
+	Type               string          `json:"type"`
+	PrimaryLocation    SonarLocation   `json:"primaryLocation"`
 	SecondaryLocations []SonarLocation `json:"secondaryLocations,omitempty"`
+	EffortMinutes      int             `json:"effortMinutes,omitempty"`
 }
 
 // SonarLocation is the struct that holds a vulnerability location within code
