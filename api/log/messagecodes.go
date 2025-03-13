@@ -33,6 +33,7 @@ var MsgCode = map[int]string{
 	111: "Invalid user input for time range query string parameter: ",
 	112: "Invalid user input for metric type: ",
 	113: "Successful retrieval of analysis data: ",
+	114: "Retrieving analysis data for RID: ",
 
 	// HuskyCI API errors
 	1001: "Error(s) found when starting HuskyCI API: ",
