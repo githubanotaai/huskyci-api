@@ -84,7 +84,7 @@ func GetAnalysis(RID string) (types.Analysis, error) {
 	analysis := types.Analysis{}
 	getAnalysisURL := config.HuskyAPI + "/analysis/" + RID
 
-	fmt.Println("[HUSKYCI][*] Waiting for analysis completion!")
+	fmt.Println("[HUSKYCI][*] Waiting for analysis completion...")
 
 	httpClient, err := util.NewClient(config.HuskyUseTLS)
 	if err != nil {
@@ -103,9 +103,12 @@ func GetAnalysis(RID string) (types.Analysis, error) {
 		return analysis, err
 	}
 
-	fmt.Println("[HUSKYCI][*] Querying DB for analysis completion!")
-
 	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		errorMsg := fmt.Sprintf("Error getting analysis! StatusCode received: %d", resp.StatusCode)
+		return analysis, errors.New(errorMsg)
+	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
