@@ -73,6 +73,10 @@ func GetAnalysis(c echo.Context) error {
     // Log the successful retrieval of analysis data
     log.Info(logActionGetAnalysis, logInfoAnalysis, 113, "Analysis data retrieved successfully for RID:", RID)
 
+    // Add logging to capture the analysis result being returned
+    log.Info(logActionGetAnalysis, logInfoAnalysis, 113, "Analysis result:", analysisResult)
+
+
     return c.JSON(http.StatusOK, analysisResult)
 }
 
