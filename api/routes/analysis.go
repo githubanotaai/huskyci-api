@@ -51,6 +51,7 @@ func GetAnalysis(c echo.Context) error {
 	}
 
 	analysisQuery := map[string]interface{}{"RID": RID}
+	log.Info(logActionGetAnalysis, logInfoAnalysis, 114, RID)
 	analysisResult, err := apiContext.APIConfiguration.DBInstance.FindOneDBAnalysis(analysisQuery)
 
 	if err != nil {
