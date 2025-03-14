@@ -2,6 +2,7 @@ package sonarqube
 
 import (
 	"encoding/json"
+	"fmt"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -20,6 +21,10 @@ or is not associated with any specific file, i.e.: vulnerable dependency version
 
 // GenerateOutputFile creates a SonarQube-compatible JSON file from the analysis results
 func GenerateOutputFile(analysis types.Analysis, outputPath, outputFileName string) error {
+
+	// Inside GenerateOutputFile
+	fmt.Println("[DEBUG] Starting GenerateOutputFile...")
+	fmt.Printf("[DEBUG] Output Path: %s, Output File Name: %s\n", outputPath, outputFileName)
 
 	// Collect all vulnerabilities from different tools into a single slice
 	allVulns := make([]types.HuskyCIVulnerability, 0)
@@ -48,6 +53,9 @@ func GenerateOutputFile(analysis types.Analysis, outputPath, outputFileName stri
 	allVulns = append(allVulns, analysis.HuskyCIResults.JavaResults.HuskyCISpotBugsOutput.LowVulns...)
 	allVulns = append(allVulns, analysis.HuskyCIResults.JavaResults.HuskyCISpotBugsOutput.MediumVulns...)
 	allVulns = append(allVulns, analysis.HuskyCIResults.JavaResults.HuskyCISpotBugsOutput.HighVulns...)
+
+	fmt.Printf("[DEBUG] Total Vulnerabilities: %d\n", len(allVulns))
+	fmt.Println("[DEBUG] Writing SonarQube JSON file...")
 
 	// Initialize the SonarQube output structure
 	var sonarOutput HuskyCISonarOutput
@@ -105,16 +113,17 @@ func GenerateOutputFile(analysis types.Analysis, outputPath, outputFileName stri
 		sonarOutput.Issues = append(sonarOutput.Issues, issue)
 	}
 
-	// Serialize the SonarQube output to JSON
-	sonarOutputString, err := json.Marshal(sonarOutput)
-	if err != nil {
-		return err
-	}
-
-	// Write the JSON output to the specified file
-	err = util.CreateFile(sonarOutputString, outputPath, outputFileName)
-	if err != nil {
-		return err
+	if len(sonarOutput.Issues) == 0 {
+		fmt.Println("[DEBUG] No vulnerabilities found. Creating an empty SonarQube JSON file.")
+		sonarOutputString, err := json.Marshal(sonarOutput)
+		if err != nil {
+			return err
+		}
+		err = util.CreateFile(sonarOutputString, outputPath, outputFileName)
+		if err != nil {
+			return err
+		}
+		return nil
 	}
 
 	return nil // Return nil if everything succeeds

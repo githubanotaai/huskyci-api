@@ -87,7 +87,8 @@ func main() {
 	outputFileName := "sonarqube.json"
 	err = sonarqube.GenerateOutputFile(huskyAnalysis, outputPath, outputFileName)
 	if err != nil {
-		fmt.Println("[HUSKYCI][ERROR] Could not create SonarQube integration file: ", err)
+		fmt.Println("[ERROR] Failed to generate SonarQube JSON file:", err)
+		os.Exit(1)
 	}
 
 	// step 4: block developer CI if vulnerabilities were found
