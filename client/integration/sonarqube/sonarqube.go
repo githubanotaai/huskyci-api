@@ -88,9 +88,9 @@ func GenerateOutputFile(analysis types.Analysis, outputPath, outputFileName stri
 				EngineID:           "huskyCI/" + vuln.SecurityTool,
 				CleanCodeAttribute: "TRUSTWORTHY",
 				Type:               "VULNERABILITY",
-				Severity:           mapSeverity(vuln.Severity),
+				Severity:           mapRuleSeverity(vuln.Severity),
 				Impacts: []SonarImpact{
-					{SoftwareQuality: "SECURITY", Severity: mapSeverity(vuln.Severity)},
+					{SoftwareQuality: "SECURITY", Severity: mapImpactSeverity(vuln.Severity)},
 				},
 			}
 			sonarOutput.Rules = append(sonarOutput.Rules, rule)
@@ -141,15 +141,29 @@ func getMessage(details string) string {
 	return details
 }
 
-// Helper function to map severity levels
-func mapSeverity(severity string) string {
+// Helper function to map severity levels for rules
+func mapRuleSeverity(severity string) string {
+	switch strings.ToLower(severity) {
+	case "low":
+		return "MINOR"
+	case "medium":
+		return "MAJOR"
+	case "high":
+		return "BLOCKER"
+	default:
+		return "INFO"
+	}
+}
+
+// Helper function to map severity levels for impacts
+func mapImpactSeverity(severity string) string {
 	switch strings.ToLower(severity) {
 	case "low":
 		return "LOW"
 	case "medium":
 		return "MEDIUM"
 	case "high":
-		return "BLOCKER"
+		return "HIGH"
 	default:
 		return "INFO"
 	}
