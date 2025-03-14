@@ -73,26 +73,33 @@ func GenerateOutputFile(analysis types.Analysis, outputPath, outputFileName stri
 	sonarOutput.Rules = make([]SonarRule, 0)
 	sonarOutput.Issues = make([]SonarIssue, 0)
 
+	ruleMap := make(map[string]bool) // Track unique rule IDs
+
 	// Generate rules and issues
 	for _, vuln := range allVulns {
-		// Add a rule for each unique vulnerability
-		rule := SonarRule{
-			ID:                 vuln.Language + " - " + vuln.SecurityTool,
-			Name:               "Rule for " + vuln.SecurityTool,
-			Description:        "Description for " + vuln.SecurityTool,
-			EngineID:           "huskyCI",
-			CleanCodeAttribute: "FORMATTED",
-			Type:               "VULNERABILITY",
-			Severity:           mapSeverity(vuln.Severity),
-			Impacts: []SonarImpact{
-				{SoftwareQuality: "SECURITY", Severity: mapSeverity(vuln.Severity)},
-			},
+		ruleID := fmt.Sprintf("%s - %s", vuln.Language, vuln.SecurityTool)
+
+		// Add the rule only if it hasn't been added before
+		if !ruleMap[ruleID] {
+			rule := SonarRule{
+				ID:                 ruleID,
+				Name:               "Rule for " + vuln.SecurityTool,
+				Description:        "Description for " + vuln.SecurityTool,
+				EngineID:           "huskyCI",
+				CleanCodeAttribute: "FORMATTED",
+				Type:               "VULNERABILITY",
+				Severity:           mapSeverity(vuln.Severity),
+				Impacts: []SonarImpact{
+					{SoftwareQuality: "SECURITY", Severity: mapSeverity(vuln.Severity)},
+				},
+			}
+			sonarOutput.Rules = append(sonarOutput.Rules, rule)
+			ruleMap[ruleID] = true // Mark this rule ID as added
 		}
-		sonarOutput.Rules = append(sonarOutput.Rules, rule)
 
 		// Create an issue for the vulnerability
 		issue := SonarIssue{
-			RuleID: rule.ID,
+			RuleID: ruleID,
 			PrimaryLocation: SonarLocation{
 				Message:  vuln.Details,
 				FilePath: getFilePath(vuln, outputPath),
