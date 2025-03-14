@@ -1,3 +1,26 @@
+package sonarqube
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+
+	"github.com/githubanotaai/huskyci-api/client/types"
+	"github.com/githubanotaai/huskyci-api/client/util"
+)
+
+const goContainerBasePath = `/go/src/code/`            // Base path for Go files inside the container
+const placeholderFileName = "huskyCI_Placeholder_File" // Placeholder file name for vulnerabilities without a file
+const placeholderFileText = `
+Placeholder file indicating that no file was associated with this vulnerability.
+This usually means that the vulnerability is related to a missing file
+or is not associated with any specific file, i.e.: vulnerable dependency versions.
+`
+
+// GenerateOutputFile creates a SonarQube-compatible JSON file from the analysis results
 func GenerateOutputFile(analysis types.Analysis, outputPath, outputFileName string) error {
 	fmt.Println("[DEBUG] Starting GenerateOutputFile...")
 	fmt.Printf("[DEBUG] Output Path: %s, Output File Name: %s\n", outputPath, outputFileName)
