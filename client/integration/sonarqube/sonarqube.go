@@ -86,7 +86,7 @@ func GenerateOutputFile(analysis types.Analysis, outputPath, outputFileName stri
 				Name:               vuln.Title,
 				Description:        getMessage(vuln.Version),
 				EngineID:           "huskyCI/" + vuln.SecurityTool,
-				CleanCodeAttribute: "RESPONSABILITY",
+				CleanCodeAttribute: "TRUSTWORTHY",
 				Type:               "VULNERABILITY",
 				Severity:           mapSeverity(vuln.Severity),
 				Impacts: []SonarImpact{
