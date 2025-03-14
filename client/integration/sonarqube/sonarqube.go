@@ -25,6 +25,12 @@ func GenerateOutputFile(analysis types.Analysis, outputPath, outputFileName stri
 	fmt.Println("[DEBUG] Starting GenerateOutputFile...")
 	fmt.Printf("[DEBUG] Output Path: %s, Output File Name: %s\n", outputPath, outputFileName)
 
+	// Resolve the absolute path for the output directory
+	absoluteOutputPath, err := filepath.Abs(outputPath)
+	if err != nil {
+		return fmt.Errorf("failed to resolve absolute path for output directory: %w", err)
+	}
+
 	// Print the current working directory
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -34,9 +40,9 @@ func GenerateOutputFile(analysis types.Analysis, outputPath, outputFileName stri
 	}
 
 	// Ensure the output directory exists
-	if _, err := os.Stat(outputPath); os.IsNotExist(err) {
-		fmt.Printf("[DEBUG] Output directory does not exist. Creating: %s\n", outputPath)
-		err := os.MkdirAll(outputPath, os.ModePerm)
+	if _, err := os.Stat(absoluteOutputPath); os.IsNotExist(err) {
+		fmt.Printf("[DEBUG] Output directory does not exist. Creating: %s\n", absoluteOutputPath)
+		err := os.MkdirAll(absoluteOutputPath, os.ModePerm)
 		if err != nil {
 			return fmt.Errorf("failed to create output directory: %w", err)
 		}
@@ -74,11 +80,11 @@ func GenerateOutputFile(analysis types.Analysis, outputPath, outputFileName stri
 
 		// Handle vulnerabilities without an associated file
 		if vuln.File == "" {
-			err := util.CreateFile([]byte(placeholderFileText), outputPath, placeholderFileName)
+			err := util.CreateFile([]byte(placeholderFileText), absoluteOutputPath, placeholderFileName)
 			if err != nil {
 				return err
 			}
-			issue.PrimaryLocation.FilePath = filepath.Join(outputPath, placeholderFileName)
+			issue.PrimaryLocation.FilePath = filepath.Join(absoluteOutputPath, placeholderFileName)
 		} else {
 			var filePath string
 			if vuln.Language == "Go" {
@@ -111,8 +117,8 @@ func GenerateOutputFile(analysis types.Analysis, outputPath, outputFileName stri
 		return err
 	}
 
-	fmt.Printf("[DEBUG] Writing SonarQube JSON file to: %s/%s\n", outputPath, outputFileName)
-	err = util.CreateFile(sonarOutputString, outputPath, outputFileName)
+	fmt.Printf("[DEBUG] Writing SonarQube JSON file to: %s/%s\n", absoluteOutputPath, outputFileName)
+	err = util.CreateFile(sonarOutputString, absoluteOutputPath, outputFileName)
 	if err != nil {
 		return err
 	}
