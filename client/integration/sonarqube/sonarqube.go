@@ -77,14 +77,14 @@ func GenerateOutputFile(analysis types.Analysis, outputPath, outputFileName stri
 
 	// Generate rules and issues
 	for _, vuln := range allVulns {
-		ruleID := fmt.Sprintf("%s - %s", vuln.Language, vuln.SecurityTool)
+		ruleID := fmt.Sprintf("%s - %s", vuln.Language, vuln.Title)
 
 		// Add the rule only if it hasn't been added before
 		if !ruleMap[ruleID] {
 			rule := SonarRule{
 				ID:                 ruleID,
 				Name:               vuln.Title,
-				Description:        getMessage(vuln.Version),
+				Description:        getMessage(vuln.Details),
 				EngineID:           "huskyCI/" + vuln.SecurityTool,
 				CleanCodeAttribute: "TRUSTWORTHY",
 				Type:               "VULNERABILITY",
@@ -98,11 +98,10 @@ func GenerateOutputFile(analysis types.Analysis, outputPath, outputFileName stri
 		}
 
 		// Create an issue for the vulnerability
-		// Create an issue for the vulnerability
 		issue := SonarIssue{
 			RuleID: ruleID,
 			PrimaryLocation: SonarLocation{
-				Message:  getMessage(vuln.Details),
+				Message:  getMessage(vuln.Version),
 				FilePath: getFilePath(vuln, outputPath),
 				TextRange: SonarTextRange{
 					StartLine: getStartLine(vuln.Line),
@@ -146,9 +145,9 @@ func getMessage(details string) string {
 func mapSeverity(severity string) string {
 	switch strings.ToLower(severity) {
 	case "low":
-		return "MINOR"
+		return "LOW"
 	case "medium":
-		return "MAJOR"
+		return "MEDIUM"
 	case "high":
 		return "BLOCKER"
 	default:
