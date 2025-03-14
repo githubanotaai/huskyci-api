@@ -83,8 +83,13 @@ func main() {
 	}
 
 	// step 3.5: integration with SonarQube
-	outputPath := "/github/workspace/huskyCI/"
+	outputPath := "./huskyCI/"
 	outputFileName := "sonarqube.json"
+
+	if _, err := os.Stat(outputPath); os.IsNotExist(err) {
+		os.MkdirAll(outputPath, os.ModePerm)
+	}
+
 	err = sonarqube.GenerateOutputFile(huskyAnalysis, outputPath, outputFileName)
 	if err != nil {
 		fmt.Println("[ERROR] Failed to generate SonarQube JSON file:", err)
