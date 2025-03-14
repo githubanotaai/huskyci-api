@@ -83,10 +83,10 @@ func GenerateOutputFile(analysis types.Analysis, outputPath, outputFileName stri
 		if !ruleMap[ruleID] {
 			rule := SonarRule{
 				ID:                 ruleID,
-				Name:               "Rule for " + vuln.SecurityTool,
-				Description:        "Description for " + vuln.SecurityTool,
-				EngineID:           "huskyCI",
-				CleanCodeAttribute: "FORMATTED",
+				Name:               vuln.Title,
+				Description:        getMessage(vuln.Version),
+				EngineID:           "huskyCI/" + vuln.SecurityTool,
+				CleanCodeAttribute: "RESPONSABILITY",
 				Type:               "VULNERABILITY",
 				Severity:           mapSeverity(vuln.Severity),
 				Impacts: []SonarImpact{
@@ -98,10 +98,11 @@ func GenerateOutputFile(analysis types.Analysis, outputPath, outputFileName stri
 		}
 
 		// Create an issue for the vulnerability
+		// Create an issue for the vulnerability
 		issue := SonarIssue{
 			RuleID: ruleID,
 			PrimaryLocation: SonarLocation{
-				Message:  vuln.Details,
+				Message:  getMessage(vuln.Details),
 				FilePath: getFilePath(vuln, outputPath),
 				TextRange: SonarTextRange{
 					StartLine: getStartLine(vuln.Line),
@@ -131,6 +132,14 @@ func GenerateOutputFile(analysis types.Analysis, outputPath, outputFileName stri
 	}
 
 	return nil
+}
+
+// Helper function to get the message for the primary location
+func getMessage(details string) string {
+	if details == "" {
+		return "No details provided for this vulnerability."
+	}
+	return details
 }
 
 // Helper function to map severity levels
