@@ -113,8 +113,8 @@ func GenerateOutputFile(analysis types.Analysis, outputPath, outputFileName stri
 		sonarOutput.Issues = append(sonarOutput.Issues, issue)
 	}
 
-	// Serialize the output to JSON
-	sonarOutputString, err := json.Marshal(sonarOutput)
+	// Serialize the output to JSON through Pretty-Print
+	sonarOutputString, err := json.MarshalIndent(sonarOutput, "", "  ")
 	if err != nil {
 		return err
 	}
