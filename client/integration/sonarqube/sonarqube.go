@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -77,14 +78,14 @@ func GenerateOutputFile(analysis types.Analysis, outputPath, outputFileName stri
 
 	// Generate rules and issues
 	for _, vuln := range allVulns {
-		ruleID := fmt.Sprintf("%s - %s", vuln.Language, vuln.Title)
+		ruleID := generateRuleID(&vuln)
 
 		// Add the rule only if it hasn't been added before
 		if !ruleMap[ruleID] {
 			rule := SonarRule{
 				ID:                 ruleID,
 				Name:               vuln.Title,
-				Description:        getMessage(vuln.Details),
+				Description:        getDescription(vuln.Details),
 				EngineID:           "huskyCI/" + vuln.SecurityTool,
 				CleanCodeAttribute: "TRUSTWORTHY",
 				Type:               "VULNERABILITY",
@@ -101,7 +102,7 @@ func GenerateOutputFile(analysis types.Analysis, outputPath, outputFileName stri
 		issue := SonarIssue{
 			RuleID: ruleID,
 			PrimaryLocation: SonarLocation{
-				Message:  getMessage(vuln.Version),
+				Message:  getDescription(vuln.Version),
 				FilePath: getFilePath(vuln, outputPath),
 				TextRange: SonarTextRange{
 					StartLine: getStartLine(vuln.Line),
@@ -134,7 +135,7 @@ func GenerateOutputFile(analysis types.Analysis, outputPath, outputFileName stri
 }
 
 // Helper function to get the message for the primary location
-func getMessage(details string) string {
+func getDescription(details string) string {
 	if details == "" {
 		return "No details provided for this vulnerability."
 	}
@@ -191,4 +192,36 @@ func getStartLine(line string) int {
 		return 1
 	}
 	return lineNum
+}
+
+// Helper function to process vulnerabilities and adjust their titles
+func generateRuleID(vuln *types.HuskyCIVulnerability) string {
+	if vuln.SecurityTool == "GitLeaks" {
+		// Slice the Title string using " in:" as a separator
+		parts := strings.SplitN(vuln.Title, " in:", 2)
+		// Set the Title to the first part of the slice
+		if len(parts) > 0 {
+			vuln.Title = strings.TrimSpace(parts[0])
+		}
+
+		return vuln.Title
+	} else {
+		// Check if the Title contains "vulnerable dependency" (case-insensitive)
+		if strings.Contains(strings.ToLower(vuln.Title), "vulnerable dependency") {
+			// Use a regular expression to extract the part before a number, math symbol, backslash or asterisk
+			re := regexp.MustCompile(`^[^0-9<>=*\\]+`)
+			match := re.FindString(vuln.Title)
+			if match != "" {
+				return fmt.Sprintf("%s - %s", vuln.Language, strings.TrimSpace(match))
+			} else {
+				// Default case: Trim the Title by the ":" character
+				parts := strings.SplitN(vuln.Title, ":", 2)
+				if len(parts) > 0 {
+					vuln.Title = strings.TrimSpace(parts[0])
+				}
+			}
+		}
+
+		return fmt.Sprintf("%s - %s", vuln.Language, vuln.Title)
+	}
 }
