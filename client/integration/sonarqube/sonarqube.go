@@ -142,7 +142,7 @@ func getDescription(vuln types.HuskyCIVulnerability) string {
 			return vuln.Version
 		}
 
-		return "No details provided for this vulnerability."
+		return vuln.Title
 	}
 	return vuln.Details
 }
@@ -217,7 +217,7 @@ func generateRuleID(vuln *types.HuskyCIVulnerability) string {
 			re := regexp.MustCompile(`^[^0-9<>=*\\]+`)
 			match := re.FindString(vuln.Title)
 			if match != "" {
-				return fmt.Sprintf("%s - %s", vuln.Language, strings.TrimSpace(match))
+				return fmt.Sprintf("(%s) %s", vuln.Language, strings.TrimSpace(match))
 			} else {
 				// Default case: Trim the Title by the ":" character
 				parts := strings.SplitN(vuln.Title, ":", 2)
