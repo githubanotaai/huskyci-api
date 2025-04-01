@@ -85,7 +85,7 @@ func GenerateOutputFile(analysis types.Analysis, outputPath, outputFileName stri
 			rule := SonarRule{
 				ID:                 ruleID,
 				Name:               vuln.Title,
-				Description:        getDescription(vuln.Details),
+				Description:        getDescription(vuln),
 				EngineID:           "huskyCI/" + vuln.SecurityTool,
 				CleanCodeAttribute: "TRUSTWORTHY",
 				Type:               "VULNERABILITY",
@@ -102,7 +102,7 @@ func GenerateOutputFile(analysis types.Analysis, outputPath, outputFileName stri
 		issue := SonarIssue{
 			RuleID: ruleID,
 			PrimaryLocation: SonarLocation{
-				Message:  getDescription(vuln.Version),
+				Message:  getDescription(vuln),
 				FilePath: getFilePath(vuln, outputPath),
 				TextRange: SonarTextRange{
 					StartLine: getStartLine(vuln.Line),
@@ -135,11 +135,16 @@ func GenerateOutputFile(analysis types.Analysis, outputPath, outputFileName stri
 }
 
 // Helper function to get the message for the primary location
-func getDescription(details string) string {
-	if details == "" {
+func getDescription(vuln types.HuskyCIVulnerability) string {
+	if vuln.Details == "" {
+
+		if vuln.Version != "" && len(vuln.Version) > len(vuln.Details) {
+			return vuln.Version
+		}
+
 		return "No details provided for this vulnerability."
 	}
-	return details
+	return vuln.Details
 }
 
 // Helper function to map severity levels for rules
