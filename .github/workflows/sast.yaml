@@ -3,7 +3,7 @@ name: SAST and Linting
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
   huskyci:
