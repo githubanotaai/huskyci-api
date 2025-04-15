@@ -1,5 +1,5 @@
 name: SAST and Linting
-
+ 
 on:
   push:
     branches:
@@ -9,14 +9,18 @@ jobs:
   huskyci:
     name: HuskyCI Security Check
     runs-on: [self-hosted]
-    container: igrowdigital/actor:latest
     env:
-        HUSKYCI_CLIENT_API_ADDR: "${{ secrets.HUSKYCI_CLIENT_API_ADDR }}"
-        HUSKYCI_CLIENT_API_USE_HTTPS: false
-        HUSKYCI_CLIENT_REPO_URL: git@github.com:${{ github.repository }}.git
-        HUSKYCI_CLIENT_REPO_BRANCH: "master"
-        HUSKYCI_CLIENT_TOKEN: "${{ secrets.HUSKYCI_CLIENT_TOKEN }}"
-        HUSKYCI_CLIENT_URL: "git@github.com/githubanotaai/huskyci-api.git"
+      AWS_ACCESS_KEY_ID: "${{ secrets.AWS_ACCESS_KEY_ID }}"
+      AWS_SECRET_ACCESS_KEY: "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+      AWS_REGION: "us-east-1"
+      DOCKERHUB_PASSWORD: "${{ secrets.DOCKERHUB_PASSWORD }}"
+      DOCKERHUB_USERNAME: "${{ secrets.DOCKERHUB_USERNAME }}"
+      HUSKYCI_CLIENT_API_ADDR: "${{ secrets.HUSKYCI_CLIENT_API_ADDR }}"
+      HUSKYCI_CLIENT_API_USE_HTTPS: false
+      HUSKYCI_CLIENT_REPO_URL: git@github.com:${{ github.repository }}.git
+      HUSKYCI_CLIENT_REPO_BRANCH: "master"
+      HUSKYCI_CLIENT_TOKEN: "${{ secrets.HUSKYCI_CLIENT_TOKEN }}"
+      HUSKYCI_CLIENT_URL: "git@github.com/githubanotaai/huskyci-api.git"
 
     steps:
       - name: Checkout repository
@@ -24,11 +28,22 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: '^1.19'
-          
+           
       - run: go version
 
       - name: Downloading and installing tools
@@ -36,7 +51,6 @@ jobs:
           apk add --update --no-cache make tcl-dev gettext curl-dev openssh git
           curl -SL https://github.com/docker/compose/releases/download/v2.32.0/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
           chmod +x /usr/local/bin/docker-compose
-
       - name: HuskyCI Client Download, Build and Run
         run: |
           wget -O - https://github.com/githubanotaai/huskyci-api/archive/main.tar.gz | tar xz --strip=1
@@ -45,7 +59,6 @@ jobs:
           git config --global --add safe.directory /__w/huskyci-api/huskyci-api
           chmod +x huskyci-client
           ./huskyci-client
-
       - name: Debug SonarQube JSON File
         if: ${{ !cancelled() }}       
         run: cat client/cmd/huskyCI/sonarqube.json
@@ -62,13 +75,27 @@ jobs:
     if: ${{ !cancelled() }}
     needs: huskyci
     runs-on: [self-hosted]
-    container: igrowdigital/actor:latestt
+    env:
+      AWS_ACCESS_KEY_ID: "${{ secrets.AWS_ACCESS_KEY_ID }}"
+      AWS_SECRET_ACCESS_KEY: "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+      AWS_REGION: "us-east-1"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
       - name: Download SonarQube Artifact
         uses: actions/download-artifact@v4
         with:
