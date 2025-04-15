@@ -1,9 +1,9 @@
-name: Build
+name: SAST and Linting
 
 on:
   push:
-  pull_request:
-    types: [opened, synchronize, reopened]
+    branches:
+      - master
 
 jobs:
   huskyci:
@@ -11,62 +11,81 @@ jobs:
     runs-on: [self-hosted]
     container: igrowdigital/actor:latest
     env:
-        HUSKYCI_CLIENT_API_ADDR: $HUSKYCI_API_URL
-        HUSKYCI_CLIENT_API_USE_HTTPS: true
-        HUSKYCI_CLIENT_REPO_URL: git@github.com:${GITHUB_REPOSITORY}.git
-        HUSKYCI_CLIENT_REPO_BRANCH: $GITHUB_REF_NAME
-        HUSKYCI_CLIENT_URL: git@github.com/globocom/huskyCI.git
+        HUSKYCI_CLIENT_API_ADDR: "${{ secrets.HUSKYCI_CLIENT_API_ADDR }}"
+        HUSKYCI_CLIENT_API_USE_HTTPS: false
+        HUSKYCI_CLIENT_REPO_URL: git@github.com:${{ github.repository }}.git
+        HUSKYCI_CLIENT_REPO_BRANCH: "master"
+        HUSKYCI_CLIENT_TOKEN: "${{ secrets.HUSKYCI_CLIENT_TOKEN }}"
+        HUSKYCI_CLIENT_URL: "git@github.com/githubanotaai/huskyci-api.git"
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+          fetch-depth: 0
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '^1.20'
+          go-version: '^1.19'
+          
       - run: go version
 
-      - name: HuskyCI Client Download and Build
+      - name: Downloading and installing tools
         run: |
-          apk add --update --no-cache make tcl-dev gettext curl-dev
+          apk add --update --no-cache make tcl-dev gettext curl-dev openssh git
           curl -SL https://github.com/docker/compose/releases/download/v2.32.0/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
           chmod +x /usr/local/bin/docker-compose
-          wget -O - https://github.com/githubanotaai/huskyci-api/archive/main.tar.gz | tar xz --strip=2 "huskyci-api-main"
-          git config --global --add safe.directory /__w/huskyci-api/huskyci-api
+
+      - name: HuskyCI Client Download, Build and Run
+        run: |
+          wget -O - https://github.com/githubanotaai/huskyci-api/archive/main.tar.gz | tar xz --strip=1
           cd client/cmd
           go build -ldflags "-s -w" -o huskyci-client main.go
-          ls -la
+          git config --global --add safe.directory /__w/huskyci-api/huskyci-api
           chmod +x huskyci-client
           ./huskyci-client
 
-      - name: HuskyCI Output
+      - name: Debug SonarQube JSON File
+        if: ${{ !cancelled() }}       
+        run: cat client/cmd/huskyCI/sonarqube.json
+        
+      - name: Upload SonarQube Artifact
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
-          name: huskyci-output
-          path: huskyci-output.json
+          name: sonarqube
+          path: client/cmd/huskyCI/sonarqube.json
 
   sonarqube:
     name: Sonarqube Check
+    if: ${{ !cancelled() }}
     needs: huskyci
     runs-on: [self-hosted]
-    container: igrowdigital/actor:latest
+    container: igrowdigital/actor:latestt
     steps:
-      - name: HuskyCI Output Download
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Download SonarQube Artifact
         uses: actions/download-artifact@v4
         with:
-          name: huskyci-output
-          path: huskyci-output.json
+          name: sonarqube
+          
+      - name: Debug SonarQube JSON File
+        if: ${{ !cancelled() }}       
+        run: cat ./sonarqube.json
 
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
-
-      - uses: sonarsource/sonarqube-scan-action@v3
+      - name: Run SonarQube Scan
+        uses: sonarsource/sonarqube-scan-action@v3
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          args: >
+            -Dsonar.externalIssuesReportPaths=sonarqube.json
       # If you wish to fail your job when the Quality Gate is red, uncomment the
       # following lines. This would typically be used to fail a deployment.
       # We do not recommend to use this in a pull request. Prefer using pull request
