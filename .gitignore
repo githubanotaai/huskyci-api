@@ -4,6 +4,7 @@
 .GOPATH
 .vagrant
 .scannerwork/
+.vscode/
 
 *.zip
 .env
