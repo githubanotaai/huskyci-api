@@ -193,6 +193,7 @@ func (npmAuditScan *SecTestScanInfo) prepareNpmAuditVulns() {
 		npmauditVuln := types.HuskyCIVulnerability{}
 		npmauditVuln.Language = "JavaScript"
 		npmauditVuln.SecurityTool = "NpmAudit"
+		npmauditVuln.File = "package-lock.json"
 		npmauditVuln.Title = fmt.Sprintf("Vulnerable Dependency: %s %s (%s)", issue.Name, issue.VulnerableVersions, issue.Title)
 		if issue.FixAvailable.Text != "true" && issue.FixAvailable.Text != "false" {
 			npmauditVuln.Details = issue.FixAvailable.Text
