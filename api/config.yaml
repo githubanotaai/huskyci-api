@@ -414,3 +414,32 @@ securitycodescan:
   language: C#
   default: true
   timeOutInSeconds: 360
+wizcli:
+  name: wizcli
+  image: 939030204144.dkr.ecr.us-east-1.amazonaws.com/huskyci-wiz
+  imageTag: "latest"
+  cmd: |+
+    mkdir -p ~/.ssh &&
+    echo '%GIT_PRIVATE_SSH_KEY%' > ~/.ssh/huskyci_id_rsa &&
+    chmod 600 ~/.ssh/huskyci_id_rsa &&
+    echo "IdentityFile ~/.ssh/huskyci_id_rsa" >> /etc/ssh/ssh_config &&
+    echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config &&
+    GIT_TERMINAL_PROMPT=0 git clone -b %GIT_BRANCH% --single-branch %GIT_REPO% code --quiet 2>/tmp/errorGitCloneWiz
+    if [ $? -eq 0 ]; then
+        export WIZ_CLIENT_ID='%WIZ_CLIENT_ID%'
+        export WIZ_CLIENT_SECRET='%WIZ_CLIENT_SECRET%'
+        wizcli auth > /tmp/errorWizAuth 2>&1
+        if [ $? -ne 0 ]; then
+            echo 'ERROR_AUTH_WIZCLI'
+            cat /tmp/errorWizAuth
+        else
+            wizcli dir scan --path ./code --sensitive-data --secrets \
+              --file-hashes-scan --policy "aai-secrets-default-policy" 2>&1 || true
+        fi
+    else
+        echo "ERROR_CLONING"
+        cat /tmp/errorGitCloneWiz
+    fi
+  type: Generic
+  default: true
+  timeOutInSeconds: 600
