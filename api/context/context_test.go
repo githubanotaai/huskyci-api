@@ -333,6 +333,8 @@ var _ = Describe("Context", func() {
 						ProxyAddress:         fakeCaller.expectedEnvVar,
 						NoProxyAddresses:     fakeCaller.expectedEnvVar,
 						PodSchedulingTimeout: fakeCaller.expectedIntegerValue,
+						NodeSelector:         map[string]string{},
+						Tolerations:          nil,
 					},
 					EnrySecurityTest: &types.SecurityTest{
 						Name:             fakeCaller.expectedStringFromConfig,
