@@ -34,31 +34,23 @@ gitauthors:
     chmod 600 ~/.ssh/huskyci_id_rsa &&
     echo "IdentityFile ~/.ssh/huskyci_id_rsa" >> /etc/ssh/ssh_config &&
     echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config &&
-    dbg() { echo "[gitauthors][$(date -u +%H:%M:%S)] $1" >> /tmp/gitauthors_debug.log; }
     GIT_TERMINAL_PROMPT=0 git clone -b %GIT_BRANCH% --single-branch %GIT_REPO% code --quiet 2> /tmp/errorGitCloneEnry
     if [ $? -ne 0 ]; then
       echo "ERROR_CLONING"
       cat /tmp/errorGitCloneEnry
       exit 1
     fi
-    dbg "clone done"
     cd code
     git fetch origin master:refs/remotes/origin/master --quiet 2> /dev/null
-    dbg "fetch master done (exit=$?)"
     git branch -a | egrep 'remotes/origin/master' 1> /dev/null 2> /dev/null
     if [ $? -ne 0 ]; then
-      dbg "no origin/master, returning empty"
       echo "{\"authors\":[]}"
       exit 0
     fi
-    dbg "running git log origin/master.."
-    authorCount=$(git log origin/master.. --pretty="%ae" | sort -u | wc -l | tr -d ' ')
-    dbg "found $authorCount unique authors"
     for i in $(git log origin/master.. --pretty="%ae" | sort -u); do
       jsonMiddle="\"${i//[^A-Za-z0-9_\.@-]/}\",$jsonMiddle"
     done
-    dbg "done"
-    echo "{\"authors\":[${jsonMiddle%?}],\"_debug\":\"$(cat /tmp/gitauthors_debug.log | tr '\n' '|')\"}"
+    echo "{\"authors\":[${jsonMiddle%?}]}"
   type: Generic
   default: true
   timeOutInSeconds: 360
