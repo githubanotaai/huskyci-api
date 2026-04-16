@@ -53,7 +53,7 @@ gitauthors:
     fi
   type: Generic
   default: true
-  timeOutInSeconds: 360
+  timeOutInSeconds: 60
 
 gosec:
   name: gosec
