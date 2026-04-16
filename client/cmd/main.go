@@ -134,6 +134,10 @@ func main() {
 		}
 		fmt.Println("[HUSKYCI][*] Some HIGH/MEDIUM issues were found in these securityTests:")
 		fmt.Println("[HUSKYCI][*]", failedList)
+		fmt.Println()
+		fmt.Println("[HUSKYCI][!] Analysis completed. Blocking vulnerabilities (HIGH/MEDIUM) were found.")
+		fmt.Println("[HUSKYCI][!] This is NOT an infrastructure error -- the security scan ran successfully.")
+		fmt.Println("[HUSKYCI][!] Fix the vulnerabilities listed above before merging.")
 	}
 
 	os.Exit(190)

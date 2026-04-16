@@ -64,7 +64,7 @@ type KubernetesConfig struct {
 	Tolerations          []TolerationConfig
 }
 
-// TolerationConfig holds a single Kubernetes toleration parsed from env.
+// TolerationConfig represents a parsed Kubernetes toleration.
 type TolerationConfig struct {
 	Key    string
 	Value  string
@@ -348,8 +348,7 @@ func (dF DefaultConfig) getKubernetesConfig() *KubernetesConfig {
 	}
 }
 
-// parseNodeSelector parses a comma-separated list of key=value pairs.
-// Example: "karpenter.sh/nodepool=actions-runner,env=prod"
+// parseNodeSelector parses a comma-separated "key=value" string into a map.
 func parseNodeSelector(raw string) map[string]string {
 	result := map[string]string{}
 	if raw == "" {
@@ -357,16 +356,15 @@ func parseNodeSelector(raw string) map[string]string {
 	}
 	for _, pair := range strings.Split(raw, ",") {
 		pair = strings.TrimSpace(pair)
-		parts := strings.SplitN(pair, "=", 2)
-		if len(parts) == 2 {
-			result[strings.TrimSpace(parts[0])] = strings.TrimSpace(parts[1])
+		kv := strings.SplitN(pair, "=", 2)
+		if len(kv) == 2 {
+			result[strings.TrimSpace(kv[0])] = strings.TrimSpace(kv[1])
 		}
 	}
 	return result
 }
 
-// parseTolerations parses a comma-separated list of key=value:effect entries.
-// Example: "actions-runner=true:NoSchedule,another-key=val:NoExecute"
+// parseTolerations parses a comma-separated "key=value:effect" string.
 func parseTolerations(raw string) []TolerationConfig {
 	var result []TolerationConfig
 	if raw == "" {
@@ -374,21 +372,18 @@ func parseTolerations(raw string) []TolerationConfig {
 	}
 	for _, entry := range strings.Split(raw, ",") {
 		entry = strings.TrimSpace(entry)
-		// Split on ":" to separate key=value from effect
-		colonParts := strings.SplitN(entry, ":", 2)
-		if len(colonParts) != 2 {
+		parts := strings.SplitN(entry, ":", 2)
+		if len(parts) != 2 {
 			continue
 		}
-		kvPart := strings.TrimSpace(colonParts[0])
-		effect := strings.TrimSpace(colonParts[1])
-		kvSplit := strings.SplitN(kvPart, "=", 2)
-		if len(kvSplit) != 2 {
+		kv := strings.SplitN(strings.TrimSpace(parts[0]), "=", 2)
+		if len(kv) != 2 {
 			continue
 		}
 		result = append(result, TolerationConfig{
-			Key:    strings.TrimSpace(kvSplit[0]),
-			Value:  strings.TrimSpace(kvSplit[1]),
-			Effect: effect,
+			Key:    strings.TrimSpace(kv[0]),
+			Value:  strings.TrimSpace(kv[1]),
+			Effect: strings.TrimSpace(parts[1]),
 		})
 	}
 	return result
