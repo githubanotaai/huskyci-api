@@ -1,31 +1,79 @@
-name: Go
+name: CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [main]
   pull_request:
-    branches: [ master ]
+    branches: [main]
+
+permissions:
+  contents: read
 
 jobs:
+  build-and-test:
+    name: Build & Test (${{ matrix.module }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [api, client, cli]
+    steps:
+      - uses: actions/checkout@v4
 
-  build:
-    name: Build
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          cache-dependency-path: ${{ matrix.module }}/go.sum
+
+      - name: Vet
+        run: go vet ./...
+        working-directory: ${{ matrix.module }}
+
+      - name: Build
+        run: go build ./...
+        working-directory: ${{ matrix.module }}
+
+      - name: Test
+        run: go test -race -count=1 ./...
+        working-directory: ${{ matrix.module }}
+
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
 
-    - name: Set up Go 1.x
-      uses: actions/setup-go@v5
-      with:
-        go-version: ^1.20
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
 
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@v4
+      - uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          working-directory: api
 
-    - name: Build API
-      run: make build-api
+      - uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          working-directory: client
 
-    - name: Test
-      run: make test
+      - uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          working-directory: cli
 
-    - name: Lint
-      run: make lint
+  docker-build:
+    name: Docker Build (${{ matrix.image }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - image: api
+            dockerfile: deployments/dockerfiles/api.Dockerfile
+          - image: client
+            dockerfile: deployments/dockerfiles/client.Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -f ${{ matrix.dockerfile }} .
