@@ -65,7 +65,7 @@ func NewKubernetes() (*Kubernetes, error) {
 
 }
 
-// buildTolerations converts parsed TolerationConfig entries into Kubernetes Toleration objects.
+// buildTolerations converts TolerationConfig entries into core.Toleration objects.
 func buildTolerations(configs []apiContext.TolerationConfig) []core.Toleration {
 	var tolerations []core.Toleration
 	for _, tc := range configs {
