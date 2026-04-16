@@ -34,23 +34,23 @@ gitauthors:
     chmod 600 ~/.ssh/huskyci_id_rsa &&
     echo "IdentityFile ~/.ssh/huskyci_id_rsa" >> /etc/ssh/ssh_config &&
     echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config &&
-    GIT_TERMINAL_PROMPT=0 git clone %GIT_REPO% code --quiet 2> /tmp/errorGitCloneEnry
+    GIT_TERMINAL_PROMPT=0 git clone -b %GIT_BRANCH% --single-branch %GIT_REPO% code --quiet 2> /tmp/errorGitCloneEnry
+    if [ $? -ne 0 ]; then
+      echo "ERROR_CLONING"
+      cat /tmp/errorGitCloneEnry
+      exit 1
+    fi
     cd code
+    git fetch origin master:refs/remotes/origin/master --quiet 2> /dev/null
     git branch -a | egrep 'remotes/origin/master' 1> /dev/null 2> /dev/null
     if [ $? -ne 0 ]; then
       echo "{\"authors\":[]}"
       exit 0
     fi
-    git checkout %GIT_BRANCH% --quiet
-    if [ $? -eq 0 ]; then
-      for i in $(git log origin/master.. --pretty="%ae" | sort -u); do
-        jsonMiddle="\"${i//[^A-Za-z0-9_\.@-]/}\",$jsonMiddle"
-      done
-      echo "{\"authors\":[${jsonMiddle%?}]}"
-    else
-      echo "ERROR_CLONING"
-      cat /tmp/errorGitCloneEnry
-    fi
+    for i in $(git log origin/master.. --pretty="%ae" | sort -u); do
+      jsonMiddle="\"${i//[^A-Za-z0-9_\.@-]/}\",$jsonMiddle"
+    done
+    echo "{\"authors\":[${jsonMiddle%?}]}"
   type: Generic
   default: true
   timeOutInSeconds: 360
