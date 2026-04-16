@@ -134,6 +134,11 @@ func main() {
 		}
 		fmt.Println("[HUSKYCI][*] Some HIGH/MEDIUM issues were found in these securityTests:")
 		fmt.Println("[HUSKYCI][*]", failedList)
+		fmt.Println()
+		fmt.Println("[HUSKYCI][!] ⚠ Analysis completed successfully but blocking vulnerabilities were found.")
+		fmt.Println("[HUSKYCI][!] This is NOT an infrastructure error. The exit code 190 signals that")
+		fmt.Println("[HUSKYCI][!] HIGH or MEDIUM severity issues must be resolved before merging.")
+		fmt.Println("[HUSKYCI][!] Review the findings above and fix them, or use 'nohusky' tags to suppress false positives.")
 	}
 
 	os.Exit(190)
