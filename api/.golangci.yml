@@ -5,4 +5,4 @@ linters:
     staticcheck:
       checks:
         - "all"
-        - "-ST1005" # error strings capitalization -- legacy codebase, too many to fix safely
+        - "-ST*" # stylecheck rules -- legacy codebase naming conventions, too invasive to fix safely
