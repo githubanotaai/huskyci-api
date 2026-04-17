@@ -16,7 +16,7 @@ func TestGetCurrentTarget(t *testing.T) {
 		"Test GetCurrentTarget() from env-var",
 		func(t *testing.T) {
 			// Set control env var
-			os.Setenv("HUSKYCI_CLIENT_API_ADDR", "https://env.example.com:443")
+			_ = os.Setenv("HUSKYCI_CLIENT_API_ADDR", "https://env.example.com:443")
 
 			currentTarget, err := GetCurrentTarget()
 			if err != nil {
@@ -30,7 +30,7 @@ func TestGetCurrentTarget(t *testing.T) {
 		"Test GetCurrentTarget() from viper (without targets)",
 		func(t *testing.T) {
 			// Unset control env var
-			os.Unsetenv("HUSKYCI_CLIENT_API_ADDR")
+			_ = os.Unsetenv("HUSKYCI_CLIENT_API_ADDR")
 
 			// Generate targets
 			targets := viper.GetStringMap("targets")
@@ -46,7 +46,7 @@ func TestGetCurrentTarget(t *testing.T) {
 		"Test GetCurrentTarget() from viper (without token-storage)",
 		func(t *testing.T) {
 			// Unset control env var
-			os.Unsetenv("HUSKYCI_CLIENT_API_ADDR")
+			_ = os.Unsetenv("HUSKYCI_CLIENT_API_ADDR")
 
 			// Generate targets
 			targets := viper.GetStringMap("targets")
@@ -65,7 +65,7 @@ func TestGetCurrentTarget(t *testing.T) {
 		"Test GetCurrentTarget() from viper (with token-storage)",
 		func(t *testing.T) {
 			// Unset control env var
-			os.Unsetenv("HUSKYCI_CLIENT_API_ADDR")
+			_ = os.Unsetenv("HUSKYCI_CLIENT_API_ADDR")
 
 			// Generate targets
 			targets := viper.GetStringMap("targets")
@@ -98,7 +98,7 @@ func TestCheckAndCreateConfigFolder(t *testing.T) {
 			}
 
 			// Clean environment
-			defer os.RemoveAll(dir)
+			defer func() { _ = os.RemoveAll(dir) }()
 		})
 	t.Run(
 		"Test CheckAndCreateConfigFolder() without permissions",
@@ -125,7 +125,7 @@ func TestCheckAndCreateConfigFolder(t *testing.T) {
 			}
 
 			// Clean environment
-			defer os.RemoveAll(dir)
+			defer func() { _ = os.RemoveAll(dir) }()
 		})
 }
 
@@ -149,7 +149,7 @@ func TestCreateConfigFile(t *testing.T) {
 			}
 
 			// Clean environment
-			defer os.RemoveAll(dir)
+			defer func() { _ = os.RemoveAll(dir) }()
 		})
 
 }
