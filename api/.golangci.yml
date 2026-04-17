@@ -1,7 +1,8 @@
 version: "2"
 
-linters-settings:
-  staticcheck:
-    checks:
-      - "all"
-      - "-ST1005" # error strings capitalization -- legacy codebase, too many to fix safely
+linters:
+  settings:
+    staticcheck:
+      checks:
+        - "all"
+        - "-ST1005" # error strings capitalization -- legacy codebase, too many to fix safely
