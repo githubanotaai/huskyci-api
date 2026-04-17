@@ -522,7 +522,7 @@ var _ = Describe("Postgres", func() {
 				postgres := PostgresRequests{}
 				Expect(
 					postgres.InsertDBSecurityTest(types.SecurityTest{})).To(
-					Equal(errors.New("Empty SecurityTest data")))
+					Equal(errors.New("empty securityTest data")))
 			})
 		})
 		Context("When WriteInDB returns an error", func() {
@@ -570,7 +570,7 @@ var _ = Describe("Postgres", func() {
 				postgres := PostgresRequests{}
 				Expect(
 					postgres.InsertDBAnalysis(types.Analysis{})).To(
-					Equal(errors.New("Empty Analysis data")))
+					Equal(errors.New("empty analysis data")))
 			})
 		})
 		Context("When WriteInDB returns an error", func() {
@@ -631,7 +631,7 @@ var _ = Describe("Postgres", func() {
 				postgres := PostgresRequests{}
 				Expect(
 					postgres.InsertDBUser(types.User{})).To(
-					Equal(errors.New("Empty User data")))
+					Equal(errors.New("empty user data")))
 			})
 		})
 		Context("When WriteInDB returns an error", func() {
