@@ -24,60 +24,55 @@ func printJSONOutput() error {
 	return nil
 }
 
-// printSTDOUTOutput prints the analysis output in STDOUT using printfs
+// printSTDOUTOutput prints the analysis output in STDOUT using printfs.
+// Summary is printed first so developers see the overview immediately,
+// then vulnerability details are wrapped in GitHub Actions collapsible groups.
 func printSTDOUTOutput(analysis types.Analysis) {
+	printAllSummary(analysis)
 
 	// gosec
-	printSTDOUTOutputGosec(outputJSON.GoResults.HuskyCIGosecOutput.LowVulns)
-	printSTDOUTOutputGosec(outputJSON.GoResults.HuskyCIGosecOutput.MediumVulns)
-	printSTDOUTOutputGosec(outputJSON.GoResults.HuskyCIGosecOutput.HighVulns)
+	printToolGroup("Go - GoSec", outputJSON.GoResults.HuskyCIGosecOutput, printSTDOUTOutputGosec)
 
 	// bandit
-	printSTDOUTOutputBandit(outputJSON.PythonResults.HuskyCIBanditOutput.LowVulns)
-	printSTDOUTOutputBandit(outputJSON.PythonResults.HuskyCIBanditOutput.MediumVulns)
-	printSTDOUTOutputBandit(outputJSON.PythonResults.HuskyCIBanditOutput.HighVulns)
+	printToolGroup("Python - Bandit", outputJSON.PythonResults.HuskyCIBanditOutput, printSTDOUTOutputBandit)
 
 	// safety
-	printSTDOUTOutputSafety(outputJSON.PythonResults.HuskyCISafetyOutput.LowVulns)
-	printSTDOUTOutputSafety(outputJSON.PythonResults.HuskyCISafetyOutput.MediumVulns)
-	printSTDOUTOutputSafety(outputJSON.PythonResults.HuskyCISafetyOutput.HighVulns)
+	printToolGroup("Python - Safety", outputJSON.PythonResults.HuskyCISafetyOutput, printSTDOUTOutputSafety)
 
 	// brakeman
-	printSTDOUTOutputBrakeman(outputJSON.RubyResults.HuskyCIBrakemanOutput.LowVulns)
-	printSTDOUTOutputBrakeman(outputJSON.RubyResults.HuskyCIBrakemanOutput.MediumVulns)
-	printSTDOUTOutputBrakeman(outputJSON.RubyResults.HuskyCIBrakemanOutput.HighVulns)
+	printToolGroup("Ruby - Brakeman", outputJSON.RubyResults.HuskyCIBrakemanOutput, printSTDOUTOutputBrakeman)
 
 	// npmaudit
-	printSTDOUTOutputNpmAudit(outputJSON.JavaScriptResults.HuskyCINpmAuditOutput.LowVulns)
-	printSTDOUTOutputNpmAudit(outputJSON.JavaScriptResults.HuskyCINpmAuditOutput.MediumVulns)
-	printSTDOUTOutputNpmAudit(outputJSON.JavaScriptResults.HuskyCINpmAuditOutput.HighVulns)
+	printToolGroup("JavaScript - NpmAudit", outputJSON.JavaScriptResults.HuskyCINpmAuditOutput, printSTDOUTOutputNpmAudit)
 
 	// yarnaudit
-	printSTDOUTOutputYarnAudit(outputJSON.JavaScriptResults.HuskyCIYarnAuditOutput.LowVulns)
-	printSTDOUTOutputYarnAudit(outputJSON.JavaScriptResults.HuskyCIYarnAuditOutput.MediumVulns)
-	printSTDOUTOutputYarnAudit(outputJSON.JavaScriptResults.HuskyCIYarnAuditOutput.HighVulns)
+	printToolGroup("JavaScript - YarnAudit", outputJSON.JavaScriptResults.HuskyCIYarnAuditOutput, printSTDOUTOutputYarnAudit)
 
 	// gitleaks
-	printSTDOUTOutputGitleaks(outputJSON.GenericResults.HuskyCIGitleaksOutput.LowVulns)
-	printSTDOUTOutputGitleaks(outputJSON.GenericResults.HuskyCIGitleaksOutput.MediumVulns)
-	printSTDOUTOutputGitleaks(outputJSON.GenericResults.HuskyCIGitleaksOutput.HighVulns)
+	printToolGroup("Generic - Gitleaks", outputJSON.GenericResults.HuskyCIGitleaksOutput, printSTDOUTOutputGitleaks)
 
 	// spotbugs
-	printSTDOUTOutputSpotBugs(outputJSON.JavaResults.HuskyCISpotBugsOutput.LowVulns)
-	printSTDOUTOutputSpotBugs(outputJSON.JavaResults.HuskyCISpotBugsOutput.MediumVulns)
-	printSTDOUTOutputSpotBugs(outputJSON.JavaResults.HuskyCISpotBugsOutput.HighVulns)
+	printToolGroup("Java - SpotBugs", outputJSON.JavaResults.HuskyCISpotBugsOutput, printSTDOUTOutputSpotBugs)
 
 	// tfsec
-	printSTDOUTOutputTFSec(outputJSON.HclResults.HuskyCITFSecOutput.LowVulns)
-	printSTDOUTOutputTFSec(outputJSON.HclResults.HuskyCITFSecOutput.MediumVulns)
-	printSTDOUTOutputTFSec(outputJSON.HclResults.HuskyCITFSecOutput.HighVulns)
+	printToolGroup("HCL - TFSec", outputJSON.HclResults.HuskyCITFSecOutput, printSTDOUTOutputTFSec)
 
 	// securitycodescan
-	printSTDOUTOutputSecurityCodeScan(outputJSON.CSharpResults.HuskyCISecurityCodeScanOutput.LowVulns)
-	printSTDOUTOutputSecurityCodeScan(outputJSON.CSharpResults.HuskyCISecurityCodeScanOutput.MediumVulns)
-	printSTDOUTOutputSecurityCodeScan(outputJSON.CSharpResults.HuskyCISecurityCodeScanOutput.HighVulns)
+	printToolGroup("C# - SecurityCodeScan", outputJSON.CSharpResults.HuskyCISecurityCodeScanOutput, printSTDOUTOutputSecurityCodeScan)
+}
 
-	printAllSummary(analysis)
+// printToolGroup prints vulnerability details inside a GitHub Actions collapsible group.
+// The group is only emitted when there are actual findings (low + medium + high > 0).
+func printToolGroup(name string, output types.HuskyCISecurityTestOutput, printFn func([]types.HuskyCIVulnerability)) {
+	total := len(output.LowVulns) + len(output.MediumVulns) + len(output.HighVulns)
+	if total == 0 {
+		return
+	}
+	fmt.Printf("::group::%s Details (%d findings)\n", name, total)
+	printFn(output.LowVulns)
+	printFn(output.MediumVulns)
+	printFn(output.HighVulns)
+	fmt.Println("::endgroup::")
 }
 
 // prepareAllSummary prepares how many low, medium and high vulnerabilites were found.
