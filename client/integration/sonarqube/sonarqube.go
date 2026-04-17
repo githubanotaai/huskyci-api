@@ -125,12 +125,6 @@ func GenerateOutputFile(analysis types.Analysis, outputPath, outputFileName stri
 		return err
 	}
 
-	absolutePath, err := filepath.Abs(filepath.Join(outputPath, outputFileName))
-	if err != nil {
-		return fmt.Errorf("failed to resolve absolute path: %w", err)
-	}
-	fmt.Printf("[DEBUG] Absolute path for SonarQube JSON file: %s\n", absolutePath)
-
 	err = util.CreateFile(sonarOutputString, outputPath, outputFileName)
 	if err != nil {
 		return err
