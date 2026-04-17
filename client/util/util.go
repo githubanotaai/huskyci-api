@@ -23,12 +23,6 @@ func NewClient(httpsEnable bool) (*http.Client, error) {
 			caCertPool = x509.NewCertPool()
 		}
 
-		tlsConfig := &tls.Config{
-			MinVersion: tls.VersionTLS12,
-			MaxVersion: tls.VersionTLS13,
-			RootCAs:    caCertPool,
-		}
-		tlsConfig.BuildNameToCertificate()
 		client := &http.Client{
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{

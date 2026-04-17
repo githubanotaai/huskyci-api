@@ -87,7 +87,9 @@ func main() {
 	outputFileName := "sonarqube.json"
 
 	if _, err := os.Stat(outputPath); os.IsNotExist(err) {
-		os.MkdirAll(outputPath, os.ModePerm)
+		if mkErr := os.MkdirAll(outputPath, os.ModePerm); mkErr != nil {
+			fmt.Println("[HUSKYCI][ERROR] Failed to create output directory:", mkErr)
+		}
 	}
 
 	err = sonarqube.GenerateOutputFile(huskyAnalysis, outputPath, outputFileName)
