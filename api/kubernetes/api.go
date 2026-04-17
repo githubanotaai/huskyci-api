@@ -187,7 +187,7 @@ schedulingLoop:
 			return "", err
 		}
 
-		return "", errors.New(fmt.Sprintf("Timed-out waiting for pod scheduling: %s", name))
+		return "", fmt.Errorf("Timed-out waiting for pod scheduling: %s", name)
 	}
 
 	timeoutResult := func(i int64) *int64 { return &i }(int64(testTimeOutInSeconds))
@@ -222,7 +222,7 @@ schedulingLoop:
 		return "", err
 	}
 
-	return "", errors.New(fmt.Sprintf("Timed-out waiting for pod to finish: %s", name))
+	return "", fmt.Errorf("Timed-out waiting for pod to finish: %s", name)
 }
 
 func (k Kubernetes) ReadOutput(name string) (string, error) {
@@ -237,7 +237,7 @@ func (k Kubernetes) ReadOutput(name string) (string, error) {
 		}
 		return "", err
 	}
-	defer podLogs.Close()
+	defer func() { _ = podLogs.Close() }()
 
 	result, err := io.ReadAll(podLogs)
 	if err != nil {

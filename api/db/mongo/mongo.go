@@ -81,8 +81,8 @@ func autoReconnect() {
 		err = Conn.Client.Ping(context.TODO(), readpref.Primary())
 		if err != nil {
 			log.Error(logActionReconnect, logInfoMongo, 2003, err)
-			Conn.Client.Disconnect(context.TODO())
-			err = Conn.Client.Connect(context.TODO())
+			_ = Conn.Client.Disconnect(context.TODO())
+			err = Conn.Client.Connect(context.TODO()) //nolint:staticcheck // deprecated but no drop-in replacement without restructuring
 			if err == nil {
 				log.Info(logActionReconnect, logInfoMongo, 23)
 			} else {
@@ -136,7 +136,7 @@ func (db *DB) Search(query bson.M, selectors []string, collection string, obj in
 	if err != nil {
 		return err
 	}
-	defer cursor.Close(context.TODO())
+	defer func() { _ = cursor.Close(context.TODO()) }()
 	return cursor.All(context.TODO(), obj)
 }
 

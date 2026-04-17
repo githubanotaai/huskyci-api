@@ -23,7 +23,7 @@ func configureImagePath(image, tag string) (string, string) {
 	canonicalURL := image
 	if !regex.MatchString(canonicalURL) {
 		// canonicalURL = fmt.Sprintf("docker.io/%s", fullContainerImage)
-		canonicalURL = fmt.Sprintf("%s", fullContainerImage)
+		canonicalURL = fullContainerImage
 	} else {
 		canonicalURL = fullContainerImage
 	}

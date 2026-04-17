@@ -24,5 +24,5 @@ var _ = AfterSuite(func() {
 const testOutputFilesPath = "./huskyCITest/"
 
 func cleanTestOutputFiles() {
-	os.RemoveAll(testOutputFilesPath)
+	_ = os.RemoveAll(testOutputFilesPath)
 }

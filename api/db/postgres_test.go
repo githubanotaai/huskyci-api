@@ -470,7 +470,7 @@ var _ = Describe("Postgres", func() {
 		Context("When Repository is set with a nil URL", func() {
 			It("Should return the expected error", func() {
 				postgres := PostgresRequests{}
-				expectedError := errors.New("Empty repository data")
+				expectedError := errors.New("empty repository data")
 				Expect(postgres.InsertDBRepository(types.Repository{})).To(Equal(expectedError))
 			})
 		})
@@ -498,7 +498,7 @@ var _ = Describe("Postgres", func() {
 				}
 				Expect(
 					postgres.InsertDBRepository(repository)).To(
-					Equal(errors.New("No data was inserted")))
+					Equal(errors.New("no data was inserted")))
 			})
 		})
 		Context("When WriteInDB returns a number of rows affected", func() {
@@ -522,7 +522,7 @@ var _ = Describe("Postgres", func() {
 				postgres := PostgresRequests{}
 				Expect(
 					postgres.InsertDBSecurityTest(types.SecurityTest{})).To(
-					Equal(errors.New("Empty SecurityTest data")))
+					Equal(errors.New("empty securityTest data")))
 			})
 		})
 		Context("When WriteInDB returns an error", func() {
@@ -548,7 +548,7 @@ var _ = Describe("Postgres", func() {
 					DataRetriever: &fakeRetriever,
 				}
 				Expect(postgres.InsertDBSecurityTest(securityTest)).To(
-					Equal(errors.New("No data was inserted")))
+					Equal(errors.New("no data was inserted")))
 			})
 		})
 		Context("When WriteInDB returns some rows affected", func() {
@@ -570,7 +570,7 @@ var _ = Describe("Postgres", func() {
 				postgres := PostgresRequests{}
 				Expect(
 					postgres.InsertDBAnalysis(types.Analysis{})).To(
-					Equal(errors.New("Empty Analysis data")))
+					Equal(errors.New("empty analysis data")))
 			})
 		})
 		Context("When WriteInDB returns an error", func() {
@@ -604,7 +604,7 @@ var _ = Describe("Postgres", func() {
 					JSONHandler:   &fakeJson,
 				}
 				Expect(postgres.InsertDBAnalysis(analysis)).To(
-					Equal(errors.New("No data was inserted")))
+					Equal(errors.New("no data was inserted")))
 			})
 		})
 		Context("When WriteInDB returns some rows affected", func() {
@@ -631,7 +631,7 @@ var _ = Describe("Postgres", func() {
 				postgres := PostgresRequests{}
 				Expect(
 					postgres.InsertDBUser(types.User{})).To(
-					Equal(errors.New("Empty User data")))
+					Equal(errors.New("empty user data")))
 			})
 		})
 		Context("When WriteInDB returns an error", func() {
@@ -657,7 +657,7 @@ var _ = Describe("Postgres", func() {
 					DataRetriever: &fakeRetriever,
 				}
 				Expect(postgres.InsertDBUser(user)).To(
-					Equal(errors.New("No data was inserted")))
+					Equal(errors.New("no data was inserted")))
 			})
 		})
 		Context("When WriteInDB returns some rows affected", func() {
@@ -706,7 +706,7 @@ var _ = Describe("Postgres", func() {
 					DataRetriever: &fakeRetriever,
 				}
 				Expect(postgres.InsertDBAccessToken(accessToken)).To(
-					Equal(errors.New("No data was inserted")))
+					Equal(errors.New("no data was inserted")))
 			})
 		})
 		Context("When WriteInDB returns some rows affected", func() {

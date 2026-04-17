@@ -74,7 +74,7 @@ func (sqlConfig *SQLConfig) GetValuesFromDB(query string,
 		return nil, err
 	}
 	if len(results) == 0 {
-		return nil, errors.New("No data found")
+		return nil, errors.New("no data found")
 	}
 	return results, nil
 }

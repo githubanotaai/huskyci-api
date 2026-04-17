@@ -6,7 +6,7 @@ package dockers
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"strconv"
 
@@ -63,7 +63,7 @@ func NewDocker(dockerHost string) (*Docker, error) {
 		return nil, err
 	}
 
-	client, err := client.NewEnvClient()
+	client, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		log.Error(logActionNew, logInfoAPI, 3002, err)
 		return nil, err
@@ -194,7 +194,7 @@ func (d Docker) ReadOutput() (string, error) {
 		return "", nil
 	}
 
-	body, err := ioutil.ReadAll(out)
+	body, err := io.ReadAll(out)
 	if err != nil {
 		log.Error("ReadOutput", logInfoAPI, 3007, err)
 		return "", err
@@ -211,7 +211,7 @@ func (d Docker) ReadOutputStderr() (string, error) {
 		return "", nil
 	}
 
-	body, err := ioutil.ReadAll(out)
+	body, err := io.ReadAll(out)
 	if err != nil {
 		log.Error("ReadOutputStderr", logInfoAPI, 3008, err)
 		return "", err

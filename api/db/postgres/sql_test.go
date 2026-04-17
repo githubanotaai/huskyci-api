@@ -59,9 +59,9 @@ func (fakeDB *FakeSql) HasNextRow() bool {
 }
 
 func (fakeDB *FakeSql) ScanRow(dest ...interface{}) error {
-	for i, val := range dest {
-		val = "teste"
-		dest[i] = &val
+	for i := range dest {
+		ptr := dest[i].(*interface{})
+		*ptr = "teste"
 	}
 	return fakeDB.ExpectedScanRowError
 }
@@ -206,7 +206,7 @@ var _ = Describe("Sql", func() {
 				myRows, err := sqlConfig.GetValuesFromDB("blabla", "somearg")
 				Expect(fakeDB.ActualRow).To(Equal(fakeDB.NumOfRows))
 				Expect(myRows).To(BeNil())
-				Expect(err).To(Equal(errors.New("No data found")))
+				Expect(err).To(Equal(errors.New("no data found")))
 			})
 		})
 		Context("When results are not empty", func() {

@@ -29,19 +29,20 @@ func (hU HuskyUtils) CheckHuskyRequirements(configAPI *apiContext.APIConfig) err
 	// check infrastructure selection
 	infrastructureSelected, hasSelected := os.LookupEnv("HUSKYCI_INFRASTRUCTURE_USE")
 	if hasSelected {
-		if infrastructureSelected == "docker" {
+		switch infrastructureSelected {
+		case "docker":
 			// check if all docker hosts are up and running docker API.
 			if err := hU.CheckHandler.checkDockerHosts(configAPI); err != nil {
 				return err
 			}
 			log.Info(logActionCheckReqs, logInfoAPIUtil, 13)
-		} else if infrastructureSelected == "kubernetes" {
+		case "kubernetes":
 			// check if all kubernetes hosts are up and running Kubernetes API.
 			if err := hU.CheckHandler.checkKubernetesHosts(configAPI); err != nil {
 				return err
 			}
 			log.Info(logActionCheckReqs, logInfoAPIUtil, 13)
-		} else {
+		default:
 			return errors.New("invalid HUSKYCI_INFRASTRUCTURE_USE value")
 		}
 	} else {
@@ -173,7 +174,7 @@ func (cH *CheckUtils) checkDefaultUser(configAPI *apiContext.APIConfig) error {
 	defaultUserQuery := map[string]interface{}{"username": user.DefaultAPIUser}
 	_, err := configAPI.DBInstance.FindOneDBUser(defaultUserQuery)
 	if err != nil {
-		if err == mongo.ErrNoDocuments || err.Error() == "No data found" {
+		if err == mongo.ErrNoDocuments || err.Error() == "no data found" {
 			// user not found, add default user
 			if err := user.InsertDefaultUser(); err != nil {
 				return err
