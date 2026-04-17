@@ -115,7 +115,7 @@ func registerNewAnalysis(RID string, repository types.Repository) error {
 func registerFinishedAnalysis(RID string, allScanResults *securitytest.RunAllInfo) error {
 	analysisQuery := map[string]interface{}{"RID": RID}
 	var errorString string
-	if _, ok := allScanResults.ErrorFound.(error); ok {
+	if allScanResults.ErrorFound != nil {
 		errorString = allScanResults.ErrorFound.Error()
 	} else {
 		errorString = ""

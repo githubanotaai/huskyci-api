@@ -5,7 +5,7 @@
 package util_test
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -197,7 +197,7 @@ Line4`
 
 				resp := w.Result()
 				Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
-				Expect(ioutil.ReadAll(resp.Body)).To(
+				Expect(io.ReadAll(resp.Body)).To(
 					MatchJSON(`{"success": false, "error": "invalid RID"}`),
 				)
 			})
@@ -234,7 +234,7 @@ Line4`
 
 				resp := w.Result()
 				Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
-				Expect(ioutil.ReadAll(resp.Body)).To(
+				Expect(io.ReadAll(resp.Body)).To(
 					MatchJSON(`{"success": false, "error": "invalid repository URL"}`),
 				)
 			})
@@ -252,7 +252,7 @@ Line4`
 
 				resp := w.Result()
 				Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
-				Expect(ioutil.ReadAll(resp.Body)).To(
+				Expect(io.ReadAll(resp.Body)).To(
 					MatchJSON(`{"success": false, "error": "invalid repository branch"}`),
 				)
 			})

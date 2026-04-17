@@ -2,6 +2,7 @@ package util_test
 
 import (
 	"errors"
+	"os"
 
 	apiContext "github.com/githubanotaai/huskyci-api/api/context"
 	apiUtil "github.com/githubanotaai/huskyci-api/api/util/api"
@@ -34,6 +35,14 @@ var checkHuskyTests = []CheckHuskyData{
 
 var _ = Describe("Util API", func() {
 	glbgelf.InitLogger("", "huskytest", "", true, "UDP")
+
+	BeforeEach(func() {
+		os.Setenv("HUSKYCI_INFRASTRUCTURE_USE", "docker")
+	})
+	AfterEach(func() {
+		os.Unsetenv("HUSKYCI_INFRASTRUCTURE_USE")
+	})
+
 	Describe("CheckHuskyRequirements", func() {
 		Context("When checkEnvVars returns an error", func() {
 			fakeCheck := &apiUtil.FakeCheck{

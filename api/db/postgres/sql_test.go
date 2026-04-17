@@ -59,9 +59,9 @@ func (fakeDB *FakeSql) HasNextRow() bool {
 }
 
 func (fakeDB *FakeSql) ScanRow(dest ...interface{}) error {
-	for i, val := range dest {
-		val = "teste"
-		dest[i] = &val
+	for i := range dest {
+		ptr := dest[i].(*interface{})
+		*ptr = "teste"
 	}
 	return fakeDB.ExpectedScanRowError
 }
