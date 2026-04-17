@@ -53,7 +53,7 @@ func StartAnalysis() (string, error) {
 		return "", err
 	}
 
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != 201 {
 		if resp.StatusCode == 401 {
@@ -66,7 +66,7 @@ func StartAnalysis() (string, error) {
 
 	RID := resp.Header.Get("X-Request-Id")
 	if RID == "" {
-		errorMsg := "Error sending request to start analysis. RID is empty!"
+		errorMsg := "Error sending request to start analysis, RID is empty"
 		return "", errors.New(errorMsg)
 	}
 
@@ -103,7 +103,7 @@ func GetAnalysis(RID string) (types.Analysis, error) {
 		return analysis, err
 	}
 
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != 200 {
 		errorMsg := fmt.Sprintf("Error getting analysis! StatusCode received: %d", resp.StatusCode)
@@ -139,9 +139,10 @@ func MonitorAnalysis(RID string) (types.Analysis, error) {
 			if err != nil {
 				return analysis, err
 			}
-			if analysis.Status == "finished" {
+			switch analysis.Status {
+			case "finished":
 				return analysis, nil
-			} else if analysis.Status == "error running" {
+			case "error running":
 				return analysis, fmt.Errorf("huskyCI encountered an error trying to execute this analysis: %v", analysis.ErrorFound)
 			}
 			if !types.IsJSONoutput {

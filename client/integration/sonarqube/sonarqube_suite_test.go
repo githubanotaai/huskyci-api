@@ -26,5 +26,5 @@ var _ = AfterSuite(func() {
 })
 
 func cleanTestOutputFiles() {
-	os.RemoveAll(testOutputFilesPath)
+	_ = os.RemoveAll(testOutputFilesPath)
 }
