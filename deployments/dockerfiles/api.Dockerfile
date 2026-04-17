@@ -1,16 +1,22 @@
-FROM golang:1.20-alpine as builder
+FROM golang:1.23-alpine AS builder
 
-COPY api/ /go/src/github.com/githubanotaai/huskyci-api/api/
-WORKDIR /go/src/github.com/githubanotaai/huskyci-api/api/
+RUN apk update && apk upgrade \
+    && apk add --no-cache git
 
-RUN go build -o huskyci-api-bin server.go
+WORKDIR /build
 
-FROM alpine:latest
+COPY api/go.mod api/go.sum ./
+RUN go mod download
 
-WORKDIR /go/src/github.com/githubanotaai/huskyci-api/api/
-COPY --from=builder /go/src/github.com/githubanotaai/huskyci-api/api/huskyci-api-bin .
-COPY api/config.yaml .
-# COPY api/api-tls-cert.pem .
-# COPY api/api-tls-key.pem .
+COPY api/ ./
+RUN CGO_ENABLED=0 go build -ldflags "-s -w" -o /huskyci-api server.go
 
-RUN chmod +x huskyci-api-bin
+FROM alpine:3.21
+
+RUN apk update && apk upgrade \
+    && apk add --no-cache ca-certificates
+
+COPY --from=builder /huskyci-api /usr/local/bin/huskyci-api
+COPY api/config.yaml /etc/huskyci/config.yaml
+
+ENTRYPOINT ["huskyci-api"]
