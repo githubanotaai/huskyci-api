@@ -237,7 +237,7 @@ func (k Kubernetes) ReadOutput(name string) (string, error) {
 		}
 		return "", err
 	}
-	defer podLogs.Close()
+	defer func() { _ = podLogs.Close() }()
 
 	result, err := io.ReadAll(podLogs)
 	if err != nil {

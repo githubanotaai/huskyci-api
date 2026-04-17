@@ -470,7 +470,7 @@ var _ = Describe("Postgres", func() {
 		Context("When Repository is set with a nil URL", func() {
 			It("Should return the expected error", func() {
 				postgres := PostgresRequests{}
-				expectedError := errors.New("Empty repository data")
+				expectedError := errors.New("empty repository data")
 				Expect(postgres.InsertDBRepository(types.Repository{})).To(Equal(expectedError))
 			})
 		})
@@ -498,7 +498,7 @@ var _ = Describe("Postgres", func() {
 				}
 				Expect(
 					postgres.InsertDBRepository(repository)).To(
-					Equal(errors.New("No data was inserted")))
+					Equal(errors.New("no data was inserted")))
 			})
 		})
 		Context("When WriteInDB returns a number of rows affected", func() {
@@ -548,7 +548,7 @@ var _ = Describe("Postgres", func() {
 					DataRetriever: &fakeRetriever,
 				}
 				Expect(postgres.InsertDBSecurityTest(securityTest)).To(
-					Equal(errors.New("No data was inserted")))
+					Equal(errors.New("no data was inserted")))
 			})
 		})
 		Context("When WriteInDB returns some rows affected", func() {
@@ -604,7 +604,7 @@ var _ = Describe("Postgres", func() {
 					JSONHandler:   &fakeJson,
 				}
 				Expect(postgres.InsertDBAnalysis(analysis)).To(
-					Equal(errors.New("No data was inserted")))
+					Equal(errors.New("no data was inserted")))
 			})
 		})
 		Context("When WriteInDB returns some rows affected", func() {
@@ -657,7 +657,7 @@ var _ = Describe("Postgres", func() {
 					DataRetriever: &fakeRetriever,
 				}
 				Expect(postgres.InsertDBUser(user)).To(
-					Equal(errors.New("No data was inserted")))
+					Equal(errors.New("no data was inserted")))
 			})
 		})
 		Context("When WriteInDB returns some rows affected", func() {
@@ -706,7 +706,7 @@ var _ = Describe("Postgres", func() {
 					DataRetriever: &fakeRetriever,
 				}
 				Expect(postgres.InsertDBAccessToken(accessToken)).To(
-					Equal(errors.New("No data was inserted")))
+					Equal(errors.New("no data was inserted")))
 			})
 		})
 		Context("When WriteInDB returns some rows affected", func() {

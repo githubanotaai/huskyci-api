@@ -59,36 +59,36 @@ var _ = Describe("Util", func() {
 
 		Context("When rawString is not empty, HUSKYCI_API_GIT_SSH_URL is empty, but HUSKYCI_API_GIT_URL_TO_SUBSTITUTE is not empty", func() {
 			It("Should return a string based on these params", func() {
-				os.Setenv("HUSKYCI_API_GIT_SSH_URL", "")
-				os.Setenv("HUSKYCI_API_GIT_URL_TO_SUBSTITUTE", "https://gitlab.example.com/")
+				_ = os.Setenv("HUSKYCI_API_GIT_SSH_URL", "")
+				_ = os.Setenv("HUSKYCI_API_GIT_URL_TO_SUBSTITUTE", "https://gitlab.example.com/")
 				Expect(util.HandleGitURLSubstitution(rawString)).To(Equal(expectedURLToSubstituteNotEmpty))
 			})
 		})
 		Context("When rawString is not empty, HUSKYCI_API_GIT_SSH_URL is not empty and HUSKYCI_API_GIT_URL_TO_SUBSTITUTE is empty", func() {
 			It("Should return a string based on these params", func() {
-				os.Setenv("HUSKYCI_API_GIT_SSH_URL", "gitlab@gitlab.example.com")
-				os.Setenv("HUSKYCI_API_GIT_URL_TO_SUBSTITUTE", "")
+				_ = os.Setenv("HUSKYCI_API_GIT_SSH_URL", "gitlab@gitlab.example.com")
+				_ = os.Setenv("HUSKYCI_API_GIT_URL_TO_SUBSTITUTE", "")
 				Expect(util.HandleGitURLSubstitution(rawString)).To(Equal(expectedSSHURLNotEmpty))
 			})
 		})
 		Context("When rawString is not empty, HUSKYCI_API_GIT_SSH_URL is empty and HUSKYCI_API_GIT_URL_TO_SUBSTITUTE is empty", func() {
 			It("Should return a string based on these params", func() {
-				os.Setenv("HUSKYCI_API_GIT_SSH_URL", "")
-				os.Setenv("HUSKYCI_API_GIT_URL_TO_SUBSTITUTE", "")
+				_ = os.Setenv("HUSKYCI_API_GIT_SSH_URL", "")
+				_ = os.Setenv("HUSKYCI_API_GIT_URL_TO_SUBSTITUTE", "")
 				Expect(util.HandleGitURLSubstitution(rawString)).To(Equal(expectedBothVarsEmpty))
 			})
 		})
 		Context("When rawString is not empty, HUSKYCI_API_GIT_SSH_URL is not empty and HUSKYCI_API_GIT_URL_TO_SUBSTITUTE is not empty", func() {
 			It("Should return a string based on these params", func() {
-				os.Setenv("HUSKYCI_API_GIT_SSH_URL", "gitlab@gitlab.example.com")
-				os.Setenv("HUSKYCI_API_GIT_URL_TO_SUBSTITUTE", "https://gitlab.example.com/")
+				_ = os.Setenv("HUSKYCI_API_GIT_SSH_URL", "gitlab@gitlab.example.com")
+				_ = os.Setenv("HUSKYCI_API_GIT_URL_TO_SUBSTITUTE", "https://gitlab.example.com/")
 				Expect(util.HandleGitURLSubstitution(rawString)).To(Equal(expectedNotEmpty))
 			})
 		})
 		Context("When rawString is empty", func() {
 			It("Should return an empty string", func() {
-				os.Setenv("HUSKYCI_API_GIT_SSH_URL", "gitlab@gitlab.example.com")
-				os.Setenv("HUSKYCI_API_GIT_URL_TO_SUBSTITUTE", "https://gitlab.example.com/")
+				_ = os.Setenv("HUSKYCI_API_GIT_SSH_URL", "gitlab@gitlab.example.com")
+				_ = os.Setenv("HUSKYCI_API_GIT_URL_TO_SUBSTITUTE", "https://gitlab.example.com/")
 				Expect(util.HandleGitURLSubstitution("")).To(Equal(""))
 			})
 		})
@@ -102,7 +102,7 @@ var _ = Describe("Util", func() {
 
 		Context("When rawString and HUSKYCI_API_GIT_PRIVATE_SSH_KEY are not empty", func() {
 			It("Should return a string based on these params", func() {
-				os.Setenv("HUSKYCI_API_GIT_PRIVATE_SSH_KEY", "PRIVKEYTEST")
+				_ = os.Setenv("HUSKYCI_API_GIT_PRIVATE_SSH_KEY", "PRIVKEYTEST")
 				Expect(util.HandlePrivateSSHKey(rawString)).To(Equal(expectedNotEmpty))
 			})
 		})
@@ -113,7 +113,7 @@ var _ = Describe("Util", func() {
 		})
 		Context("When rawString is not empty and HUSKYCI_API_GIT_PRIVATE_SSH_KEY is empty", func() {
 			It("Should return a string based on these params.", func() {
-				os.Unsetenv("HUSKYCI_API_GIT_PRIVATE_SSH_KEY")
+				_ = os.Unsetenv("HUSKYCI_API_GIT_PRIVATE_SSH_KEY")
 				Expect(util.HandlePrivateSSHKey(rawString)).To(Equal(expectedEmpty))
 			})
 		})

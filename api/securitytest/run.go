@@ -131,9 +131,10 @@ func (results *RunAllInfo) runGenericScans(enryScan SecTestScanInfo) error {
 				}
 			}
 			results.Containers = append(results.Containers, newGenericScan.Container)
-			if genericTest.Name == "gitauthors" {
+			switch genericTest.Name {
+			case "gitauthors":
 				results.CommitAuthors = newGenericScan.CommitAuthors.Authors
-			} else if genericTest.Name == "gitleaks" || genericTest.Name == "wizcli" {
+			case "gitleaks", "wizcli":
 				results.setVulns(newGenericScan)
 			}
 		}(&genericTests[genericTestIndex])
@@ -372,7 +373,7 @@ func getAllDefaultSecurityTests(typeOf, language string) ([]types.SecurityTest, 
 	}
 	securityTests, err := apiContext.APIConfiguration.DBInstance.FindAllDBSecurityTest(securityTestQuery)
 	if err != nil {
-		if err.Error() == "No data found" {
+		if err.Error() == "no data found" {
 			return securityTests, nil
 		}
 		log.Error("getAllDefaultSecurityTests", "SECURITYTEST", 2009, err)

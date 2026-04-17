@@ -37,10 +37,10 @@ var _ = Describe("Util API", func() {
 	glbgelf.InitLogger("", "huskytest", "", true, "UDP")
 
 	BeforeEach(func() {
-		os.Setenv("HUSKYCI_INFRASTRUCTURE_USE", "docker")
+		_ = os.Setenv("HUSKYCI_INFRASTRUCTURE_USE", "docker")
 	})
 	AfterEach(func() {
-		os.Unsetenv("HUSKYCI_INFRASTRUCTURE_USE")
+		_ = os.Unsetenv("HUSKYCI_INFRASTRUCTURE_USE")
 	})
 
 	Describe("CheckHuskyRequirements", func() {

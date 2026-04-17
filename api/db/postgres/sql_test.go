@@ -206,7 +206,7 @@ var _ = Describe("Sql", func() {
 				myRows, err := sqlConfig.GetValuesFromDB("blabla", "somearg")
 				Expect(fakeDB.ActualRow).To(Equal(fakeDB.NumOfRows))
 				Expect(myRows).To(BeNil())
-				Expect(err).To(Equal(errors.New("No data found")))
+				Expect(err).To(Equal(errors.New("no data found")))
 			})
 		})
 		Context("When results are not empty", func() {

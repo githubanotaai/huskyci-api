@@ -55,7 +55,7 @@ func GetAnalysis(c echo.Context) error {
 	analysisResult, err := apiContext.APIConfiguration.DBInstance.FindOneDBAnalysis(analysisQuery)
 
 	if err != nil {
-		if err == mongo.ErrNoDocuments || err.Error() == "No data found" {
+		if err == mongo.ErrNoDocuments || err.Error() == "no data found" {
 			log.Warning(logActionGetAnalysis, logInfoAnalysis, 106, RID)
 			reply := map[string]interface{}{"success": false, "error": "user not found"}
 			return c.JSON(http.StatusNotFound, reply)
@@ -110,7 +110,7 @@ func ReceiveRequest(c echo.Context) error {
 	repositoryQuery := map[string]interface{}{"repositoryURL": repository.URL}
 	_, err = apiContext.APIConfiguration.DBInstance.FindOneDBRepository(repositoryQuery)
 	if err != nil {
-		if err == mongo.ErrNoDocuments || err.Error() == "No data found" {
+		if err == mongo.ErrNoDocuments || err.Error() == "no data found" {
 			// step-02-o1: repository not found! insert it into MongoDB
 			repository.CreatedAt = time.Now()
 			err = apiContext.APIConfiguration.DBInstance.InsertDBRepository(repository)
@@ -130,7 +130,7 @@ func ReceiveRequest(c echo.Context) error {
 		analysisQuery := map[string]interface{}{"repositoryURL": repository.URL, "repositoryBranch": repository.Branch}
 		analysisResult, err := apiContext.APIConfiguration.DBInstance.FindOneDBAnalysis(analysisQuery)
 		if err != nil {
-			if err == mongo.ErrNoDocuments || err.Error() == "No data found" {
+			if err == mongo.ErrNoDocuments || err.Error() == "no data found" {
 				// nice! we can start this analysis!
 			} else {
 				// step-03-err: another error searching for analysisQuery

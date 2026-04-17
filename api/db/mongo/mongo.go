@@ -136,7 +136,7 @@ func (db *DB) Search(query bson.M, selectors []string, collection string, obj in
 	if err != nil {
 		return err
 	}
-	defer cursor.Close(context.TODO())
+	defer func() { _ = cursor.Close(context.TODO()) }()
 	return cursor.All(context.TODO(), obj)
 }
 
