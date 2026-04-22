@@ -1,0 +1,46 @@
+name: Continuous Delivery
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        description: Environment to deploy to
+        required: false
+        default: unreleased
+        options:
+          - unreleased
+          - stable
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy to Cluster
+    container: igrowdigital/actor:latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Build docker image and update tag in deployment repository
+        uses: githubanotaai/cluster-cd-action@master
+        with:
+          app_name: huskyci-api
+          deployment_repo: githubanotaai/k8s-infrastructure-live
+          deployment_repo_token: ${{ secrets.DEPLOYMENT_REPO_TOKEN }}
+          deployment_repo_yaml_paths: |
+            components/huskyci/ENVIRONMENT/values.yaml
+          deployment_repo_yaml_imgtag_key: image.tag
+
+          # pushes to main always go to unreleased; manual dispatch allows stable
+          environment: ${{ github.event.inputs.environment || 'unreleased' }}
+
+          image_owner: 939030204144.dkr.ecr.us-east-1.amazonaws.com
+          image_repo: huskyci-api
+          image_tag: ${{ github.sha }}
+
+          docker_build_registry_username: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          docker_build_registry_password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          docker_build_dockerfile_path: deployments/dockerfiles/api.Dockerfile
+          docker_build_context_path: .
