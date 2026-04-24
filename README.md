@@ -154,7 +154,7 @@ huskyCI is licensed under the [BSD 3-Clause License](LICENSE.md).
 [Gosec]: https://github.com/securego/gosec
 [NpmAudit]: https://docs.npmjs.com/cli/audit
 [YarnAudit]: https://yarnpkg.com/lang/en/docs/cli/audit/
-[Gitleaks]: https://github.com/zricethezav/gitleaks
+[Gitleaks]: https://github.com/gitleaks/gitleaks
 [SpotBugs]: https://spotbugs.github.io
 [FindSec]: https://find-sec-bugs.github.io
 [TFSec]: https://github.com/liamg/tfsec
