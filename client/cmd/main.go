@@ -87,7 +87,9 @@ func main() {
 	outputFileName := "sonarqube.json"
 
 	if _, err := os.Stat(outputPath); os.IsNotExist(err) {
-		os.MkdirAll(outputPath, os.ModePerm)
+		if mkErr := os.MkdirAll(outputPath, os.ModePerm); mkErr != nil {
+			fmt.Println("[HUSKYCI][ERROR] Failed to create output directory:", mkErr)
+		}
 	}
 
 	err = sonarqube.GenerateOutputFile(huskyAnalysis, outputPath, outputFileName)
@@ -134,6 +136,10 @@ func main() {
 		}
 		fmt.Println("[HUSKYCI][*] Some HIGH/MEDIUM issues were found in these securityTests:")
 		fmt.Println("[HUSKYCI][*]", failedList)
+		fmt.Println()
+		fmt.Println("[HUSKYCI][!] Analysis completed. Blocking vulnerabilities (HIGH/MEDIUM) were found.")
+		fmt.Println("[HUSKYCI][!] This is NOT an infrastructure error -- the security scan ran successfully.")
+		fmt.Println("[HUSKYCI][!] Fix the vulnerabilities listed above before merging.")
 	}
 
 	os.Exit(190)

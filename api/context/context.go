@@ -60,6 +60,15 @@ type KubernetesConfig struct {
 	ProxyAddress         string
 	NoProxyAddresses     string
 	PodSchedulingTimeout int
+	NodeSelector         map[string]string
+	Tolerations          []TolerationConfig
+}
+
+// TolerationConfig represents a parsed Kubernetes toleration.
+type TolerationConfig struct {
+	Key    string
+	Value  string
+	Effect string
 }
 
 // GraylogConfig represents Graylog configuration.
@@ -326,13 +335,58 @@ func (dF DefaultConfig) getKubernetesConfig() *KubernetesConfig {
 	if err != nil {
 		podSchedulingTimeout = 60
 	}
+	nodeSelector := parseNodeSelector(dF.Caller.GetEnvironmentVariable("HUSKYCI_KUBERNETES_NODE_SELECTOR"))
+	tolerations := parseTolerations(dF.Caller.GetEnvironmentVariable("HUSKYCI_KUBERNETES_TOLERATIONS"))
 	return &KubernetesConfig{
 		ConfigFilePath:       configFilePath,
 		Namespace:            namespace,
 		ProxyAddress:         proxyAddress,
 		NoProxyAddresses:     noProxyAddresses,
 		PodSchedulingTimeout: podSchedulingTimeout,
+		NodeSelector:         nodeSelector,
+		Tolerations:          tolerations,
 	}
+}
+
+// parseNodeSelector parses a comma-separated "key=value" string into a map.
+func parseNodeSelector(raw string) map[string]string {
+	result := map[string]string{}
+	if raw == "" {
+		return result
+	}
+	for _, pair := range strings.Split(raw, ",") {
+		pair = strings.TrimSpace(pair)
+		kv := strings.SplitN(pair, "=", 2)
+		if len(kv) == 2 {
+			result[strings.TrimSpace(kv[0])] = strings.TrimSpace(kv[1])
+		}
+	}
+	return result
+}
+
+// parseTolerations parses a comma-separated "key=value:effect" string.
+func parseTolerations(raw string) []TolerationConfig {
+	var result []TolerationConfig
+	if raw == "" {
+		return result
+	}
+	for _, entry := range strings.Split(raw, ",") {
+		entry = strings.TrimSpace(entry)
+		parts := strings.SplitN(entry, ":", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		kv := strings.SplitN(strings.TrimSpace(parts[0]), "=", 2)
+		if len(kv) != 2 {
+			continue
+		}
+		result = append(result, TolerationConfig{
+			Key:    strings.TrimSpace(kv[0]),
+			Value:  strings.TrimSpace(kv[1]),
+			Effect: strings.TrimSpace(parts[1]),
+		})
+	}
+	return result
 }
 
 // GetDockerAPIPort will return the port number

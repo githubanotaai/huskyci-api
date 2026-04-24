@@ -132,7 +132,8 @@ type RubyResults struct {
 
 // GenericResults represents all generic securityTests results
 type GenericResults struct {
-	HuskyCIGitleaksOutput HuskyCISecurityTestOutput `bson:"gitleaksoutput,omitempty" json:"gitleaksoutput,omitempty"`
+	HuskyCIGitleaksOutput  HuskyCISecurityTestOutput `bson:"gitleaksoutput,omitempty" json:"gitleaksoutput,omitempty"`
+	HuskyCIWizCLIOutput    HuskyCISecurityTestOutput `bson:"wizclioutput,omitempty" json:"wizclioutput,omitempty"`
 }
 
 // HclResults represents all HCL security tests results.

@@ -65,6 +65,11 @@ func GenerateOutputFile(analysis types.Analysis, outputPath, outputFileName stri
 	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIGitleaksOutput.MediumVulns...)
 	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIGitleaksOutput.HighVulns...)
 
+	// wizcli
+	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIWizCLIOutput.LowVulns...)
+	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIWizCLIOutput.MediumVulns...)
+	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIWizCLIOutput.HighVulns...)
+
 	// spotbugs
 	allVulns = append(allVulns, analysis.HuskyCIResults.JavaResults.HuskyCISpotBugsOutput.LowVulns...)
 	allVulns = append(allVulns, analysis.HuskyCIResults.JavaResults.HuskyCISpotBugsOutput.MediumVulns...)
@@ -119,12 +124,6 @@ func GenerateOutputFile(analysis types.Analysis, outputPath, outputFileName stri
 	if err != nil {
 		return err
 	}
-
-	absolutePath, err := filepath.Abs(filepath.Join(outputPath, outputFileName))
-	if err != nil {
-		return fmt.Errorf("failed to resolve absolute path: %w", err)
-	}
-	fmt.Printf("[DEBUG] Absolute path for SonarQube JSON file: %s\n", absolutePath)
 
 	err = util.CreateFile(sonarOutputString, outputPath, outputFileName)
 	if err != nil {

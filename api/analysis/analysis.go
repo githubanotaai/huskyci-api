@@ -46,7 +46,8 @@ func StartAnalysis(RID string, repository types.Repository) {
 
 	var apiHost string
 
-	if infrastructureSelected == "docker" {
+	switch infrastructureSelected {
+	case "docker":
 		dockerAPIHost, err := apiContext.APIConfiguration.DBInstance.FindAndModifyDockerAPIAddresses()
 		if err != nil {
 			log.Error(logActionStart, logInfoAnalysis, 2011, err)
@@ -64,11 +65,11 @@ func StartAnalysis(RID string, repository types.Repository) {
 			log.Error(logActionStart, logInfoAnalysis, 2011, err)
 			return
 		}
-	} else if infrastructureSelected == "kubernetes" {
+	case "kubernetes":
 		// Assume that the Kubernetes host is set properly in the configuration or environment variables
 		// Implement any specific logic to get the Kubernetes API host if needed
 		apiHost = "kubernetes.default.svc" // Example host, replace with actual logic if needed
-	} else {
+	default:
 		err := errors.New("invalid HUSKYCI_INFRASTRUCTURE_USE value")
 		log.Error(logActionStart, logInfoAnalysis, 2011, err)
 		return
@@ -115,7 +116,7 @@ func registerNewAnalysis(RID string, repository types.Repository) error {
 func registerFinishedAnalysis(RID string, allScanResults *securitytest.RunAllInfo) error {
 	analysisQuery := map[string]interface{}{"RID": RID}
 	var errorString string
-	if _, ok := allScanResults.ErrorFound.(error); ok {
+	if allScanResults.ErrorFound != nil {
 		errorString = allScanResults.ErrorFound.Error()
 	} else {
 		errorString = ""

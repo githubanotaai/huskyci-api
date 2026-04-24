@@ -1,0 +1,8 @@
+version: "2"
+
+linters:
+  settings:
+    staticcheck:
+      checks:
+        - "all"
+        - "-ST*" # stylecheck rules -- legacy codebase naming conventions, too invasive to fix safely

@@ -26,6 +26,8 @@ type Kubernetes struct {
 	Namespace        string
 	ProxyAddress     string
 	NoProxyAddresses string
+	NodeSelector     map[string]string
+	Tolerations      []core.Toleration
 }
 
 const logActionNew = "NewKubernetes"
@@ -55,10 +57,26 @@ func NewKubernetes() (*Kubernetes, error) {
 		Namespace:        configAPI.KubernetesConfig.Namespace,
 		ProxyAddress:     configAPI.KubernetesConfig.ProxyAddress,
 		NoProxyAddresses: configAPI.KubernetesConfig.NoProxyAddresses,
+		NodeSelector:     configAPI.KubernetesConfig.NodeSelector,
+		Tolerations:      buildTolerations(configAPI.KubernetesConfig.Tolerations),
 	}
 
 	return kubernetes, nil
 
+}
+
+// buildTolerations converts TolerationConfig entries into core.Toleration objects.
+func buildTolerations(configs []apiContext.TolerationConfig) []core.Toleration {
+	var tolerations []core.Toleration
+	for _, tc := range configs {
+		tolerations = append(tolerations, core.Toleration{
+			Key:      tc.Key,
+			Operator: core.TolerationOpEqual,
+			Value:    tc.Value,
+			Effect:   core.TaintEffect(tc.Effect),
+		})
+	}
+	return tolerations
 }
 
 func (k Kubernetes) CreatePod(image, cmd, podName, securityTestName string) (string, error) {
@@ -100,6 +118,8 @@ func (k Kubernetes) CreatePod(image, cmd, podName, securityTestName string) (str
 					},
 				},
 			},
+			NodeSelector: k.NodeSelector,
+			Tolerations:  k.Tolerations,
 			TopologySpreadConstraints: []core.TopologySpreadConstraint{
 				{
 					MaxSkew:           1,
@@ -167,7 +187,7 @@ schedulingLoop:
 			return "", err
 		}
 
-		return "", errors.New(fmt.Sprintf("Timed-out waiting for pod scheduling: %s", name))
+		return "", fmt.Errorf("Timed-out waiting for pod scheduling: %s", name)
 	}
 
 	timeoutResult := func(i int64) *int64 { return &i }(int64(testTimeOutInSeconds))
@@ -202,7 +222,7 @@ schedulingLoop:
 		return "", err
 	}
 
-	return "", errors.New(fmt.Sprintf("Timed-out waiting for pod to finish: %s", name))
+	return "", fmt.Errorf("Timed-out waiting for pod to finish: %s", name)
 }
 
 func (k Kubernetes) ReadOutput(name string) (string, error) {
@@ -217,7 +237,7 @@ func (k Kubernetes) ReadOutput(name string) (string, error) {
 		}
 		return "", err
 	}
-	defer podLogs.Close()
+	defer func() { _ = podLogs.Close() }()
 
 	result, err := io.ReadAll(podLogs)
 	if err != nil {

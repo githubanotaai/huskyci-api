@@ -32,11 +32,14 @@ const logInfoAnalysis = "ANALYSIS"
 const logActionReceiveRequest = "ReceiveRequest"
 
 // HandleCmd will extract %GIT_REPO%, %GIT_BRANCH% from cmd and replace it with the proper repository URL.
+// Also replaces %WIZ_CLIENT_ID% and %WIZ_CLIENT_SECRET% with values from environment variables.
 func HandleCmd(repositoryURL, repositoryBranch, cmd string) string {
 	if repositoryURL != "" && repositoryBranch != "" && cmd != "" {
-		replace1 := strings.Replace(cmd, "%GIT_REPO%", repositoryURL, -1)
-		replace2 := strings.Replace(replace1, "%GIT_BRANCH%", repositoryBranch, -1)
-		return replace2
+		replace1 := strings.ReplaceAll(cmd, "%GIT_REPO%", repositoryURL)
+		replace2 := strings.ReplaceAll(replace1, "%GIT_BRANCH%", repositoryBranch)
+		replace3 := strings.ReplaceAll(replace2, "%WIZ_CLIENT_ID%", os.Getenv("HUSKYCI_API_WIZ_CLIENT_ID"))
+		replace4 := strings.ReplaceAll(replace3, "%WIZ_CLIENT_SECRET%", os.Getenv("HUSKYCI_API_WIZ_CLIENT_SECRET"))
+		return replace4
 	}
 	return ""
 }
@@ -50,8 +53,8 @@ func HandleGitURLSubstitution(rawString string) string {
 		gitSSHURL = "nil"
 		gitURLToSubstitute = "nil"
 	}
-	cmdReplaced := strings.Replace(rawString, "%GIT_SSH_URL%", gitSSHURL, -1)
-	cmdReplaced = strings.Replace(cmdReplaced, "%GIT_URL_TO_SUBSTITUTE%", gitURLToSubstitute, -1)
+	cmdReplaced := strings.ReplaceAll(rawString, "%GIT_SSH_URL%", gitSSHURL)
+	cmdReplaced = strings.ReplaceAll(cmdReplaced, "%GIT_URL_TO_SUBSTITUTE%", gitURLToSubstitute)
 
 	return cmdReplaced
 }
@@ -59,7 +62,7 @@ func HandleGitURLSubstitution(rawString string) string {
 // HandlePrivateSSHKey will extract %GIT_PRIVATE_SSH_KEY% from cmd and replace it with the proper private SSH key.
 func HandlePrivateSSHKey(rawString string) string {
 	privKey := os.Getenv("HUSKYCI_API_GIT_PRIVATE_SSH_KEY")
-	cmdReplaced := strings.Replace(rawString, "%GIT_PRIVATE_SSH_KEY%", privKey, -1)
+	cmdReplaced := strings.ReplaceAll(rawString, "%GIT_PRIVATE_SSH_KEY%", privKey)
 	return cmdReplaced
 }
 
@@ -96,8 +99,8 @@ func SanitizeSafetyJSON(s string) string {
 	if s == "" {
 		return ""
 	}
-	s1 := strings.Replace(s, "\\", "\\\\", -1)
-	s2 := strings.Replace(s1, "\\\"", "\\\\\"", -1)
+	s1 := strings.ReplaceAll(s, "\\", "\\\\")
+	s2 := strings.ReplaceAll(s1, "\\\"", "\\\\\"")
 	return s2
 }
 
@@ -117,7 +120,7 @@ func RemoveDuplicates(s []string) []string {
 
 // HandleScanError show the right error when json is not expected as output of scan
 func HandleScanError(containerOutput string, otherErr error) error {
-	return fmt.Errorf("%s\nError from top: %v\n", containerOutput, otherErr)
+	return fmt.Errorf("%s\nError from top: %v", containerOutput, otherErr)
 }
 
 // CheckValidInput checks if an user's input is "malicious" or not
@@ -195,8 +198,8 @@ func CheckMaliciousRID(RID string, c echo.Context) error {
 func AdjustWarningMessage(warningRaw string) string {
 	warning := strings.Split(warningRaw, ":")
 	if len(warning) > 1 {
-		warning[1] = strings.Replace(warning[1], "safety_huskyci_analysis_requirements_raw.txt", "'requirements.txt'", -1)
-		warning[1] = strings.Replace(warning[1], " unpinned", "Unpinned", -1)
+		warning[1] = strings.ReplaceAll(warning[1], "safety_huskyci_analysis_requirements_raw.txt", "'requirements.txt'")
+		warning[1] = strings.ReplaceAll(warning[1], " unpinned", "Unpinned")
 
 		return (warning[1] + " huskyCI can check it if you pin it in a format such as this: \"mypacket==3.2.9\" :D")
 	}

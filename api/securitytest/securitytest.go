@@ -27,6 +27,7 @@ var securityTestAnalyze = map[string]func(scanInfo *SecTestScanInfo) error{
 	"safety":           analyzeSafety,
 	"tfsec":            analyzeTFSec,
 	"securitycodescan": analyzeSecurityCodeScan,
+	"wizcli":           analyzeWizCLI,
 }
 
 // SecTestScanInfo holds all information of securityTest scan.

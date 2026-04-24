@@ -133,7 +133,7 @@ func (pR *PostgresRequests) FindAllDBAnalysis(
 // InsertDBRepository inserts a new repository into repository table.
 func (pR *PostgresRequests) InsertDBRepository(repository types.Repository) error {
 	if repository.URL == "" || time.Time.IsZero(repository.CreatedAt) {
-		return errors.New("Empty repository data")
+		return errors.New("empty repository data")
 	}
 	repositoryMap := map[string]interface{}{
 		"repositoryURL": repository.URL,
@@ -146,7 +146,7 @@ func (pR *PostgresRequests) InsertDBRepository(repository types.Repository) erro
 		return err
 	}
 	if rowsAff == int64(0) {
-		return errors.New("No data was inserted")
+		return errors.New("no data was inserted")
 	}
 	return nil
 }
@@ -154,7 +154,7 @@ func (pR *PostgresRequests) InsertDBRepository(repository types.Repository) erro
 // InsertDBSecurityTest inserts a new securityTest into securityTest table.
 func (pR *PostgresRequests) InsertDBSecurityTest(securityTest types.SecurityTest) error {
 	if (types.SecurityTest{}) == securityTest {
-		return errors.New("Empty SecurityTest data")
+		return errors.New("empty securityTest data")
 	}
 	securityTestMap := map[string]interface{}{
 		"name":           securityTest.Name,
@@ -173,7 +173,7 @@ func (pR *PostgresRequests) InsertDBSecurityTest(securityTest types.SecurityTest
 		return err
 	}
 	if rowsAff == int64(0) {
-		return errors.New("No data was inserted")
+		return errors.New("no data was inserted")
 	}
 	return nil
 }
@@ -181,7 +181,7 @@ func (pR *PostgresRequests) InsertDBSecurityTest(securityTest types.SecurityTest
 // InsertDBAnalysis inserts a new analysis into analysis table.
 func (pR *PostgresRequests) InsertDBAnalysis(analysis types.Analysis) error {
 	if analysis.URL == "" {
-		return errors.New("Empty Analysis data")
+		return errors.New("empty analysis data")
 	}
 	analysisMap := map[string]interface{}{
 		"RID":              analysis.RID,
@@ -201,7 +201,7 @@ func (pR *PostgresRequests) InsertDBAnalysis(analysis types.Analysis) error {
 		return err
 	}
 	if rowsAff == int64(0) {
-		return errors.New("No data was inserted")
+		return errors.New("no data was inserted")
 	}
 	return nil
 }
@@ -209,7 +209,7 @@ func (pR *PostgresRequests) InsertDBAnalysis(analysis types.Analysis) error {
 // InsertDBUser inserts a new user into user table.
 func (pR *PostgresRequests) InsertDBUser(user types.User) error {
 	if (types.User{}) == user {
-		return errors.New("Empty User data")
+		return errors.New("empty user data")
 	}
 	userMap := map[string]interface{}{
 		"username":     user.Username,
@@ -226,7 +226,7 @@ func (pR *PostgresRequests) InsertDBUser(user types.User) error {
 		return err
 	}
 	if rowsAff == int64(0) {
-		return errors.New("No data was inserted")
+		return errors.New("no data was inserted")
 	}
 	return nil
 }
@@ -251,7 +251,7 @@ func (pR *PostgresRequests) InsertDBAccessToken(accessToken types.DBToken) error
 		return err
 	}
 	if rowsAff == int64(0) {
-		return errors.New("No data was inserted")
+		return errors.New("no data was inserted")
 	}
 	return nil
 }
