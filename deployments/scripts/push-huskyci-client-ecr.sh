@@ -7,7 +7,7 @@
 #
 # Environment variables (all have defaults):
 #   AWS_REGION    - AWS region where the ECR repository lives  (default: us-east-1)
-#   ECR_REGISTRY  - ECR registry host                          (default: 939030204144.dkr.ecr.us-east-1.amazonaws.com)
+#   ECR_REGISTRY  - ECR registry host (required — no default account id in the repo)
 #   IMAGE_NAME    - ECR repository name                        (default: huskyci-client)
 #   IMAGE_TAG     - Tag to apply to the image                  (default: latest, or first positional arg)
 #
@@ -18,9 +18,13 @@
 set -euo pipefail
 
 AWS_REGION="${AWS_REGION:-us-east-1}"
-ECR_REGISTRY="${ECR_REGISTRY:-939030204144.dkr.ecr.us-east-1.amazonaws.com}"
 IMAGE_NAME="${IMAGE_NAME:-huskyci-client}"
 IMAGE_TAG="${1:-${IMAGE_TAG:-latest}}"
+
+if [ -z "${ECR_REGISTRY:-}" ]; then
+  echo "ERROR: ECR_REGISTRY is not set. Example: export ECR_REGISTRY=<account_id>.dkr.ecr.<region>.amazonaws.com" >&2
+  exit 1
+fi
 
 FULL_IMAGE="${ECR_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
 DOCKERFILE="deployments/dockerfiles/huskyci-client.Dockerfile"
