@@ -106,6 +106,13 @@ var _ = Describe("Util", func() {
 				Expect(util.HandlePrivateSSHKey(rawString)).To(Equal(expectedNotEmpty))
 			})
 		})
+		Context("When key is a one-liner with literal \\n (AWS Secrets Manager style)", func() {
+			It("Should expand escapes to real newlines in the injected key", func() {
+				os.Setenv("HUSKYCI_API_GIT_PRIVATE_SSH_KEY", "LINE_A\\nLINE_B")
+				expected := "echo 'LINE_A\nLINE_B' > ~/.ssh/huskyci_id_rsa &&"
+				Expect(util.HandlePrivateSSHKey(rawString)).To(Equal(expected))
+			})
+		})
 		Context("When rawString is empty and HUSKYCI_API_GIT_PRIVATE_SSH_KEY is not empty", func() {
 			It("Should return an empty string.", func() {
 				Expect(util.HandlePrivateSSHKey("")).To(Equal(""))

@@ -59,9 +59,27 @@ func HandleGitURLSubstitution(rawString string) string {
 	return cmdReplaced
 }
 
+// normalizeGitSSHPrivateKey expands common AWS Secrets Manager one-liner escapes so PEM uses real newlines.
+// Many secrets store PEM as a single line with the two-character sequence \ + n instead of an ASCII LF.
+func normalizeGitSSHPrivateKey(s string) string {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return s
+	}
+	s = strings.ReplaceAll(s, "\\r\\n", "\n")
+	s = strings.ReplaceAll(s, "\\n", "\n")
+	s = strings.ReplaceAll(s, "\\r", "\n")
+	return s
+}
+
+// NormalizeGitSSHPrivateKeyFromEnv applies the same unescaping used by HandlePrivateSSHKey (for tests/diagnostics).
+func NormalizeGitSSHPrivateKeyFromEnv(s string) string {
+	return normalizeGitSSHPrivateKey(s)
+}
+
 // HandlePrivateSSHKey will extract %GIT_PRIVATE_SSH_KEY% from cmd and replace it with the proper private SSH key.
 func HandlePrivateSSHKey(rawString string) string {
-	privKey := os.Getenv("HUSKYCI_API_GIT_PRIVATE_SSH_KEY")
+	privKey := normalizeGitSSHPrivateKey(os.Getenv("HUSKYCI_API_GIT_PRIVATE_SSH_KEY"))
 	cmdReplaced := strings.ReplaceAll(rawString, "%GIT_PRIVATE_SSH_KEY%", privKey)
 	return cmdReplaced
 }
