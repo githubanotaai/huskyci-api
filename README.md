@@ -79,6 +79,10 @@ docker build --platform linux/amd64 \
   -f deployments/dockerfiles/client.Dockerfile .
 ```
 
+**CI contract checks (Gitleaks & deploy scripts).** The [`CI`](.github/workflows/ci.yaml) workflow includes jobs that: build the Gitleaks image from [deployments/dockerfiles/gitleaks/Dockerfile](deployments/dockerfiles/gitleaks/Dockerfile) and assert the `gitleaks` binary is **v8**; run `gitleaks dir` on a **fixture** with one expected finding ([api/securitytest/testdata/gitleaks_e2e_fixture](api/securitytest/testdata/gitleaks_e2e_fixture)); and run [deployments/scripts/verify-depl-scripts.sh](deployments/scripts/verify-depl-scripts.sh) (`bash -n` on registry/push entrypoints). That complements unit tests in `api/securitytest` and `api/context` and does not push to any registry from CI.
+
+**Manual Gitleaks image e2e (optional).** The API’s `HUSKYCI_GITLEAKS_IMAGE` and `HUSKYCI_GITLEAKS_IMAGE_TAG` overrides are covered by unit tests (`api/context`); to validate end-to-end with a real cluster, run the API (e.g. docker-compose or your environment), set those variables to a registry and tag you control, and run a security test that uses Gitleaks, then confirm scanner pods use the expected image in Kubernetes or Docker.
+
 ### Pushing images to a registry
 
 Registry hosts and account IDs are not hardcoded in scripts. Set environment variables when pushing.
