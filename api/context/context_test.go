@@ -456,11 +456,37 @@ var _ = Describe("Context", func() {
 						Default:          fakeCaller.expectedBoolFromConfig,
 						TimeOutInSeconds: fakeCaller.expectedIntFromConfig,
 					},
+					WizcliSecurityTest: &types.SecurityTest{
+						Name:             fakeCaller.expectedStringFromConfig,
+						Image:            fakeCaller.expectedStringFromConfig,
+						ImageTag:         fakeCaller.expectedStringFromConfig,
+						Cmd:              fakeCaller.expectedStringFromConfig,
+						Type:             fakeCaller.expectedStringFromConfig,
+						Language:         fakeCaller.expectedStringFromConfig,
+						Default:          fakeCaller.expectedBoolFromConfig,
+						TimeOutInSeconds: fakeCaller.expectedIntFromConfig,
+					},
 					DBInstance: &db.MongoRequests{},
 					Cache:      apiConfig.Cache, // cannot be compared due to channels inside the structure
 				}
 				Expect(apiConfig).To(Equal(expectedConfig))
 				Expect(err).To(BeNil())
+			})
+		})
+	})
+	Describe("SetOnceConfig", func() {
+		Context("When SetOnceConfig is called with a FakeCaller returning 'wizcli' for string config", func() {
+			It("Should set WizcliSecurityTest with the expected name", func() {
+				fakeCaller := FakeCaller{
+					expectedStringFromConfig: "wizcli",
+				}
+				config := DefaultConfig{
+					Caller: &fakeCaller,
+				}
+				ResetOnceConfig()
+				config.SetOnceConfig()
+				Expect(APIConfiguration.WizcliSecurityTest).NotTo(BeNil())
+				Expect(APIConfiguration.WizcliSecurityTest.Name).To(Equal("wizcli"))
 			})
 		})
 	})

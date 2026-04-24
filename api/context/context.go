@@ -104,6 +104,7 @@ type APIConfig struct {
 	SafetySecurityTest           *types.SecurityTest
 	TFSecSecurityTest            *types.SecurityTest
 	SecurityCodeScanSecurityTest *types.SecurityTest
+	WizcliSecurityTest           *types.SecurityTest
 	DBInstance                   db.Requests
 	Cache                        *cache.Cache
 }
@@ -123,6 +124,12 @@ func (dF DefaultConfig) GetAPIConfig() (*APIConfig, error) {
 	}
 	dF.SetOnceConfig()
 	return APIConfiguration, nil
+}
+
+// ResetOnceConfig resets the onceConfig sync.Once so SetOnceConfig can be called again.
+// This is intended for use in tests only.
+func ResetOnceConfig() {
+	onceConfig = sync.Once{}
 }
 
 // SetOnceConfig sets APIConfiguration once
@@ -151,6 +158,7 @@ func (dF DefaultConfig) SetOnceConfig() {
 			SafetySecurityTest:           dF.getSecurityTestConfig("safety"),
 			TFSecSecurityTest:            dF.getSecurityTestConfig("tfsec"),
 			SecurityCodeScanSecurityTest: dF.getSecurityTestConfig("securitycodescan"),
+			WizcliSecurityTest:           dF.getSecurityTestConfig("wizcli"),
 			DBInstance:                   dF.GetDB(),
 			Cache:                        dF.GetCache(),
 		}
