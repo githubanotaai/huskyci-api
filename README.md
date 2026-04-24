@@ -79,6 +79,23 @@ docker build --platform linux/amd64 \
   -f deployments/dockerfiles/client.Dockerfile .
 ```
 
+### Pushing images to a registry
+
+Registry hosts and account IDs are not hardcoded in scripts. Set environment variables when pushing.
+
+**Gitleaks image** — [deployments/scripts/push-huskyci-gitleaks.sh](deployments/scripts/push-huskyci-gitleaks.sh) builds from [deployments/dockerfiles/gitleaks/Dockerfile](deployments/dockerfiles/gitleaks/Dockerfile) and pushes by version plus `latest`.
+
+| Variable | Description |
+|----------|-------------|
+| `HUSKYCI_PUSH_TARGET` | `docker` (default) or `ecr` |
+| `ECR_REGISTRY` | Required for ECR, e.g. `123456789012.dkr.ecr.us-east-1.amazonaws.com` |
+| `AWS_REGION` | Required for ECR (e.g. `us-east-1`) |
+| `GITLEAKS_ECR_REPOSITORY` | ECR repository name (default: `huskyci-gitleaks`) |
+| `DOCKERHUB_ORG` | Docker Hub org for `docker` target (default: `huskyci`) |
+| `DOCKERHUB_USER` / `DOCKERHUB_PASSWORD` | Optional; otherwise use an existing `docker login` on the host |
+
+**Client image to ECR** — [deployments/scripts/push-huskyci-client-ecr.sh](deployments/scripts/push-huskyci-client-ecr.sh) requires `ECR_REGISTRY` (and uses `AWS_REGION`, optional `IMAGE_NAME` / `IMAGE_TAG`).
+
 ## Configuration
 
 ### API environment variables
@@ -97,6 +114,8 @@ docker build --platform linux/amd64 \
 | `HUSKYCI_KUBERNETES_NODE_SELECTOR` | Node selector for scanner pods (e.g. `karpenter.sh/nodepool=actions-runner`) |
 | `HUSKYCI_KUBERNETES_TOLERATIONS` | Tolerations for scanner pods (e.g. `actions-runner=true:NoSchedule`) |
 | `HUSKYCI_KUBERNETES_POD_SCHEDULING_TIMEOUT` | Timeout in seconds for pod scheduling (default: 60) |
+| `HUSKYCI_GITLEAKS_IMAGE` | If set, overrides the Gitleaks container image from `config.yaml` (e.g. ECR URL) |
+| `HUSKYCI_GITLEAKS_IMAGE_TAG` | If set, overrides the Gitleaks image tag from `config.yaml` |
 
 ### Client environment variables
 
