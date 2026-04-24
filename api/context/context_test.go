@@ -27,6 +27,12 @@ func (fC *FakeCaller) ConvertStrToInt(str string) (int, error) {
 }
 
 func (fC *FakeCaller) GetEnvironmentVariable(envName string) string {
+	// Gitleaks image overrides are read for every getSecurityTestConfig("gitleaks") call; the
+	// generic GetAPIConfig test uses the same expectedEnvVar for all other env keys and must
+	// not treat that as a gitleaks override.
+	if envName == "HUSKYCI_GITLEAKS_IMAGE" || envName == "HUSKYCI_GITLEAKS_IMAGE_TAG" {
+		return ""
+	}
 	return fC.expectedEnvVar
 }
 

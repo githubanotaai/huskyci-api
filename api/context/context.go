@@ -414,7 +414,7 @@ func (dF DefaultConfig) GetDockerAPITLSVerify() int {
 }
 
 func (dF DefaultConfig) getSecurityTestConfig(securityTestName string) *types.SecurityTest {
-	return &types.SecurityTest{
+	st := &types.SecurityTest{
 		Name:             dF.Caller.GetStringFromConfigFile(fmt.Sprintf("%s.name", securityTestName)),
 		Image:            dF.Caller.GetStringFromConfigFile(fmt.Sprintf("%s.image", securityTestName)),
 		ImageTag:         dF.Caller.GetStringFromConfigFile(fmt.Sprintf("%s.imageTag", securityTestName)),
@@ -424,6 +424,15 @@ func (dF DefaultConfig) getSecurityTestConfig(securityTestName string) *types.Se
 		Default:          dF.Caller.GetBoolFromConfigFile(fmt.Sprintf("%s.default", securityTestName)),
 		TimeOutInSeconds: dF.Caller.GetIntFromConfigFile(fmt.Sprintf("%s.timeOutInSeconds", securityTestName)),
 	}
+	if securityTestName == "gitleaks" {
+		if v := dF.Caller.GetEnvironmentVariable("HUSKYCI_GITLEAKS_IMAGE"); v != "" {
+			st.Image = v
+		}
+		if v := dF.Caller.GetEnvironmentVariable("HUSKYCI_GITLEAKS_IMAGE_TAG"); v != "" {
+			st.ImageTag = v
+		}
+	}
+	return st
 }
 
 // GetDB returns a Requests implementation based on the
