@@ -2,6 +2,7 @@ package securitytest
 
 import (
 	"bufio"
+	"errors"
 	"regexp"
 	"strings"
 
@@ -21,6 +22,11 @@ func analyzeWizCLI(scanInfo *SecTestScanInfo) error {
 	if strings.Contains(output, "ERROR_AUTH_WIZCLI") {
 		scanInfo.ErrorFound = nil
 		return nil
+	}
+
+	if strings.Contains(output, "ERROR_RUNNING_WIZCLI_SCAN") {
+		scanInfo.ErrorFound = errors.New("wizcli dir scan failed with a non-findings exit code")
+		return scanInfo.ErrorFound
 	}
 
 	vulns := parseWizCLIStdout(output)

@@ -5,6 +5,7 @@ import (
 	"os"
 
 	apiContext "github.com/githubanotaai/huskyci-api/api/context"
+	"github.com/githubanotaai/huskyci-api/api/types"
 	apiUtil "github.com/githubanotaai/huskyci-api/api/util/api"
 	"github.com/globocom/glbgelf"
 	. "github.com/onsi/ginkgo"
@@ -112,6 +113,18 @@ var _ = Describe("Util API", func() {
 			}
 			It("Should return nil", func() {
 				Expect(huskyCheck.CheckHuskyRequirements(checkHuskyTests[4].configApi)).To(BeNil())
+			})
+		})
+	})
+
+	Describe("APIConfig WizcliSecurityTest wiring", func() {
+		Context("When WizcliSecurityTest is provided in configAPI", func() {
+			It("WizcliSecurityTest should be non-nil when provided in configAPI", func() {
+				cfg := &apiContext.APIConfig{
+					WizcliSecurityTest: &types.SecurityTest{Name: "wizcli"},
+				}
+				Expect(cfg.WizcliSecurityTest).NotTo(BeNil())
+				Expect(cfg.WizcliSecurityTest.Name).To(Equal("wizcli"))
 			})
 		})
 	})
