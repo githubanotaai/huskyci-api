@@ -416,6 +416,7 @@ securitycodescan:
   language: C#
   default: true
   timeOutInSeconds: 360
+
 wizcli:
   name: wizcli
   image: 939030204144.dkr.ecr.us-east-1.amazonaws.com/huskyci-wiz
@@ -436,7 +437,11 @@ wizcli:
             cat /tmp/errorWizAuth
         else
             wizcli dir scan --path ./code --sensitive-data --secrets \
-              --file-hashes-scan --policy "aai-secrets-default-policy" 2>&1 || true
+              --file-hashes-scan --policy "aai-secrets-default-policy" 2>&1
+            SCAN_RC=$?
+            if [ $SCAN_RC -ge 2 ]; then
+              echo "ERROR_RUNNING_WIZCLI_SCAN"
+            fi
         fi
     else
         echo "ERROR_CLONING"
