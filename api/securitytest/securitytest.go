@@ -2,6 +2,7 @@ package securitytest
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -141,7 +142,13 @@ func (scanInfo *SecTestScanInfo) kubeRun(timeOutInSeconds int) error {
 func (scanInfo *SecTestScanInfo) analyze() error {
 	errorCloning := strings.Contains(scanInfo.Container.COutput, "ERROR_CLONING")
 	if errorCloning {
-		errorMsg := errors.New("error cloning")
+		hint := extractGitCloneFailureHint(scanInfo.Container.COutput)
+		var errorMsg error
+		if hint != "" {
+			errorMsg = fmt.Errorf("error cloning: %s", hint)
+		} else {
+			errorMsg = errors.New("error cloning")
+		}
 		log.Error("analyze", "SECURITYTEST", 1031, scanInfo.URL, scanInfo.Branch, errorMsg)
 		scanInfo.ErrorFound = errorMsg
 		return errorMsg
