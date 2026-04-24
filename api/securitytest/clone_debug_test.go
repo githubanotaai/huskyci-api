@@ -16,35 +16,6 @@ func TestExtractGitCloneFailureHint_PublicKey(t *testing.T) {
 	}
 }
 
-func TestSSHKeyEnvDiagnostics_NoSecrets(t *testing.T) {
-	t.Setenv("HUSKYCI_API_GIT_PRIVATE_SSH_KEY", "-----BEGIN TEST-----\nLINE\n-----END TEST-----")
-	t.Setenv("HUSKYCI_API_GIT_SSH_URL", "")
-	t.Setenv("HUSKYCI_API_GIT_URL_TO_SUBSTITUTE", "")
-	d := sshKeyEnvDiagnostics()
-	if d["beginsBEGIN"] != true {
-		t.Fatalf("beginsBEGIN: %v", d["beginsBEGIN"])
-	}
-	if d["newlineCountRaw"].(int) < 1 {
-		t.Fatalf("newlineCountRaw: %v", d["newlineCountRaw"])
-	}
-}
-
-func TestSSHKeyEnvDiagnostics_AWSOneLinerLiteralN(t *testing.T) {
-	t.Setenv("HUSKYCI_API_GIT_PRIVATE_SSH_KEY", "-----BEGIN X-----\\nABC\\n-----END X-----")
-	t.Setenv("HUSKYCI_API_GIT_SSH_URL", "")
-	t.Setenv("HUSKYCI_API_GIT_URL_TO_SUBSTITUTE", "")
-	d := sshKeyEnvDiagnostics()
-	if d["newlineCountRaw"].(int) != 0 {
-		t.Fatalf("raw PEM one-liner should have zero real LF: got %v", d["newlineCountRaw"])
-	}
-	if d["newlineCountAfterNorm"].(int) < 2 {
-		t.Fatalf("after API normalization expect multiple LFs: got %v", d["newlineCountAfterNorm"])
-	}
-	if d["literalBackslashNPair"] != true {
-		t.Fatalf("expected literal \\\\n in secret: %v", d["literalBackslashNPair"])
-	}
-}
-
 func TestExtractGitCloneFailureHint_StripsPEM(t *testing.T) {
 	raw := "ERROR_CLONING\n-----BEGIN RSA PRIVATE KEY-----\nMIIE\n-----END RSA PRIVATE KEY-----\nPermission denied (publickey)."
 	got := extractGitCloneFailureHint(raw)
