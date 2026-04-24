@@ -6,6 +6,7 @@ package securitytest
 
 import (
 	"encoding/json"
+	"strconv"
 	"strings"
 
 	"github.com/githubanotaai/huskyci-api/api/log"
@@ -16,21 +17,65 @@ import (
 // GitleaksOutput is the struct that holds all data from Gitleaks output.
 type GitleaksOutput []GitLeaksIssue
 
-// GitLeaksIssue is the struct that holds all isssues from Gitleaks output.
+// GitLeaksIssue holds gitleaks/gitleaks v8 JSON findings; v7 fields are preserved for legacy cOutput.
+// See https://github.com/gitleaks/gitleaks/blob/master/report/finding.go
 type GitLeaksIssue struct {
-	Line          string `json:"line"`
-	Commit        string `json:"commit"`
+	RuleID        string   `json:"RuleID"`
+	Description   string   `json:"Description"`
+	StartLine     int      `json:"StartLine"`
+	EndLine       int      `json:"EndLine"`
+	StartColumn   int      `json:"StartColumn"`
+	EndColumn     int      `json:"EndColumn"`
+	Match         string   `json:"Match"`
+	Secret        string   `json:"Secret"`
+	File          string   `json:"File"`
+	SymlinkFile   string   `json:"SymlinkFile"`
+	Commit        string   `json:"Commit"`
+	Entropy       float64  `json:"Entropy"`
+	Author        string   `json:"Author"`
+	Email         string   `json:"Email"`
+	Date          string   `json:"Date"`
+	Message       string   `json:"Message"`
+	Tags          []string `json:"Tags"`
+	Fingerprint   string   `json:"Fingerprint"`
+	LineContentV8 string   `json:"Line"`
+
+	// v7 legacy (gitleaks v6/v7 report)
 	Offender      string `json:"offender"`
-	Rule          string `json:"rule"`
 	Info          string `json:"info"`
 	CommitMessage string `json:"commitMsg"`
-	Author        string `json:"author"`
-	Email         string `json:"email"`
-	File          string `json:"file"`
 	Repository    string `json:"repo"`
-	Date          string `json:"date"`
-	Tags          string `json:"tags"`
-	Severity      string `json:"severity"`
+	RuleV7        string `json:"rule"`
+	SeverityV7    string `json:"severity"`
+	LineV7        string `json:"line"`
+	TagsV7        string `json:"tags"`
+}
+
+func (i GitLeaksIssue) effectiveRule() string {
+	if i.RuleID != "" {
+		return i.RuleID
+	}
+	return i.RuleV7
+}
+
+func (i GitLeaksIssue) lineNumberString() string {
+	if i.StartLine > 0 {
+		return strconv.Itoa(i.StartLine)
+	}
+	if n, err := strconv.Atoi(strings.TrimSpace(i.LineV7)); err == nil && n > 0 {
+		return strconv.Itoa(n)
+	}
+	return ""
+}
+
+func (i GitLeaksIssue) codeSnippet() string {
+	if i.Match != "" {
+		return i.Match
+	}
+	if i.LineContentV8 != "" {
+		return i.LineContentV8
+	}
+	return i.LineV7
 }
 
 func analyseGitleaks(gitleaksScan *SecTestScanInfo) error {
@@ -110,23 +155,23 @@ func (gitleaksScan *SecTestScanInfo) prepareGitleaksVulns() {
 			continue
 		}
 
+		rule := issue.effectiveRule()
 		gitleaksVuln := types.HuskyCIVulnerability{}
 		gitleaksVuln.SecurityTool = "GitLeaks"
-		gitleaksVuln.Title = issue.Rule + " sensitive data found"
 		gitleaksVuln.File = issue.File
-		gitleaksVuln.Code = issue.Line
-		gitleaksVuln.Title = "Hard Coded " + issue.Rule + " in: " + issue.File
-
-		switch issue.Rule {
-		case "PKCS8", "RSA", "SSH", "PGP", "EC":
-			gitleaksVuln.Severity = "HIGH"
-		case "AWS Secret Key", "Facebook Secret Key", "Facebook access token", "Twitter Secret Key", "LinkedIn Secret Key", "Google OAuth access token", "Google Cloud Platform API key", "Heroku API key", "MailChimp API key", "Mailgun API key", "PayPal Braintree access token", "Picatic API key", "Stripe API key", "Twilio API key":
-			gitleaksVuln.Severity = "MEDIUM"
-		default:
-			gitleaksVuln.Severity = "LOW"
+		gitleaksVuln.Code = issue.codeSnippet()
+		gitleaksVuln.Line = issue.lineNumberString()
+		if issue.Description != "" {
+			gitleaksVuln.Details = issue.Description
+		} else if issue.Info != "" {
+			gitleaksVuln.Details = issue.Info
 		}
+		gitleaksVuln.Title = "Hard Coded " + rule + " in: " + issue.File
 
-		switch gitleaksVuln.Severity {
+		bucket := gitleaksBucketSeverity(rule)
+		gitleaksVuln.Severity = strings.ToLower(bucket)
+
+		switch bucket {
 		case "LOW":
 			huskyCIgitleaksResults.LowVulns = append(huskyCIgitleaksResults.LowVulns, gitleaksVuln)
 		case "MEDIUM":
