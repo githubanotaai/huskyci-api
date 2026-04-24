@@ -309,3 +309,44 @@ func TestAnalyzeWizCLI_ErrorAuth(t *testing.T) {
 		t.Errorf("expected zero vulns on auth error, got %d", total)
 	}
 }
+
+// ── TestAnalyzeWizCLI_ScanError ───────────────────────────────────────────────
+
+// TestAnalyzeWizCLI_ScanError verifies that ERROR_RUNNING_WIZCLI_SCAN surfaces as an error.
+func TestAnalyzeWizCLI_ScanError(t *testing.T) {
+	scanInfo := &SecTestScanInfo{}
+	scanInfo.Container.COutput = "some partial output\nERROR_RUNNING_WIZCLI_SCAN\n"
+
+	err := analyzeWizCLI(scanInfo)
+	if err == nil {
+		t.Fatal("expected non-nil error when ERROR_RUNNING_WIZCLI_SCAN is present, got nil")
+	}
+	if scanInfo.ErrorFound == nil {
+		t.Error("expected scanInfo.ErrorFound to be set, got nil")
+	}
+}
+
+// ── TestAnalyzeWizCLI_FindingsNoSentinel ─────────────────────────────────────
+
+// TestAnalyzeWizCLI_FindingsNoSentinel verifies that a normal findings output
+// (exit code 1 scenario) does NOT produce an error — only classified vulns.
+func TestAnalyzeWizCLI_FindingsNoSentinel(t *testing.T) {
+	const input = `Secrets:
+  Secret description: AWS Key
+  Severity: HIGH
+  Path: ./code/.env
+`
+	scanInfo := &SecTestScanInfo{}
+	scanInfo.Container.COutput = input
+
+	err := analyzeWizCLI(scanInfo)
+	if err != nil {
+		t.Fatalf("expected nil error for findings-only output, got: %v", err)
+	}
+	if scanInfo.ErrorFound != nil {
+		t.Errorf("expected scanInfo.ErrorFound to be nil, got: %v", scanInfo.ErrorFound)
+	}
+	if len(scanInfo.Vulnerabilities.HighVulns) == 0 {
+		t.Error("expected at least one HIGH vuln to be populated")
+	}
+}
