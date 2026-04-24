@@ -1,0 +1,2 @@
+# Deliberate test string for gitleaks CI: format matches github-pat (not a real secret).
+ghp_12abcdefghijklmnopqrstuvwx12345678abcdef
