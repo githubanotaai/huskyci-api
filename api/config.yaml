@@ -420,7 +420,7 @@ securitycodescan:
 wizcli:
   name: wizcli
   image: 939030204144.dkr.ecr.us-east-1.amazonaws.com/huskyci-wiz
-  imageTag: "latest"
+  imageTag: "latest-amd64"
   cmd: |+
     mkdir -p ~/.ssh &&
     echo '%GIT_PRIVATE_SSH_KEY%' > ~/.ssh/huskyci_id_rsa &&
