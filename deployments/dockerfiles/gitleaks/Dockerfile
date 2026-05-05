@@ -1,9 +1,11 @@
-# Dockerfile used to create "husyci/gitleaks" image
+# Dockerfile used to create "huskyci/gitleaks" image
+# https://github.com/gitleaks/gitleaks/pkgs/container/gitleaks
 # https://hub.docker.com/r/huskyci/gitleaks/
 
-FROM zricethezav/gitleaks
+ARG GITLEAKS_VERSION=8.30.1
+FROM ghcr.io/gitleaks/gitleaks:v${GITLEAKS_VERSION}
 
-RUN apk --no-cache add ca-certificates openssh-client jq
+RUN apk add --no-cache ca-certificates openssh-client jq
 
 ENTRYPOINT []
 CMD ["/bin/sh"]

@@ -1,8 +1,14 @@
+# See https://github.com/gitleaks/gitleaks/blob/master/config/gitleaks.toml
 title = "gitleaks config"
-[whitelist]
-files = [
-  "(.*?)(jpg|gif|doc|pdf|bin)$",
-  "^vendor/(.*?)$",
-  "testdata/(.*?)$",
-  "^.gitleaks.toml$",
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "HuskyCI API repo: asset and vendor noise"
+paths = [
+  '''(.*?)(jpg|gif|doc|pdf|bin)$''',
+  '''^vendor/(.*)$''',
+  '''testdata/''',
+  '''^.gitleaks\.toml$''',
 ]

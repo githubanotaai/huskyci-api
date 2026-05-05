@@ -79,6 +79,27 @@ docker build --platform linux/amd64 \
   -f deployments/dockerfiles/client.Dockerfile .
 ```
 
+**CI contract checks (Gitleaks & deploy scripts).** The [`CI`](.github/workflows/ci.yaml) workflow includes jobs that: build the Gitleaks image from [deployments/dockerfiles/gitleaks/Dockerfile](deployments/dockerfiles/gitleaks/Dockerfile) and assert the `gitleaks` binary is **v8**; run `gitleaks dir` on a **fixture** with one expected finding ([api/securitytest/testdata/gitleaks_e2e_fixture](api/securitytest/testdata/gitleaks_e2e_fixture)); and run [deployments/scripts/verify-depl-scripts.sh](deployments/scripts/verify-depl-scripts.sh) (`bash -n` on registry/push entrypoints). That complements unit tests in `api/securitytest` and `api/context` and does not push to any registry from CI.
+
+**Manual Gitleaks image e2e (optional).** The API’s `HUSKYCI_GITLEAKS_IMAGE` and `HUSKYCI_GITLEAKS_IMAGE_TAG` overrides are covered by unit tests (`api/context`); to validate end-to-end with a real cluster, run the API (e.g. docker-compose or your environment), set those variables to a registry and tag you control, and run a security test that uses Gitleaks, then confirm scanner pods use the expected image in Kubernetes or Docker.
+
+### Pushing images to a registry
+
+Registry hosts and account IDs are not hardcoded in scripts. Set environment variables when pushing.
+
+**Gitleaks image** — [deployments/scripts/push-huskyci-gitleaks.sh](deployments/scripts/push-huskyci-gitleaks.sh) builds from [deployments/dockerfiles/gitleaks/Dockerfile](deployments/dockerfiles/gitleaks/Dockerfile) and pushes by version plus `latest`.
+
+| Variable | Description |
+|----------|-------------|
+| `HUSKYCI_PUSH_TARGET` | `docker` (default) or `ecr` |
+| `ECR_REGISTRY` | Required for ECR, e.g. `123456789012.dkr.ecr.us-east-1.amazonaws.com` |
+| `AWS_REGION` | Required for ECR (e.g. `us-east-1`) |
+| `GITLEAKS_ECR_REPOSITORY` | ECR repository name (default: `huskyci-gitleaks`) |
+| `DOCKERHUB_ORG` | Docker Hub org for `docker` target (default: `huskyci`) |
+| `DOCKERHUB_USER` / `DOCKERHUB_PASSWORD` | Optional; otherwise use an existing `docker login` on the host |
+
+**Client image to ECR** — [deployments/scripts/push-huskyci-client-ecr.sh](deployments/scripts/push-huskyci-client-ecr.sh) requires `ECR_REGISTRY` (and uses `AWS_REGION`, optional `IMAGE_NAME` / `IMAGE_TAG`).
+
 ## Configuration
 
 ### API environment variables
@@ -97,6 +118,8 @@ docker build --platform linux/amd64 \
 | `HUSKYCI_KUBERNETES_NODE_SELECTOR` | Node selector for scanner pods (e.g. `karpenter.sh/nodepool=actions-runner`) |
 | `HUSKYCI_KUBERNETES_TOLERATIONS` | Tolerations for scanner pods (e.g. `actions-runner=true:NoSchedule`) |
 | `HUSKYCI_KUBERNETES_POD_SCHEDULING_TIMEOUT` | Timeout in seconds for pod scheduling (default: 60) |
+| `HUSKYCI_GITLEAKS_IMAGE` | If set, overrides the Gitleaks container image from `config.yaml` (e.g. ECR URL) |
+| `HUSKYCI_GITLEAKS_IMAGE_TAG` | If set, overrides the Gitleaks image tag from `config.yaml` |
 
 ### Client environment variables
 
@@ -154,7 +177,7 @@ huskyCI is licensed under the [BSD 3-Clause License](LICENSE.md).
 [Gosec]: https://github.com/securego/gosec
 [NpmAudit]: https://docs.npmjs.com/cli/audit
 [YarnAudit]: https://yarnpkg.com/lang/en/docs/cli/audit/
-[Gitleaks]: https://github.com/zricethezav/gitleaks
+[Gitleaks]: https://github.com/gitleaks/gitleaks
 [SpotBugs]: https://spotbugs.github.io
 [FindSec]: https://find-sec-bugs.github.io
 [TFSec]: https://github.com/liamg/tfsec

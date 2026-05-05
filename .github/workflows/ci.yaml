@@ -77,3 +77,40 @@ jobs:
 
       - name: Build image
         run: docker build -f ${{ matrix.dockerfile }} .
+
+  gitleaks-contract:
+    name: Gitleaks image & contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Gitleaks image
+        run: docker build -f deployments/dockerfiles/gitleaks/Dockerfile -t huskyci/gitleaks:ci .
+
+      - name: Assert gitleaks v8
+        run: |
+          v=$(docker run --rm huskyci/gitleaks:ci gitleaks version | head -1)
+          echo "gitleaks version: $v"
+          echo "$v" | grep -E 'v?8\.'
+
+      - name: Contract — gitleaks dir on fixture (one finding)
+        run: |
+          set +e
+          out=$(docker run --rm -v "$GITHUB_WORKSPACE/api/securitytest/testdata/gitleaks_e2e_fixture:/scan" \
+            huskyci/gitleaks:ci gitleaks dir /scan -f json -r - -l error --no-banner 2>/dev/null)
+          ex=$?
+          set -e
+          if [ "$ex" -ne 0 ] && [ "$ex" -ne 1 ]; then
+            echo "gitleaks exited with $ex" >&2
+            exit 1
+          fi
+          echo "$out" | jq -e 'type == "array" and (length == 1) and .[0].RuleID == "github-pat"'
+
+  deployment-shell:
+    name: Deployment shell (bash -n)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: verify-depl-scripts
+        run: bash deployments/scripts/verify-depl-scripts.sh

@@ -333,7 +333,7 @@ spotbugs:
 gitleaks:
   name: gitleaks
   image: huskyci/gitleaks
-  imageTag: "v.7.6.1"
+  imageTag: "8.30.1"
   cmd: |+
     mkdir -p ~/.ssh &&
     echo '%GIT_PRIVATE_SSH_KEY%' > ~/.ssh/huskyci_id_rsa &&
@@ -343,15 +343,16 @@ gitleaks:
     GIT_TERMINAL_PROMPT=0 git clone -b %GIT_BRANCH% --single-branch --depth 1 %GIT_REPO% code --quiet 2> /tmp/errorGitCloneGitleaks
     if [ $? -eq 0 ]; then
         touch /tmp/results.json
-        $(which gitleaks) --no-git --report=/tmp/results.json --path=./code --branch=%GIT_BRANCH% --append-repo-config --threads=2 --format=json &> /tmp/errorGitleaks
-        if [[ $? -eq 124 || $? -eq 143 ]]; then #timeout exit codes
+        $(which gitleaks) dir ./code -f json -r /tmp/results.json --no-banner -l error 2> /tmp/errorGitleaks
+        gl_ex=$?
+        if [ $gl_ex -eq 124 ] || [ $gl_ex -eq 143 ]; then
             echo 'ERROR_TIMEOUT_GITLEAKS'
             cat /tmp/errorGitleaks
-        elif [ $? -eq 2 ]; then
+        elif jq -e . /tmp/results.json >/dev/null 2>&1; then
+            jq -j -M -c . /tmp/results.json
+        else
             echo 'ERROR_RUNNING_GITLEAKS'
             cat /tmp/errorGitleaks
-        else
-            jq -j -M -c . /tmp/results.json
         fi
     else
         echo "ERROR_CLONING"
@@ -420,7 +421,7 @@ securitycodescan:
 wizcli:
   name: wizcli
   image: 939030204144.dkr.ecr.us-east-1.amazonaws.com/huskyci-wiz
-  imageTag: "latest"
+  imageTag: "latest-amd64"
   cmd: |+
     mkdir -p ~/.ssh &&
     echo '%GIT_PRIVATE_SSH_KEY%' > ~/.ssh/huskyci_id_rsa &&
