@@ -436,10 +436,14 @@ wizcli:
             cat /tmp/errorWizAuth
         else
             wizcli dir scan --path ./code --sensitive-data --secrets \
-              --file-hashes-scan --policy "aai-secrets-default-policy" 2>&1
+              --file-hashes-scan --policy "aai-secrets-default-policy" \
+              -f json > /tmp/wizResult.json 2> /tmp/errorWizScan
             SCAN_RC=$?
             if [ $SCAN_RC -ge 2 ]; then
               echo "ERROR_RUNNING_WIZCLI_SCAN"
+              cat /tmp/errorWizScan
+            else
+              cat /tmp/wizResult.json
             fi
         fi
     else

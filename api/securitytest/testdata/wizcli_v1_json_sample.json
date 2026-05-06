@@ -1,0 +1,867 @@
+{
+  "id": "0069faa4-330b-8e5c-932c-970e54148001",
+  "projects": [
+    {
+      "id": "b4ce9215-eca0-50f1-97b3-6c0224097997"
+    }
+  ],
+  "createdAt": "2026-05-06T02:15:22.245239962Z",
+  "startedAt": "2026-05-06T02:15:15.871529285Z",
+  "createdBy": {
+    "serviceAccount": {
+      "id": "***REDACTED***"
+    }
+  },
+  "status": {
+    "state": "SUCCESS",
+    "verdict": "PASSED_BY_POLICY"
+  },
+  "policies": [
+    {
+      "id": "5e9561cf-2548-4b9f-93ab-0b4056c1fc23",
+      "name": "aai-secrets-default-policy",
+      "description": null,
+      "type": "SECRETS",
+      "builtin": false,
+      "projects": [
+        {
+          "id": "b4ce9215-eca0-50f1-97b3-6c0224097997"
+        }
+      ],
+      "policyLifecycleEnforcements": [
+        {
+          "enforcementMethod": "AUDIT",
+          "deploymentLifecycle": "CLI"
+        },
+        {
+          "enforcementMethod": "AUDIT",
+          "deploymentLifecycle": "CODE"
+        }
+      ],
+      "ignoreRules": null,
+      "lifecycleTargets": [
+        "BUILD",
+        "CODE"
+      ],
+      "Default": false,
+      "params": {
+        "__typename": "cicdscanpolicyparamssecrets",
+        "countThreshold": 1,
+        "pathAllowList": null,
+        "secretFindingSeverityThreshold": "LOW",
+        "disallowedValidationStatus": null
+      }
+    }
+  ],
+  "extraInfo": {
+    "clientName": "WizCLI",
+    "clientVersion": "1.45.0-9c936d6",
+    "buildParams": {
+      "platform": "UNKNOWN"
+    }
+  },
+  "tags": null,
+  "outdatedPolicies": null,
+  "taggedResource": null,
+  "associatedBaselineScans": null,
+  "outputMessages": null,
+  "scanOriginResource": {
+    "__typename": "CICDScanOriginDirectory",
+    "name": "/code"
+  },
+  "result": {
+    "__typename": "CICDDiskScanResult",
+    "osPackages": null,
+    "libraries": [
+      {
+        "name": "lodash",
+        "version": "4.17.4",
+        "path": "/package-lock.json",
+        "startLine": 5,
+        "endLine": 5,
+        "vulnerabilities": [
+          {
+            "name": "CVE-2026-4800",
+            "severity": "HIGH",
+            "fixedVersion": "4.18.0",
+            "fileRemediation": null,
+            "source": "https://github.com/advisories/GHSA-r5fr-rjxr-66jc",
+            "description": "Impact:\n\nThe fix for CVE-2021-23337 (https://github.com/advisories/GHSA-35jh-r3h4-6jhm) added validation for the variable option in _.template but did not apply the same validation to options.imports key names. Both paths flow into the same Function() constructor sink.\n\nWhen an application passes untrusted input as options.imports key names, an attacker can inject default-parameter expressions that execute arbitrary code at template compilation time.\n\nAdditionally, _.template uses assignInWith to merge imports, which enumerates inherited properties via for..in. If Object.prototype has been polluted by any other vector, the polluted keys are copied into the imports object and passed to Function().\n\nPatches:\n\nUsers should upgrade to version 4.18.0.\n\nWorkarounds:\n\nDo not pass untrusted input as key names in options.imports. Only use developer-controlled, static key names.",
+            "score": 9.8,
+            "exploitabilityScore": 3.9,
+            "cvssV3Metrics": {
+              "attackComplexity": "LOW",
+              "attackVector": "NETWORK",
+              "confidentialityImpact": "HIGH",
+              "integrityImpact": "HIGH",
+              "privilegesRequired": "NONE",
+              "userInteractionRequired": false
+            },
+            "cvssV2Metrics": {
+              "attackComplexity": null,
+              "attackVector": null,
+              "confidentialityImpact": null,
+              "integrityImpact": null,
+              "privilegesRequired": null,
+              "userInteractionRequired": false
+            },
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:X/RL:X/RC:X",
+            "cvssV4Vector": null,
+            "hasExploit": true,
+            "hasCisaKevExploit": false,
+            "cisaKevReleaseDate": null,
+            "cisaKevDueDate": null,
+            "epssProbability": 0,
+            "epssPercentile": 11.3,
+            "epssSeverity": "LOW",
+            "weightedSeverity": "CRITICAL",
+            "publishDate": "2026-03-31T20:16:00Z",
+            "fixPublishDate": "2026-04-02T20:44:01Z",
+            "gracePeriodEnd": null,
+            "gracePeriodRemainingHours": null,
+            "failedPolicyMatches": null,
+            "finding": {
+              "id": "9cb8c680-2cab-5d95-8892-5c3541c7cb3b"
+            },
+            "ignoredPolicyMatches": null
+          },
+          {
+            "name": "CVE-2018-16487",
+            "severity": "HIGH",
+            "fixedVersion": "4.17.11",
+            "fileRemediation": null,
+            "source": "https://github.com/advisories/GHSA-4xc9-xhrj-v574",
+            "description": "A prototype pollution vulnerability was found in lodash <4.17.11 where the functions merge, mergeWith, and defaultsDeep can be tricked into adding or modifying properties of Object.prototype.",
+            "score": 5.6,
+            "exploitabilityScore": 2.2,
+            "cvssV3Metrics": {
+              "attackComplexity": "HIGH",
+              "attackVector": "NETWORK",
+              "confidentialityImpact": "LOW",
+              "integrityImpact": "LOW",
+              "privilegesRequired": "NONE",
+              "userInteractionRequired": false
+            },
+            "cvssV2Metrics": {
+              "attackComplexity": "MEDIUM",
+              "attackVector": "NETWORK",
+              "confidentialityImpact": "PARTIAL",
+              "integrityImpact": "PARTIAL",
+              "privilegesRequired": "NONE",
+              "userInteractionRequired": false
+            },
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:L",
+            "cvssV4Vector": null,
+            "hasExploit": true,
+            "hasCisaKevExploit": false,
+            "cisaKevReleaseDate": null,
+            "cisaKevDueDate": null,
+            "epssProbability": 0.5,
+            "epssPercentile": 66.4,
+            "epssSeverity": "HIGH",
+            "weightedSeverity": "MEDIUM",
+            "publishDate": "2019-02-01T18:29:00Z",
+            "fixPublishDate": "2023-06-05T00:00:00Z",
+            "gracePeriodEnd": null,
+            "gracePeriodRemainingHours": null,
+            "failedPolicyMatches": null,
+            "finding": {
+              "id": "2dd7df8f-e19b-5663-af83-5bb54c29e67a"
+            },
+            "ignoredPolicyMatches": null
+          },
+          {
+            "name": "CVE-2018-3721",
+            "severity": "MEDIUM",
+            "fixedVersion": "4.17.5",
+            "fileRemediation": null,
+            "source": "https://github.com/advisories/GHSA-fvqr-27wr-82fm",
+            "description": "lodash node module before 4.17.5 suffers from a Modification of Assumed-Immutable Data (MAID) vulnerability via defaultsDeep, merge, and mergeWith functions, which allows a malicious user to modify the prototype of \"Object\" via __proto__, causing the addition or modification of an existing property that will exist on all objects.",
+            "score": 6.5,
+            "exploitabilityScore": 2.8,
+            "cvssV3Metrics": {
+              "attackComplexity": "LOW",
+              "attackVector": "NETWORK",
+              "confidentialityImpact": "NONE",
+              "integrityImpact": "HIGH",
+              "privilegesRequired": "LOW",
+              "userInteractionRequired": false
+            },
+            "cvssV2Metrics": {
+              "attackComplexity": "LOW",
+              "attackVector": "NETWORK",
+              "confidentialityImpact": "NONE",
+              "integrityImpact": "PARTIAL",
+              "privilegesRequired": "SINGLE",
+              "userInteractionRequired": false
+            },
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:H/A:N",
+            "cvssV4Vector": null,
+            "hasExploit": true,
+            "hasCisaKevExploit": false,
+            "cisaKevReleaseDate": null,
+            "cisaKevDueDate": null,
+            "epssProbability": 0.3,
+            "epssPercentile": 48.8,
+            "epssSeverity": "LOW",
+            "weightedSeverity": "MEDIUM",
+            "publishDate": "2018-06-07T02:29:00Z",
+            "fixPublishDate": "2023-06-05T00:00:00Z",
+            "gracePeriodEnd": null,
+            "gracePeriodRemainingHours": null,
+            "failedPolicyMatches": null,
+            "finding": {
+              "id": "8c9f6797-bd10-5b53-aa7b-dfe669c5726f"
+            },
+            "ignoredPolicyMatches": null
+          },
+          {
+            "name": "CVE-2019-1010266",
+            "severity": "MEDIUM",
+            "fixedVersion": "4.17.11",
+            "fileRemediation": null,
+            "source": "https://github.com/advisories/GHSA-x5rq-j2xg-h7qm",
+            "description": "lodash prior to 4.17.11 is affected by: CWE-400: Uncontrolled Resource Consumption. The impact is: Denial of service. The component is: Date handler. The attack vector is: Attacker provides very long strings, which the library attempts to match using a regular expression. The fixed version is: 4.17.11.",
+            "score": 6.5,
+            "exploitabilityScore": 2.8,
+            "cvssV3Metrics": {
+              "attackComplexity": "LOW",
+              "attackVector": "NETWORK",
+              "confidentialityImpact": "NONE",
+              "integrityImpact": "NONE",
+              "privilegesRequired": "LOW",
+              "userInteractionRequired": false
+            },
+            "cvssV2Metrics": {
+              "attackComplexity": "LOW",
+              "attackVector": "NETWORK",
+              "confidentialityImpact": "NONE",
+              "integrityImpact": "NONE",
+              "privilegesRequired": "SINGLE",
+              "userInteractionRequired": false
+            },
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
+            "cvssV4Vector": null,
+            "hasExploit": true,
+            "hasCisaKevExploit": false,
+            "cisaKevReleaseDate": null,
+            "cisaKevDueDate": null,
+            "epssProbability": 0.2,
+            "epssPercentile": 43.6,
+            "epssSeverity": "LOW",
+            "weightedSeverity": "LOW",
+            "publishDate": "2019-07-17T21:15:00Z",
+            "fixPublishDate": "2023-06-05T00:00:00Z",
+            "gracePeriodEnd": null,
+            "gracePeriodRemainingHours": null,
+            "failedPolicyMatches": null,
+            "finding": {
+              "id": "93de9030-5d95-5c69-891f-321dc57af3f1"
+            },
+            "ignoredPolicyMatches": null
+          },
+          {
+            "name": "CVE-2021-23337",
+            "severity": "HIGH",
+            "fixedVersion": "4.17.21",
+            "fileRemediation": null,
+            "source": "https://github.com/advisories/GHSA-35jh-r3h4-6jhm",
+            "description": "Lodash versions prior to 4.17.21 are vulnerable to Command Injection via the template function.",
+            "score": 7.2,
+            "exploitabilityScore": 1.2,
+            "cvssV3Metrics": {
+              "attackComplexity": "LOW",
+              "attackVector": "NETWORK",
+              "confidentialityImpact": "HIGH",
+              "integrityImpact": "HIGH",
+              "privilegesRequired": "HIGH",
+              "userInteractionRequired": false
+            },
+            "cvssV2Metrics": {
+              "attackComplexity": "LOW",
+              "attackVector": "NETWORK",
+              "confidentialityImpact": "PARTIAL",
+              "integrityImpact": "PARTIAL",
+              "privilegesRequired": "SINGLE",
+              "userInteractionRequired": false
+            },
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+            "cvssV4Vector": null,
+            "hasExploit": true,
+            "hasCisaKevExploit": false,
+            "cisaKevReleaseDate": null,
+            "cisaKevDueDate": null,
+            "epssProbability": 4.3,
+            "epssPercentile": 88.9,
+            "epssSeverity": "CRITICAL",
+            "weightedSeverity": "HIGH",
+            "publishDate": "2021-02-15T13:15:00Z",
+            "fixPublishDate": "2023-06-05T00:00:00Z",
+            "gracePeriodEnd": null,
+            "gracePeriodRemainingHours": null,
+            "failedPolicyMatches": null,
+            "finding": {
+              "id": "9740e2ca-52fc-5503-8a25-9d21f2de7603"
+            },
+            "ignoredPolicyMatches": null
+          },
+          {
+            "name": "CVE-2025-13465",
+            "severity": "MEDIUM",
+            "fixedVersion": "4.17.23",
+            "fileRemediation": null,
+            "source": "https://github.com/advisories/GHSA-xxjr-mmjv-4gpg",
+            "description": "Lodash versions 4.0.0 through 4.17.22 are vulnerable to prototype pollution in the _.unset and _.omit functions. An attacker can pass crafted paths which cause Lodash to delete methods from global prototypes.\n\nThe issue permits deletion of properties but does not allow overwriting their original behavior.\n\nThis issue is patched on 4.17.23",
+            "score": 6.9,
+            "exploitabilityScore": 3.9,
+            "cvssV3Metrics": {
+              "attackComplexity": "LOW",
+              "attackVector": "NETWORK",
+              "confidentialityImpact": "NONE",
+              "integrityImpact": "LOW",
+              "privilegesRequired": "NONE",
+              "userInteractionRequired": false
+            },
+            "cvssV2Metrics": {
+              "attackComplexity": null,
+              "attackVector": null,
+              "confidentialityImpact": null,
+              "integrityImpact": null,
+              "privilegesRequired": null,
+              "userInteractionRequired": false
+            },
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N",
+            "cvssV4Vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:L/VA:L/SC:H/SI:H/SA:H/E:P/CR:X/IR:X/AR:X/MAV:X/MAC:X/MAT:X/MPR:X/MUI:X/MVC:X/MVI:X/MVA:X/MSC:X/MSI:X/MSA:X/S:X/AU:X/R:X/V:X/RE:X/U:X",
+            "hasExploit": false,
+            "hasCisaKevExploit": false,
+            "cisaKevReleaseDate": null,
+            "cisaKevDueDate": null,
+            "epssProbability": 0,
+            "epssPercentile": 8.3,
+            "epssSeverity": "LOW",
+            "weightedSeverity": "LOW",
+            "publishDate": "2026-01-21T20:16:00Z",
+            "fixPublishDate": "2026-01-22T06:44:04Z",
+            "gracePeriodEnd": null,
+            "gracePeriodRemainingHours": null,
+            "failedPolicyMatches": null,
+            "finding": {
+              "id": "831c4ab7-fd4c-5566-8b33-390a055e3963"
+            },
+            "ignoredPolicyMatches": null
+          },
+          {
+            "name": "CVE-2020-28500",
+            "severity": "MEDIUM",
+            "fixedVersion": "4.17.21",
+            "fileRemediation": null,
+            "source": "https://github.com/advisories/GHSA-29mw-wpgm-hmr9",
+            "description": "Lodash versions prior to 4.17.21 are vulnerable to Regular Expression Denial of Service (ReDoS) via the toNumber, trim and trimEnd functions.",
+            "score": 5.3,
+            "exploitabilityScore": 3.9,
+            "cvssV3Metrics": {
+              "attackComplexity": "LOW",
+              "attackVector": "NETWORK",
+              "confidentialityImpact": "NONE",
+              "integrityImpact": "NONE",
+              "privilegesRequired": "NONE",
+              "userInteractionRequired": false
+            },
+            "cvssV2Metrics": {
+              "attackComplexity": "LOW",
+              "attackVector": "NETWORK",
+              "confidentialityImpact": "NONE",
+              "integrityImpact": "NONE",
+              "privilegesRequired": "NONE",
+              "userInteractionRequired": false
+            },
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L",
+            "cvssV4Vector": null,
+            "hasExploit": true,
+            "hasCisaKevExploit": false,
+            "cisaKevReleaseDate": null,
+            "cisaKevDueDate": null,
+            "epssProbability": 0.2,
+            "epssPercentile": 47.6,
+            "epssSeverity": "LOW",
+            "weightedSeverity": "LOW",
+            "publishDate": "2021-02-15T11:15:00Z",
+            "fixPublishDate": "2023-06-05T00:00:00Z",
+            "gracePeriodEnd": null,
+            "gracePeriodRemainingHours": null,
+            "failedPolicyMatches": null,
+            "finding": {
+              "id": "4ea98376-2fba-54e0-9d10-3ac6e792b2e5"
+            },
+            "ignoredPolicyMatches": null
+          },
+          {
+            "name": "CVE-2020-8203",
+            "severity": "HIGH",
+            "fixedVersion": "4.17.19",
+            "fileRemediation": null,
+            "source": "https://github.com/advisories/GHSA-p6mc-m468-83gw",
+            "description": "Prototype pollution attack when using _.zipObjectDeep in lodash before 4.17.20.",
+            "score": 7.4,
+            "exploitabilityScore": 2.2,
+            "cvssV3Metrics": {
+              "attackComplexity": "HIGH",
+              "attackVector": "NETWORK",
+              "confidentialityImpact": "NONE",
+              "integrityImpact": "HIGH",
+              "privilegesRequired": "NONE",
+              "userInteractionRequired": false
+            },
+            "cvssV2Metrics": {
+              "attackComplexity": "MEDIUM",
+              "attackVector": "NETWORK",
+              "confidentialityImpact": "NONE",
+              "integrityImpact": "PARTIAL",
+              "privilegesRequired": "NONE",
+              "userInteractionRequired": false
+            },
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:H/A:H",
+            "cvssV4Vector": null,
+            "hasExploit": false,
+            "hasCisaKevExploit": false,
+            "cisaKevReleaseDate": null,
+            "cisaKevDueDate": null,
+            "epssProbability": 3.3,
+            "epssPercentile": 87.3,
+            "epssSeverity": "CRITICAL",
+            "weightedSeverity": "CRITICAL",
+            "publishDate": "2020-07-15T17:15:00Z",
+            "fixPublishDate": "2023-06-05T00:00:00Z",
+            "gracePeriodEnd": null,
+            "gracePeriodRemainingHours": null,
+            "failedPolicyMatches": null,
+            "finding": {
+              "id": "ebfbdc3e-3280-58ce-ada0-49ef0ef30d99"
+            },
+            "ignoredPolicyMatches": null
+          },
+          {
+            "name": "CVE-2026-2950",
+            "severity": "MEDIUM",
+            "fixedVersion": "4.18.0",
+            "fileRemediation": null,
+            "source": "https://github.com/advisories/GHSA-f23m-r3pf-42rh",
+            "description": "Impact:\n\nLodash versions 4.17.23 and earlier are vulnerable to prototype pollution in the _.unset and _.omit functions. The fix for (CVE-2025-13465: https://github.com/lodash/lodash/security/advisories/GHSA-xxjr-mmjv-4gpg) only guards against string key members, so an attacker can bypass the check by passing array-wrapped path segments. This allows deletion of properties from built-in prototypes such as Object.prototype, Number.prototype, and String.prototype.\n\nThe issue permits deletion of prototype properties but does not allow overwriting their original behavior.\n\nPatches:\n\nThis issue is patched in 4.18.0.\n\nWorkarounds:\n\nNone. Upgrade to the patched version.",
+            "score": 5.3,
+            "exploitabilityScore": 3.9,
+            "cvssV3Metrics": {
+              "attackComplexity": "LOW",
+              "attackVector": "NETWORK",
+              "confidentialityImpact": "NONE",
+              "integrityImpact": "LOW",
+              "privilegesRequired": "NONE",
+              "userInteractionRequired": false
+            },
+            "cvssV2Metrics": {
+              "attackComplexity": null,
+              "attackVector": null,
+              "confidentialityImpact": null,
+              "integrityImpact": null,
+              "privilegesRequired": null,
+              "userInteractionRequired": false
+            },
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N",
+            "cvssV4Vector": null,
+            "hasExploit": false,
+            "hasCisaKevExploit": false,
+            "cisaKevReleaseDate": null,
+            "cisaKevDueDate": null,
+            "epssProbability": 0,
+            "epssPercentile": 7,
+            "epssSeverity": "LOW",
+            "weightedSeverity": "LOW",
+            "publishDate": "2026-03-31T20:16:00Z",
+            "fixPublishDate": "2026-04-02T20:44:01Z",
+            "gracePeriodEnd": null,
+            "gracePeriodRemainingHours": null,
+            "failedPolicyMatches": null,
+            "finding": {
+              "id": "47feaa30-ab24-5aad-9385-3f333cc56986"
+            },
+            "ignoredPolicyMatches": null
+          },
+          {
+            "name": "CVE-2019-10744",
+            "severity": "CRITICAL",
+            "fixedVersion": "4.17.12",
+            "fileRemediation": null,
+            "source": "https://github.com/advisories/GHSA-jf85-cpcp-j695",
+            "description": "Versions of lodash lower than 4.17.12 are vulnerable to Prototype Pollution. The function defaultsDeep could be tricked into adding or modifying properties of Object.prototype using a constructor payload.",
+            "score": 9.1,
+            "exploitabilityScore": 3.9,
+            "cvssV3Metrics": {
+              "attackComplexity": "LOW",
+              "attackVector": "NETWORK",
+              "confidentialityImpact": "NONE",
+              "integrityImpact": "HIGH",
+              "privilegesRequired": "NONE",
+              "userInteractionRequired": false
+            },
+            "cvssV2Metrics": {
+              "attackComplexity": "LOW",
+              "attackVector": "NETWORK",
+              "confidentialityImpact": "NONE",
+              "integrityImpact": "PARTIAL",
+              "privilegesRequired": "NONE",
+              "userInteractionRequired": false
+            },
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:H",
+            "cvssV4Vector": null,
+            "hasExploit": true,
+            "hasCisaKevExploit": false,
+            "cisaKevReleaseDate": null,
+            "cisaKevDueDate": null,
+            "epssProbability": 3.3,
+            "epssPercentile": 87.4,
+            "epssSeverity": "CRITICAL",
+            "weightedSeverity": "CRITICAL",
+            "publishDate": "2019-07-26T00:15:00Z",
+            "fixPublishDate": "2023-06-05T00:00:00Z",
+            "gracePeriodEnd": null,
+            "gracePeriodRemainingHours": null,
+            "failedPolicyMatches": null,
+            "finding": {
+              "id": "a86d55c1-4710-560d-b35e-c77bbaaef876"
+            },
+            "ignoredPolicyMatches": null
+          }
+        ],
+        "detectionMethod": "LIBRARY",
+        "layerMetadata": null,
+        "failedPolicyMatches": null,
+        "resolvedDependencyTree": null
+      },
+      {
+        "name": "express",
+        "version": "4.16.0",
+        "path": "/package-lock.json",
+        "startLine": 6,
+        "endLine": 6,
+        "vulnerabilities": [
+          {
+            "name": "CVE-2024-43796",
+            "severity": "LOW",
+            "fixedVersion": "4.20.0",
+            "fileRemediation": null,
+            "source": "https://github.com/advisories/GHSA-qw6h-vgh9-j6wx",
+            "description": "Express.js minimalist web framework for node. In express < 4.20.0, passing untrusted user input - even after sanitizing it - to response.redirect() may execute untrusted code. This issue is patched in express 4.20.0.",
+            "score": 4.7,
+            "exploitabilityScore": 1.6,
+            "cvssV3Metrics": {
+              "attackComplexity": "HIGH",
+              "attackVector": "NETWORK",
+              "confidentialityImpact": "LOW",
+              "integrityImpact": "LOW",
+              "privilegesRequired": "NONE",
+              "userInteractionRequired": true
+            },
+            "cvssV2Metrics": {
+              "attackComplexity": null,
+              "attackVector": null,
+              "confidentialityImpact": null,
+              "integrityImpact": null,
+              "privilegesRequired": null,
+              "userInteractionRequired": false
+            },
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:C/C:L/I:L/A:N",
+            "cvssV4Vector": "CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:P/VC:N/VI:N/VA:N/SC:L/SI:L/SA:L",
+            "hasExploit": false,
+            "hasCisaKevExploit": false,
+            "cisaKevReleaseDate": null,
+            "cisaKevDueDate": null,
+            "epssProbability": 0.1,
+            "epssPercentile": 30.4,
+            "epssSeverity": "LOW",
+            "weightedSeverity": "LOW",
+            "publishDate": "2024-09-10T15:15:00Z",
+            "fixPublishDate": "2024-09-11T04:50:58Z",
+            "gracePeriodEnd": null,
+            "gracePeriodRemainingHours": null,
+            "failedPolicyMatches": null,
+            "finding": {
+              "id": "68bb59ce-2a8c-5c9e-86c1-841954c1baaa"
+            },
+            "ignoredPolicyMatches": null
+          },
+          {
+            "name": "CVE-2024-29041",
+            "severity": "MEDIUM",
+            "fixedVersion": "4.19.2",
+            "fileRemediation": null,
+            "source": "https://github.com/advisories/GHSA-rv95-896h-c2vc",
+            "description": "Express.js minimalist web framework for node. Versions of Express.js prior to 4.19.0 and all pre-release alpha and beta versions of 5.0 are affected by an open redirect vulnerability using malformed URLs. When a user of Express performs a redirect using a user-provided URL Express performs an encode [using `encodeurl`](https://github.com/pillarjs/encodeurl) on the contents before passing it to the `location` header. This can cause malformed URLs to be evaluated in unexpected ways by common redirect allow list implementations in Express applications, leading to an Open Redirect via bypass of a properly implemented allow list. The main method impacted is `res.location()` but this is also called from within `res.redirect()`. The vulnerability is fixed in 4.19.2 and 5.0.0-beta.3.",
+            "score": 6.1,
+            "exploitabilityScore": 2.8,
+            "cvssV3Metrics": {
+              "attackComplexity": "LOW",
+              "attackVector": "NETWORK",
+              "confidentialityImpact": "LOW",
+              "integrityImpact": "LOW",
+              "privilegesRequired": "NONE",
+              "userInteractionRequired": true
+            },
+            "cvssV2Metrics": {
+              "attackComplexity": null,
+              "attackVector": null,
+              "confidentialityImpact": null,
+              "integrityImpact": null,
+              "privilegesRequired": null,
+              "userInteractionRequired": false
+            },
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N",
+            "cvssV4Vector": null,
+            "hasExploit": false,
+            "hasCisaKevExploit": false,
+            "cisaKevReleaseDate": null,
+            "cisaKevDueDate": null,
+            "epssProbability": 0.2,
+            "epssPercentile": 35.7,
+            "epssSeverity": "LOW",
+            "weightedSeverity": "LOW",
+            "publishDate": "2024-03-25T21:15:00Z",
+            "fixPublishDate": "2024-03-26T12:34:58Z",
+            "gracePeriodEnd": null,
+            "gracePeriodRemainingHours": null,
+            "failedPolicyMatches": null,
+            "finding": {
+              "id": "e3277b8f-1114-5de5-9aa6-8935994a0d46"
+            },
+            "ignoredPolicyMatches": null
+          }
+        ],
+        "detectionMethod": "LIBRARY",
+        "layerMetadata": null,
+        "failedPolicyMatches": null,
+        "resolvedDependencyTree": null
+      }
+    ],
+    "applications": null,
+    "endOfLifeTechnologies": null,
+    "cpes": null,
+    "secrets": [
+      {
+        "id": "77ac3240-f6f6-59f9-a8d1-efb5e2a4a457",
+        "externalId": "/code##/leaky.env##13",
+        "description": "GitHub Classic PAT in Dedicated Secret Files",
+        "path": "/leaky.env",
+        "lineNumber": 1,
+        "offset": 13,
+        "type": "SAAS_API_KEY",
+        "contains": [
+          {
+            "name": "GitHub Classic PAT",
+            "type": "SAAS_API_KEY"
+          }
+        ],
+        "snippet": "---REDACTED---",
+        "failedPolicyMatches": null,
+        "hasAdminPrivileges": null,
+        "hasHighPrivileges": null,
+        "severity": "INFORMATIONAL",
+        "relatedEntities": null,
+        "ignoredPolicyMatches": [
+          {
+            "policy": {
+              "id": "5e9561cf-2548-4b9f-93ab-0b4056c1fc23",
+              "name": "aai-secrets-default-policy",
+              "description": null,
+              "type": "SECRETS",
+              "builtin": false,
+              "projects": [
+                {
+                  "id": "b4ce9215-eca0-50f1-97b3-6c0224097997"
+                }
+              ],
+              "policyLifecycleEnforcements": [
+                {
+                  "enforcementMethod": "AUDIT",
+                  "deploymentLifecycle": "CLI",
+                  "enforcementConfig": null
+                },
+                {
+                  "enforcementMethod": "AUDIT",
+                  "deploymentLifecycle": "CODE",
+                  "enforcementConfig": null
+                }
+              ],
+              "ignoreRules": null,
+              "lifecycleTargets": [
+                "BUILD",
+                "CODE"
+              ],
+              "Default": false
+            },
+            "ignoreReason": "BELOW_THRESHOLD",
+            "matchedIgnoreRules": null
+          }
+        ],
+        "ruleId": "SECRET-1065",
+        "details": {
+          "__typename": "DiskScanSecretDetailsSaasAPIKey",
+          "serviceName": "GitHub Classic PAT"
+        }
+      }
+    ],
+    "dataFindings": null,
+    "vulnerableSBOMArtifactsByNameVersion": [
+      {
+        "id": "78edddad-d29a-5c02-9a6e-eecbaf3c63f2",
+        "type": {
+          "group": "CODE_LIBRARY",
+          "codeLibraryLanguage": "JAVASCRIPT",
+          "osPackageManager": null,
+          "hostedTechnology": null,
+          "plugin": null,
+          "custom": null,
+          "ciComponent": null
+        },
+        "name": "lodash",
+        "version": "4.17.4",
+        "filePath": "/package-lock.json",
+        "layerMetadata": null,
+        "vulnerabilityFindings": {
+          "severities": {
+            "criticalCount": 1,
+            "highCount": 4,
+            "mediumCount": 5,
+            "lowCount": 0,
+            "infoCount": 0
+          },
+          "fixedVersion": "4.18.0",
+          "remediation": "npm update lodash",
+          "fileRemediation": null,
+          "findings": null
+        }
+      },
+      {
+        "id": "5a21c26a-e1f1-5aec-8dc2-59a98bb5dafb",
+        "type": {
+          "group": "CODE_LIBRARY",
+          "codeLibraryLanguage": "JAVASCRIPT",
+          "osPackageManager": null,
+          "hostedTechnology": null,
+          "plugin": null,
+          "custom": null,
+          "ciComponent": null
+        },
+        "name": "express",
+        "version": "4.16.0",
+        "filePath": "/package-lock.json",
+        "layerMetadata": null,
+        "vulnerabilityFindings": {
+          "severities": {
+            "criticalCount": 0,
+            "highCount": 0,
+            "mediumCount": 1,
+            "lowCount": 1,
+            "infoCount": 0
+          },
+          "fixedVersion": "4.20.0",
+          "remediation": "npm update express",
+          "fileRemediation": null,
+          "findings": null
+        }
+      }
+    ],
+    "hostConfiguration": {
+      "hostConfigurationFrameworks": null,
+      "hostConfigurationFindings": null,
+      "analytics": {
+        "severity": {
+          "infoCount": 0,
+          "lowCount": 0,
+          "mediumCount": 0,
+          "highCount": 0,
+          "criticalCount": 0
+        },
+        "status": {
+          "passCount": 0,
+          "failCount": 0,
+          "errorCount": 0,
+          "notAssessedCount": 0,
+          "totalCount": 0
+        }
+      }
+    },
+    "failedPolicyMatches": null,
+    "analytics": {
+      "vulnerabilities": {
+        "infoCount": 0,
+        "lowCount": 1,
+        "mediumCount": 6,
+        "highCount": 4,
+        "criticalCount": 1,
+        "unfixedCount": 0,
+        "totalCount": 12
+      },
+      "secrets": {
+        "privateKeyCount": 0,
+        "publicKeyCount": 0,
+        "passwordCount": 0,
+        "certificateCount": 0,
+        "cloudKeyCount": 0,
+        "sshAuthorizedKeyCount": 0,
+        "dbConnectionStringCount": 0,
+        "gitCredentialCount": 0,
+        "presignedURLCount": 0,
+        "saasAPIKeyCount": 1,
+        "infoCount": 1,
+        "lowCount": 0,
+        "mediumCount": 0,
+        "highCount": 0,
+        "criticalCount": 0,
+        "totalCount": 1
+      },
+      "hostConfiguration": {
+        "infoCount": 0,
+        "lowCount": 0,
+        "mediumCount": 0,
+        "highCount": 0,
+        "criticalCount": 0
+      },
+      "malware": {
+        "infoCount": 0,
+        "lowCount": 0,
+        "mediumCount": 0,
+        "highCount": 0,
+        "criticalCount": 0,
+        "totalCount": 0
+      },
+      "softwareSupplyChain": {
+        "infoCount": 0,
+        "lowCount": 0,
+        "mediumCount": 0,
+        "highCount": 0,
+        "criticalCount": 0,
+        "totalCount": 0
+      },
+      "aiModel": null,
+      "sast": {
+        "infoCount": 0,
+        "lowCount": 0,
+        "mediumCount": 0,
+        "highCount": 0,
+        "criticalCount": 0,
+        "totalCount": 0
+      },
+      "filesScannedCount": 2,
+      "directoriesScannedCount": 1
+    },
+    "sbomOutput": "",
+    "malwares": null,
+    "softwareSupplyChain": null,
+    "aiModels": null,
+    "sast": null,
+    "iac": null,
+    "ruleMatches": null,
+    "scanStatistics": null,
+    "fileTypes": null,
+    "discoveredResources": null
+  },
+  "reportUrl": "https://app.wiz.io/findings/cicd-scans#~%2528cicd_scan~%25270069faa4-330b-8e5c-932c-970e54148001%252A2c2026-05-06T02%2525%25252A3a15%2525%25252A3a22.245229623Z%2527%2529"
+}

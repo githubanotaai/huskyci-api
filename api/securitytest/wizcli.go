@@ -1,19 +1,66 @@
 package securitytest
 
 import (
-	"bufio"
+	"encoding/json"
 	"errors"
-	"regexp"
+	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/githubanotaai/huskyci-api/api/types"
 )
 
-var ansiEscape = regexp.MustCompile(`\x1b\[[0-9;]*m|\[[0-9;]*m`)
-var cvePattern = regexp.MustCompile(`CVE-\d{4}-\d+`)
+// wizCLIReport models the subset of `wizcli dir scan -f json` output that
+// huskyCI surfaces as findings. Unrelated metadata (analytics, sbomOutput,
+// hostConfiguration, ...) is intentionally ignored.
+type wizCLIReport struct {
+	Status struct {
+		State   string `json:"state"`
+		Verdict string `json:"verdict"`
+	} `json:"status"`
+	Result struct {
+		Libraries             []wizPackageWithVulns  `json:"libraries"`
+		OSPackages            []wizPackageWithVulns  `json:"osPackages"`
+		Secrets               []wizSecretFinding     `json:"secrets"`
+		DataFindings          []wizDataFinding       `json:"dataFindings"`
+		EndOfLifeTechnologies []wizEndOfLifeFinding  `json:"endOfLifeTechnologies"`
+	} `json:"result"`
+}
 
-func stripAnsiWiz(s string) string {
-	return ansiEscape.ReplaceAllString(s, "")
+type wizPackageWithVulns struct {
+	Name            string             `json:"name"`
+	Version         string             `json:"version"`
+	Path            string             `json:"path"`
+	StartLine       int                `json:"startLine"`
+	Vulnerabilities []wizVulnerability `json:"vulnerabilities"`
+}
+
+type wizVulnerability struct {
+	Name         string `json:"name"`
+	Severity     string `json:"severity"`
+	FixedVersion string `json:"fixedVersion"`
+	Description  string `json:"description"`
+	HasExploit   bool   `json:"hasExploit"`
+}
+
+type wizSecretFinding struct {
+	Description string `json:"description"`
+	Path        string `json:"path"`
+	LineNumber  int    `json:"lineNumber"`
+	Severity    string `json:"severity"`
+	Type        string `json:"type"`
+}
+
+type wizDataFinding struct {
+	Classifier string `json:"classifier"`
+	MatchCount int    `json:"matchCount"`
+	Severity   string `json:"severity"`
+	Path       string `json:"path"`
+}
+
+type wizEndOfLifeFinding struct {
+	Name    string `json:"name"`
+	Version string `json:"version"`
 }
 
 func analyzeWizCLI(scanInfo *SecTestScanInfo) error {
@@ -29,7 +76,16 @@ func analyzeWizCLI(scanInfo *SecTestScanInfo) error {
 		return scanInfo.ErrorFound
 	}
 
-	vulns := parseWizCLIStdout(output)
+	trimmed := strings.TrimSpace(output)
+	if trimmed == "" {
+		return nil
+	}
+
+	vulns, err := parseWizCLIJSON(trimmed)
+	if err != nil {
+		scanInfo.ErrorFound = fmt.Errorf("wizcli json parse failed: %w", err)
+		return scanInfo.ErrorFound
+	}
 
 	for _, v := range vulns {
 		switch strings.ToUpper(v.Severity) {
@@ -47,49 +103,27 @@ func analyzeWizCLI(scanInfo *SecTestScanInfo) error {
 	return nil
 }
 
-// parseWizCLIStdout parses the textual stdout of `wizcli dir scan` into
-// HuskyCIVulnerability entries. It mirrors the logic in console-parser.js,
-// handling Secrets, Data Findings, and CVE sections.
-func parseWizCLIStdout(output string) []types.HuskyCIVulnerability {
+// parseWizCLIJSON converts the JSON produced by `wizcli dir scan -f json`
+// into HuskyCIVulnerability entries, covering CVEs (libraries, OS packages),
+// secrets, data findings, and end-of-life technologies.
+func parseWizCLIJSON(output string) ([]types.HuskyCIVulnerability, error) {
+	var report wizCLIReport
+	if err := json.Unmarshal([]byte(output), &report); err != nil {
+		return nil, err
+	}
+
 	var findings []types.HuskyCIVulnerability
 	seen := make(map[string]bool)
 
-	type secretState struct {
-		description string
-		severity    string
-		filePath    string
-		lineNumber  string
-	}
-
-	type dataFindingState struct {
-		classifier string
-		matchCount string
-		severity   string
-		filePath   string
-	}
-
-	type cveState struct {
-		cve          string
-		severity     string
-		location     string
-		fixedVersion string
-	}
-
-	type packageState struct {
-		name    string
-		version string
-		path    string
-	}
-
-	addFinding := func(title, severity, file, line, details, tool string) {
-		key := title + "::" + severity + "::" + file
+	addFinding := func(title, severity, file, line, details string) {
+		key := title + "::" + severity + "::" + file + "::" + line
 		if seen[key] {
 			return
 		}
 		seen[key] = true
 		findings = append(findings, types.HuskyCIVulnerability{
 			Language:     "Generic",
-			SecurityTool: tool,
+			SecurityTool: "WizCLI",
 			Severity:     severity,
 			Title:        title,
 			File:         file,
@@ -98,250 +132,84 @@ func parseWizCLIStdout(output string) []types.HuskyCIVulnerability {
 		})
 	}
 
-	var (
-		currentSection     string
-		currentSecret      *secretState
-		currentDataFinding *dataFindingState
-		currentCVE         *cveState
-		currentPackage     *packageState
-	)
-
-	flushCVE := func(cve *cveState) {
-		if cve == nil {
-			return
-		}
-		fv := cve.fixedVersion
-		if fv == "" {
-			fv = "n/a"
-		}
-		details := cve.cve
-		if fv != "n/a" {
-			details += " (fixed: " + fv + ")"
-		}
-		addFinding(cve.cve, cve.severity, cve.location, "", details, "WizCLI")
-	}
-
-	flushSecret := func(s *secretState) {
-		if s == nil || s.filePath == "" {
-			return
-		}
-		loc := s.filePath
-		if s.lineNumber != "" {
-			loc += ", Line " + s.lineNumber
-		}
-		sev := s.severity
-		if sev == "" {
-			sev = "INFO"
-		}
-		addFinding(s.description, sev, loc, s.lineNumber, s.description, "WizCLI")
-	}
-
-	scanner := bufio.NewScanner(strings.NewReader(output))
-	var lines []string
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-
-	for i, rawLine := range lines {
-		line := strings.TrimSpace(stripAnsiWiz(rawLine))
-
-		// Section detection
-		if strings.Contains(line, "Library vulnerabilities:") || strings.Contains(line, "OS Package vulnerabilities:") {
-			flushCVE(currentCVE)
-			currentCVE = nil
-			currentSection = "vulnerabilities"
-			currentPackage = nil
-			continue
-		}
-		if strings.Contains(line, "Secrets:") {
-			currentSection = "secrets"
-			currentSecret = nil
-			continue
-		}
-		if strings.Contains(line, "Data Findings:") || strings.Contains(line, "Data findings:") {
-			currentSection = "dataFindings"
-			currentDataFinding = nil
-			continue
-		}
-		if strings.Contains(line, "End of life technologies:") {
-			flushCVE(currentCVE)
-			currentCVE = nil
-			currentSection = "eol"
-			currentPackage = nil
-			continue
-		}
-		if strings.Contains(line, "Licenses:") {
-			flushCVE(currentCVE)
-			currentCVE = nil
-			currentSection = "licenses"
-			currentPackage = nil
-			continue
-		}
-
-		switch currentSection {
-
-		case "secrets":
-			cleanLine := stripAnsiWiz(rawLine)
-
-			if strings.Contains(line, "Secret description:") {
-				flushSecret(currentSecret)
-				re := regexp.MustCompile(`(?i)Secret description:\s*(.+?)(?:\s*\[0m|\s*\[[0-9;]*m|\s*$)`)
-				if m := re.FindStringSubmatch(cleanLine); len(m) > 1 {
-					desc := ansiEscape.ReplaceAllString(strings.TrimSpace(m[1]), "")
-					currentSecret = &secretState{description: desc, severity: "INFO"}
-				}
-				continue
+	collectCVEs := func(pkgs []wizPackageWithVulns) {
+		for _, pkg := range pkgs {
+			location := pkg.Name
+			if pkg.Version != "" {
+				location += ":" + pkg.Version
 			}
-			if currentSecret != nil && strings.Contains(line, "Severity:") {
-				cleanedLine := ansiEscape.ReplaceAllString(cleanLine, "")
-				if m := regexp.MustCompile(`(?i)Severity:\s*(\w+)`).FindStringSubmatch(cleanedLine); len(m) > 1 {
-					currentSecret.severity = strings.ToUpper(strings.TrimSpace(m[1]))
-				}
-				if currentSecret.filePath != "" {
-					flushSecret(currentSecret)
-					currentSecret = nil
-				}
-				continue
+			if pkg.Path != "" {
+				location += " (" + strings.TrimLeft(pkg.Path, "/") + ")"
 			}
-			if currentSecret != nil && strings.Contains(line, "Path:") {
-				re := regexp.MustCompile(`(?i)Path:\s*([^,]+)(?:,\s*Line\s+(\d+))?`)
-				if m := re.FindStringSubmatch(cleanLine); len(m) > 1 {
-					fp := ansiEscape.ReplaceAllString(strings.TrimSpace(m[1]), "")
-					currentSecret.filePath = fp
-					if len(m) > 2 && m[2] != "" {
-						currentSecret.lineNumber = strings.TrimSpace(m[2])
-					} else if i+1 < len(lines) {
-						nextLine := strings.TrimSpace(stripAnsiWiz(lines[i+1]))
-						if lm := regexp.MustCompile(`(?i)Line\s+(\d+)`).FindStringSubmatch(nextLine); len(lm) > 1 {
-							currentSecret.lineNumber = lm[1]
-						}
-					}
-					if currentSecret.severity != "" && currentSecret.severity != "INFO" {
-						flushSecret(currentSecret)
-						currentSecret = nil
-					}
-				}
-				continue
+			line := ""
+			if pkg.StartLine > 0 {
+				line = strconv.Itoa(pkg.StartLine)
 			}
-
-		case "dataFindings":
-			cleanLine := stripAnsiWiz(line)
-			if strings.Contains(line, "Data finding for classifier:") {
-				re := regexp.MustCompile(`(?i)Data finding for classifier:\s*(.+?)(?:\s*\[0m|\s*\[[0-9;]*m|\s*$)`)
-				if m := re.FindStringSubmatch(cleanLine); len(m) > 1 {
-					clf := ansiEscape.ReplaceAllString(strings.TrimSpace(m[1]), "")
-					currentDataFinding = &dataFindingState{classifier: clf, severity: "INFO"}
+			for _, v := range pkg.Vulnerabilities {
+				if v.Name == "" {
+					continue
 				}
-				continue
-			}
-			if currentDataFinding != nil && strings.Contains(line, "Match count:") {
-				if m := regexp.MustCompile(`(?i)Match count:\s*(\d+)`).FindStringSubmatch(cleanLine); len(m) > 1 {
-					currentDataFinding.matchCount = m[1]
+				details := v.Name
+				if v.FixedVersion != "" {
+					details += " (fixed: " + v.FixedVersion + ")"
+				} else {
+					details += " (fixed: n/a)"
 				}
-				continue
-			}
-			if currentDataFinding != nil && strings.Contains(line, "Severity:") {
-				cleanedLine := ansiEscape.ReplaceAllString(cleanLine, "")
-				if m := regexp.MustCompile(`(?i)Severity:\s*(\w+)`).FindStringSubmatch(cleanedLine); len(m) > 1 {
-					currentDataFinding.severity = strings.ToUpper(strings.TrimSpace(m[1]))
+				if v.Description != "" {
+					details += " — " + v.Description
 				}
-				continue
-			}
-			if currentDataFinding != nil && strings.Contains(line, "Path:") {
-				if m := regexp.MustCompile(`(?i)Path:\s*(.+)`).FindStringSubmatch(cleanLine); len(m) > 1 {
-					fp := strings.TrimSpace(m[1])
-					if currentDataFinding.filePath == "" {
-						currentDataFinding.filePath = fp
-						name := currentDataFinding.classifier
-						if currentDataFinding.matchCount != "" {
-							name += " (" + currentDataFinding.matchCount + " matches)"
-						}
-						addFinding(name, currentDataFinding.severity, fp, "", name, "WizCLI")
-					}
-				}
-				continue
-			}
-
-		case "vulnerabilities":
-			cleanLine := stripAnsiWiz(rawLine)
-			if strings.Contains(line, "Name:") {
-				flushCVE(currentCVE)
-				currentCVE = nil
-				nameRe := regexp.MustCompile(`Name:\s*([^,]+)`)
-				verRe := regexp.MustCompile(`Version:\s*([^,]+)`)
-				pathRe := regexp.MustCompile(`Path:\s*(.+?)(?:\s*$)`)
-				var pkg packageState
-				if m := nameRe.FindStringSubmatch(cleanLine); len(m) > 1 {
-					pkg.name = strings.TrimSpace(m[1])
-				}
-				if m := verRe.FindStringSubmatch(cleanLine); len(m) > 1 {
-					pkg.version = strings.TrimSpace(m[1])
-				}
-				if m := pathRe.FindStringSubmatch(cleanLine); len(m) > 1 {
-					p := strings.TrimSpace(m[1])
-					if idx := strings.Index(p, " contains transitive"); idx != -1 {
-						p = strings.TrimSpace(p[:idx])
-					}
-					pkg.path = p
-				}
-				if pkg.name != "" {
-					currentPackage = &pkg
-				}
-				continue
-			}
-			if currentPackage != nil && cvePattern.MatchString(line) {
-				flushCVE(currentCVE)
-				cveM := cvePattern.FindString(stripAnsiWiz(rawLine))
-				sevM := regexp.MustCompile(`(?i)Severity:\s*(\w+)`).FindStringSubmatch(stripAnsiWiz(rawLine))
-				sev := "UNKNOWN"
-				if len(sevM) > 1 {
-					sev = strings.ToUpper(strings.TrimSpace(sevM[1]))
-				}
-				loc := currentPackage.name
-				if currentPackage.version != "" {
-					loc += ":" + currentPackage.version
-				}
-				if currentPackage.path != "" {
-					loc += " (" + strings.TrimLeft(currentPackage.path, "/") + ")"
-				}
-				currentCVE = &cveState{cve: cveM, severity: sev, location: loc, fixedVersion: "n/a"}
-				continue
-			}
-			if currentCVE != nil && strings.Contains(line, "Fixed version:") {
-				if m := regexp.MustCompile(`(?i)Fixed version:\s*([^\s,]+)`).FindStringSubmatch(stripAnsiWiz(rawLine)); len(m) > 1 {
-					currentCVE.fixedVersion = strings.TrimSpace(m[1])
-				}
-				continue
-			}
-
-		case "eol":
-			cleanLine := stripAnsiWiz(rawLine)
-			if strings.Contains(line, "Name:") {
-				nameRe := regexp.MustCompile(`Name:\s*([^,]+)`)
-				verRe := regexp.MustCompile(`Version:\s*([^,]+)`)
-				name := ""
-				version := ""
-				if m := nameRe.FindStringSubmatch(cleanLine); len(m) > 1 {
-					name = strings.TrimSpace(m[1])
-				}
-				if m := verRe.FindStringSubmatch(cleanLine); len(m) > 1 {
-					version = strings.TrimSpace(m[1])
-				}
-				if name != "" {
-					loc := name
-					if version != "" {
-						loc += ":" + version
-					}
-					addFinding("End of Life Technology", "MEDIUM", loc, "", name+" is end of life", "WizCLI")
-				}
-				continue
+				addFinding(v.Name, strings.ToUpper(v.Severity), location, line, details)
 			}
 		}
 	}
 
-	// Flush any pending state
-	flushCVE(currentCVE)
-	flushSecret(currentSecret)
+	collectCVEs(report.Result.Libraries)
+	collectCVEs(report.Result.OSPackages)
 
-	return findings
+	for _, s := range report.Result.Secrets {
+		title := s.Description
+		if title == "" {
+			title = s.Type
+		}
+		if title == "" {
+			title = "Secret finding"
+		}
+		line := ""
+		if s.LineNumber > 0 {
+			line = strconv.Itoa(s.LineNumber)
+		}
+		severity := strings.ToUpper(s.Severity)
+		if severity == "INFORMATIONAL" || severity == "INFO" || severity == "" {
+			severity = "INFO"
+		}
+		addFinding(title, severity, s.Path, line, title)
+	}
+
+	for _, df := range report.Result.DataFindings {
+		title := df.Classifier
+		if title == "" {
+			title = "Data finding"
+		}
+		if df.MatchCount > 0 {
+			title += " (" + strconv.Itoa(df.MatchCount) + " matches)"
+		}
+		severity := strings.ToUpper(df.Severity)
+		if severity == "INFORMATIONAL" || severity == "INFO" || severity == "" {
+			severity = "INFO"
+		}
+		addFinding(title, severity, df.Path, "", title)
+	}
+
+	for _, eol := range report.Result.EndOfLifeTechnologies {
+		if eol.Name == "" {
+			continue
+		}
+		location := eol.Name
+		if eol.Version != "" {
+			location += ":" + eol.Version
+		}
+		addFinding("End of Life Technology", "MEDIUM", location, "", eol.Name+" is end of life")
+	}
+
+	return findings, nil
 }
