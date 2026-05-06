@@ -186,6 +186,7 @@ type Summary struct {
 	BrakemanSummary         HuskyCISummary `json:"brakemansummary,omitempty"`
 	SpotBugsSummary         HuskyCISummary `json:"spotbugssummary,omitempty"`
 	GitleaksSummary         HuskyCISummary `json:"gitleakssummary,omitempty"`
+	WizCLISummary           HuskyCISummary `json:"wizclisummary,omitempty"`
 	TFSecSummary            HuskyCISummary `json:"tfsecsummary,omitempty"`
 	SecurityCodeScanSummary HuskyCISummary `json:"securitycodescansummary,omitempty"`
 	TotalSummary            HuskyCISummary `json:"totalsummary,omitempty"`

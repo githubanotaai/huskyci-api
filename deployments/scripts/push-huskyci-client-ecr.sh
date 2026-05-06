@@ -27,7 +27,7 @@ if [ -z "${ECR_REGISTRY:-}" ]; then
 fi
 
 FULL_IMAGE="${ECR_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
-DOCKERFILE="deployments/dockerfiles/huskyci-client.Dockerfile"
+DOCKERFILE="deployments/dockerfiles/huskyci-client/huskyci-client.Dockerfile"
 BUILDER_NAME="huskyci-buildx"
 
 echo "▶ Image  : ${FULL_IMAGE}"

@@ -51,6 +51,9 @@ func printSTDOUTOutput(analysis types.Analysis) {
 	// gitleaks
 	printToolGroup("Generic - Gitleaks", outputJSON.GenericResults.HuskyCIGitleaksOutput, printSTDOUTOutputGitleaks)
 
+	// wizcli
+	printToolGroup("Generic - Wiz CLI", outputJSON.GenericResults.HuskyCIWizCLIOutput, printSTDOUTOutputWizCLI)
+
 	// spotbugs
 	printToolGroup("Java - SpotBugs", outputJSON.JavaResults.HuskyCISpotBugsOutput, printSTDOUTOutputSpotBugs)
 
@@ -180,6 +183,18 @@ func prepareAllSummary(analysis types.Analysis) {
 		outputJSON.Summary.GitleaksSummary.FoundVuln = true
 	}
 
+	// WizCLI summary
+	outputJSON.Summary.WizCLISummary.NoSecVuln = len(outputJSON.GenericResults.HuskyCIWizCLIOutput.NoSecVulns)
+	outputJSON.Summary.WizCLISummary.LowVuln = len(outputJSON.GenericResults.HuskyCIWizCLIOutput.LowVulns)
+	outputJSON.Summary.WizCLISummary.MediumVuln = len(outputJSON.GenericResults.HuskyCIWizCLIOutput.MediumVulns)
+	outputJSON.Summary.WizCLISummary.HighVuln = len(outputJSON.GenericResults.HuskyCIWizCLIOutput.HighVulns)
+	if len(outputJSON.GenericResults.HuskyCIWizCLIOutput.LowVulns) > 0 || len(outputJSON.GenericResults.HuskyCIWizCLIOutput.NoSecVulns) > 0 {
+		outputJSON.Summary.WizCLISummary.FoundInfo = true
+	}
+	if len(outputJSON.GenericResults.HuskyCIWizCLIOutput.MediumVulns) > 0 || len(outputJSON.GenericResults.HuskyCIWizCLIOutput.HighVulns) > 0 {
+		outputJSON.Summary.WizCLISummary.FoundVuln = true
+	}
+
 	// TFSec summary
 	outputJSON.Summary.TFSecSummary.LowVuln = len(outputJSON.HclResults.HuskyCITFSecOutput.LowVulns)
 	outputJSON.Summary.TFSecSummary.MediumVuln = len(outputJSON.HclResults.HuskyCITFSecOutput.MediumVulns)
@@ -203,21 +218,21 @@ func prepareAllSummary(analysis types.Analysis) {
 	}
 
 	// Total summary
-	if outputJSON.Summary.GosecSummary.FoundVuln || outputJSON.Summary.BanditSummary.FoundVuln || outputJSON.Summary.SafetySummary.FoundVuln || outputJSON.Summary.BrakemanSummary.FoundVuln || outputJSON.Summary.NpmAuditSummary.FoundVuln || outputJSON.Summary.YarnAuditSummary.FoundVuln || outputJSON.Summary.GitleaksSummary.FoundVuln || outputJSON.Summary.SpotBugsSummary.FoundVuln || outputJSON.Summary.TFSecSummary.FoundVuln || outputJSON.Summary.SecurityCodeScanSummary.FoundVuln {
+	if outputJSON.Summary.GosecSummary.FoundVuln || outputJSON.Summary.BanditSummary.FoundVuln || outputJSON.Summary.SafetySummary.FoundVuln || outputJSON.Summary.BrakemanSummary.FoundVuln || outputJSON.Summary.NpmAuditSummary.FoundVuln || outputJSON.Summary.YarnAuditSummary.FoundVuln || outputJSON.Summary.GitleaksSummary.FoundVuln || outputJSON.Summary.WizCLISummary.FoundVuln || outputJSON.Summary.SpotBugsSummary.FoundVuln || outputJSON.Summary.TFSecSummary.FoundVuln || outputJSON.Summary.SecurityCodeScanSummary.FoundVuln {
 		outputJSON.Summary.TotalSummary.FoundVuln = true
 		types.FoundVuln = true
-	} else if outputJSON.Summary.GosecSummary.FoundInfo || outputJSON.Summary.BanditSummary.FoundInfo || outputJSON.Summary.SafetySummary.FoundInfo || outputJSON.Summary.BrakemanSummary.FoundInfo || outputJSON.Summary.NpmAuditSummary.FoundInfo || outputJSON.Summary.YarnAuditSummary.FoundInfo || outputJSON.Summary.GitleaksSummary.FoundInfo || outputJSON.Summary.SpotBugsSummary.FoundInfo || outputJSON.Summary.TFSecSummary.FoundInfo || outputJSON.Summary.SecurityCodeScanSummary.FoundInfo {
+	} else if outputJSON.Summary.GosecSummary.FoundInfo || outputJSON.Summary.BanditSummary.FoundInfo || outputJSON.Summary.SafetySummary.FoundInfo || outputJSON.Summary.BrakemanSummary.FoundInfo || outputJSON.Summary.NpmAuditSummary.FoundInfo || outputJSON.Summary.YarnAuditSummary.FoundInfo || outputJSON.Summary.GitleaksSummary.FoundInfo || outputJSON.Summary.WizCLISummary.FoundInfo || outputJSON.Summary.SpotBugsSummary.FoundInfo || outputJSON.Summary.TFSecSummary.FoundInfo || outputJSON.Summary.SecurityCodeScanSummary.FoundInfo {
 		outputJSON.Summary.TotalSummary.FoundInfo = true
 		types.FoundInfo = true
 	}
 
-	totalNoSec = outputJSON.Summary.BrakemanSummary.NoSecVuln + outputJSON.Summary.BanditSummary.NoSecVuln + outputJSON.Summary.GosecSummary.NoSecVuln + outputJSON.Summary.GitleaksSummary.NoSecVuln
+	totalNoSec = outputJSON.Summary.BrakemanSummary.NoSecVuln + outputJSON.Summary.BanditSummary.NoSecVuln + outputJSON.Summary.GosecSummary.NoSecVuln + outputJSON.Summary.GitleaksSummary.NoSecVuln + outputJSON.Summary.WizCLISummary.NoSecVuln
 
-	totalLow = outputJSON.Summary.BrakemanSummary.LowVuln + outputJSON.Summary.SafetySummary.LowVuln + outputJSON.Summary.BanditSummary.LowVuln + outputJSON.Summary.GosecSummary.LowVuln + outputJSON.Summary.NpmAuditSummary.LowVuln + outputJSON.Summary.YarnAuditSummary.LowVuln + outputJSON.Summary.GitleaksSummary.LowVuln + outputJSON.Summary.SpotBugsSummary.LowVuln + outputJSON.Summary.TFSecSummary.LowVuln + outputJSON.Summary.SecurityCodeScanSummary.LowVuln
+	totalLow = outputJSON.Summary.BrakemanSummary.LowVuln + outputJSON.Summary.SafetySummary.LowVuln + outputJSON.Summary.BanditSummary.LowVuln + outputJSON.Summary.GosecSummary.LowVuln + outputJSON.Summary.NpmAuditSummary.LowVuln + outputJSON.Summary.YarnAuditSummary.LowVuln + outputJSON.Summary.GitleaksSummary.LowVuln + outputJSON.Summary.WizCLISummary.LowVuln + outputJSON.Summary.SpotBugsSummary.LowVuln + outputJSON.Summary.TFSecSummary.LowVuln + outputJSON.Summary.SecurityCodeScanSummary.LowVuln
 
-	totalMedium = outputJSON.Summary.BrakemanSummary.MediumVuln + outputJSON.Summary.SafetySummary.MediumVuln + outputJSON.Summary.BanditSummary.MediumVuln + outputJSON.Summary.GosecSummary.MediumVuln + outputJSON.Summary.NpmAuditSummary.MediumVuln + outputJSON.Summary.YarnAuditSummary.MediumVuln + outputJSON.Summary.GitleaksSummary.MediumVuln + outputJSON.Summary.SpotBugsSummary.MediumVuln + outputJSON.Summary.TFSecSummary.MediumVuln + outputJSON.Summary.SecurityCodeScanSummary.MediumVuln
+	totalMedium = outputJSON.Summary.BrakemanSummary.MediumVuln + outputJSON.Summary.SafetySummary.MediumVuln + outputJSON.Summary.BanditSummary.MediumVuln + outputJSON.Summary.GosecSummary.MediumVuln + outputJSON.Summary.NpmAuditSummary.MediumVuln + outputJSON.Summary.YarnAuditSummary.MediumVuln + outputJSON.Summary.GitleaksSummary.MediumVuln + outputJSON.Summary.WizCLISummary.MediumVuln + outputJSON.Summary.SpotBugsSummary.MediumVuln + outputJSON.Summary.TFSecSummary.MediumVuln + outputJSON.Summary.SecurityCodeScanSummary.MediumVuln
 
-	totalHigh = outputJSON.Summary.BrakemanSummary.HighVuln + outputJSON.Summary.SafetySummary.HighVuln + outputJSON.Summary.BanditSummary.HighVuln + outputJSON.Summary.GosecSummary.HighVuln + outputJSON.Summary.NpmAuditSummary.HighVuln + outputJSON.Summary.YarnAuditSummary.HighVuln + outputJSON.Summary.GitleaksSummary.HighVuln + outputJSON.Summary.SpotBugsSummary.HighVuln + outputJSON.Summary.TFSecSummary.HighVuln + outputJSON.Summary.SecurityCodeScanSummary.HighVuln
+	totalHigh = outputJSON.Summary.BrakemanSummary.HighVuln + outputJSON.Summary.SafetySummary.HighVuln + outputJSON.Summary.BanditSummary.HighVuln + outputJSON.Summary.GosecSummary.HighVuln + outputJSON.Summary.NpmAuditSummary.HighVuln + outputJSON.Summary.YarnAuditSummary.HighVuln + outputJSON.Summary.GitleaksSummary.HighVuln + outputJSON.Summary.WizCLISummary.HighVuln + outputJSON.Summary.SpotBugsSummary.HighVuln + outputJSON.Summary.TFSecSummary.HighVuln + outputJSON.Summary.SecurityCodeScanSummary.HighVuln
 
 	outputJSON.Summary.TotalSummary.HighVuln = totalHigh
 	outputJSON.Summary.TotalSummary.MediumVuln = totalMedium
@@ -228,7 +243,7 @@ func prepareAllSummary(analysis types.Analysis) {
 
 func printAllSummary(analysis types.Analysis) {
 
-	var gosecVersion, banditVersion, safetyVersion, brakemanVersion, npmauditVersion, yarnauditVersion, gitleaksVersion, spotbugsVersion, tfsecVersion, securityCodeScanVersion string
+	var gosecVersion, banditVersion, safetyVersion, brakemanVersion, npmauditVersion, yarnauditVersion, gitleaksVersion, wizcliVersion, spotbugsVersion, tfsecVersion, securityCodeScanVersion string
 
 	for _, container := range analysis.Containers {
 		switch container.SecurityTest.Name {
@@ -248,6 +263,8 @@ func printAllSummary(analysis types.Analysis) {
 			spotbugsVersion = fmt.Sprintf("%s:%s", container.SecurityTest.Image, container.SecurityTest.ImageTag)
 		case "gitleaks":
 			gitleaksVersion = fmt.Sprintf("%s:%s", container.SecurityTest.Image, container.SecurityTest.ImageTag)
+		case "wizcli":
+			wizcliVersion = fmt.Sprintf("%s:%s", container.SecurityTest.Image, container.SecurityTest.ImageTag)
 		case "tfsec":
 			tfsecVersion = fmt.Sprintf("%s:%s", container.SecurityTest.Image, container.SecurityTest.ImageTag)
 		case "securitycodescan":
@@ -343,6 +360,15 @@ func printAllSummary(analysis types.Analysis) {
 		fmt.Printf("[HUSKYCI][SUMMARY] Medium: %d\n", outputJSON.Summary.GitleaksSummary.MediumVuln)
 		fmt.Printf("[HUSKYCI][SUMMARY] Low: %d\n", outputJSON.Summary.GitleaksSummary.LowVuln)
 		fmt.Printf("[HUSKYCI][SUMMARY] NoSecHusky: %d\n", outputJSON.Summary.GitleaksSummary.NoSecVuln)
+	}
+
+	if outputJSON.Summary.WizCLISummary.FoundVuln || outputJSON.Summary.WizCLISummary.FoundInfo {
+		fmt.Println()
+		fmt.Printf("[HUSKYCI][SUMMARY] Generic -> %s\n", wizcliVersion)
+		fmt.Printf("[HUSKYCI][SUMMARY] High: %d\n", outputJSON.Summary.WizCLISummary.HighVuln)
+		fmt.Printf("[HUSKYCI][SUMMARY] Medium: %d\n", outputJSON.Summary.WizCLISummary.MediumVuln)
+		fmt.Printf("[HUSKYCI][SUMMARY] Low: %d\n", outputJSON.Summary.WizCLISummary.LowVuln)
+		fmt.Printf("[HUSKYCI][SUMMARY] NoSecHusky: %d\n", outputJSON.Summary.WizCLISummary.NoSecVuln)
 	}
 
 	if outputJSON.Summary.TotalSummary.FoundVuln || outputJSON.Summary.TotalSummary.FoundInfo {
@@ -489,6 +515,34 @@ func printSTDOUTOutputGitleaks(issues []types.HuskyCIVulnerability) {
 		fmt.Printf("[HUSKYCI][!] Details: %s\n", issue.Details)
 		fmt.Printf("[HUSKYCI][!] File: %s\n", issue.File)
 		fmt.Printf("[HUSKYCI][!] Code: %s\n", issue.Code)
+	}
+}
+
+func printSTDOUTOutputWizCLI(issues []types.HuskyCIVulnerability) {
+	for _, issue := range issues {
+		fmt.Println()
+		fmt.Printf("[HUSKYCI][!] Title: %s\n", issue.Title)
+		if issue.Language != "" {
+			fmt.Printf("[HUSKYCI][!] Language: %s\n", issue.Language)
+		}
+		fmt.Printf("[HUSKYCI][!] Tool: %s\n", issue.SecurityTool)
+		fmt.Printf("[HUSKYCI][!] Severity: %s\n", issue.Severity)
+		fmt.Printf("[HUSKYCI][!] Details: %s\n", issue.Details)
+		if issue.File != "" {
+			fmt.Printf("[HUSKYCI][!] File: %s\n", issue.File)
+		}
+		if issue.Line != "" {
+			fmt.Printf("[HUSKYCI][!] Line: %s\n", issue.Line)
+		}
+		if issue.Code != "" {
+			fmt.Printf("[HUSKYCI][!] Code: %s\n", issue.Code)
+		}
+		if issue.VunerableBelow != "" {
+			fmt.Printf("[HUSKYCI][!] Vulnerable Below: %s\n", issue.VunerableBelow)
+		}
+		if issue.Version != "" {
+			fmt.Printf("[HUSKYCI][!] Version: %s\n", issue.Version)
+		}
 	}
 }
 
