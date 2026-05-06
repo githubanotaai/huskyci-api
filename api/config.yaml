@@ -430,9 +430,7 @@ wizcli:
     echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config &&
     GIT_TERMINAL_PROMPT=0 git clone -b %GIT_BRANCH% --single-branch --depth 1 %GIT_REPO% code --quiet 2>/tmp/errorGitCloneWiz
     if [ $? -eq 0 ]; then
-        export WIZ_CLIENT_ID='%WIZ_CLIENT_ID%'
-        export WIZ_CLIENT_SECRET='%WIZ_CLIENT_SECRET%'
-        wizcli auth > /tmp/errorWizAuth 2>&1
+        wizcli auth --id '%WIZ_CLIENT_ID%' --secret '%WIZ_CLIENT_SECRET%' > /tmp/errorWizAuth 2>&1
         if [ $? -ne 0 ]; then
             echo 'ERROR_AUTH_WIZCLI'
             cat /tmp/errorWizAuth
