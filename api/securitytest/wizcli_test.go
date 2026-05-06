@@ -289,16 +289,19 @@ func TestAnalyzeWizCLI_SeverityBuckets(t *testing.T) {
 
 // ── TestAnalyzeWizCLI_ErrorAuth ───────────────────────────────────────────────
 
+// TestAnalyzeWizCLI_ErrorAuth verifies that ERROR_AUTH_WIZCLI surfaces as an
+// error so authentication failures are not silently swallowed.
 func TestAnalyzeWizCLI_ErrorAuth(t *testing.T) {
 	scanInfo := &SecTestScanInfo{}
 	scanInfo.Container.COutput = "ERROR_AUTH_WIZCLI: authentication failed"
 	scanInfo.ErrorFound = nil
 
-	if err := analyzeWizCLI(scanInfo); err != nil {
-		t.Fatalf("analyzeWizCLI returned unexpected error: %v", err)
+	err := analyzeWizCLI(scanInfo)
+	if err == nil {
+		t.Fatal("expected non-nil error when ERROR_AUTH_WIZCLI is present, got nil")
 	}
-	if scanInfo.ErrorFound != nil {
-		t.Errorf("expected ErrorFound to be nil after auth error, got %v", scanInfo.ErrorFound)
+	if scanInfo.ErrorFound == nil {
+		t.Error("expected scanInfo.ErrorFound to be set, got nil")
 	}
 
 	total := len(scanInfo.Vulnerabilities.HighVulns) +

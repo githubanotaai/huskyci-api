@@ -20,8 +20,8 @@ func analyzeWizCLI(scanInfo *SecTestScanInfo) error {
 	output := scanInfo.Container.COutput
 
 	if strings.Contains(output, "ERROR_AUTH_WIZCLI") {
-		scanInfo.ErrorFound = nil
-		return nil
+		scanInfo.ErrorFound = errors.New("wizcli authentication failed (ERROR_AUTH_WIZCLI)")
+		return scanInfo.ErrorFound
 	}
 
 	if strings.Contains(output, "ERROR_RUNNING_WIZCLI_SCAN") {
