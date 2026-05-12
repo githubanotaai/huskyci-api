@@ -117,9 +117,28 @@ Registry hosts and account IDs are not hardcoded in scripts. Set environment var
 | `HUSKYCI_KUBERNETES_NAMESPACE` | Namespace for scanner pods |
 | `HUSKYCI_KUBERNETES_NODE_SELECTOR` | Node selector for scanner pods (e.g. `karpenter.sh/nodepool=actions-runner`) |
 | `HUSKYCI_KUBERNETES_TOLERATIONS` | Tolerations for scanner pods (e.g. `actions-runner=true:NoSchedule`) |
-| `HUSKYCI_KUBERNETES_POD_SCHEDULING_TIMEOUT` | Timeout in seconds for pod scheduling (default: 60) |
-| `HUSKYCI_GITLEAKS_IMAGE` | If set, overrides the Gitleaks container image from `config.yaml` (e.g. ECR URL) |
-| `HUSKYCI_GITLEAKS_IMAGE_TAG` | If set, overrides the Gitleaks image tag from `config.yaml` |
+|| `HUSKYCI_KUBERNETES_POD_SCHEDULING_TIMEOUT` | Timeout in seconds for pod scheduling (default: 60) |
+|| `HUSKYCI_GITLEAKS_IMAGE` | If set, overrides the Gitleaks container image from `config.yaml` (e.g. ECR URL) |
+|| `HUSKYCI_GITLEAKS_IMAGE_TAG` | If set, overrides the Gitleaks image tag from `config.yaml` |
+
+#### Security test disable flags
+
+Each security test can be disabled at runtime by setting its corresponding environment variable to `true` or `1`:
+
+| Variable | Description |
+|----------|-------------|
+| `HUSKYCI_DISABLE_GITAUTHORS` | Disable git authors metadata collection |
+| `HUSKYCI_DISABLE_GITLEAKS` | Disable secrets scanning |
+| `HUSKYCI_DISABLE_WIZCLI` | Disable Wiz CLI scanning |
+| `HUSKYCI_DISABLE_BANDIT` | Disable Python Bandit |
+| `HUSKYCI_DISABLE_SAFETY` | Disable Python Safety |
+| `HUSKYCI_DISABLE_GOSEC` | Disable Go Gosec |
+| `HUSKYCI_DISABLE_NPMAUDIT` | Disable JavaScript Npm Audit |
+| `HUSKYCI_DISABLE_YARNAUDIT` | Disable JavaScript Yarn Audit |
+| `HUSKYCI_DISABLE_BRAKEMAN` | Disable Ruby Brakeman |
+| `HUSKYCI_DISABLE_SPOTBUGS` | Disable Java SpotBugs |
+| `HUSKYCI_DISABLE_TFSEC` | Disable HCL TFSec |
+| `HUSKYCI_DISABLE_SECURITYCODESCAN` | Disable C# Security Code Scan |
 
 ### Client environment variables
 

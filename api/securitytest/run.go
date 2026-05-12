@@ -1,6 +1,8 @@
 package securitytest
 
 import (
+	"os"
+	"strings"
 	"sync"
 
 	apiContext "github.com/githubanotaai/huskyci-api/api/context"
@@ -31,6 +33,15 @@ const gitleaks = "gitleaks"
 const tfsec = "tfsec"
 const securitycodescan = "securitycodescan"
 const wizcli = "wizcli"
+
+// isTestDisabled checks if a security test is disabled via environment variable.
+// The env var pattern is: HUSKYCI_DISABLE_<TESTNAME> (e.g., HUSKYCI_DISABLE_GITAUTHORS=true)
+// Returns true if the test should be skipped.
+func isTestDisabled(testName string) bool {
+	envVarName := "HUSKYCI_DISABLE_" + strings.ToUpper(testName)
+	value := os.Getenv(envVarName)
+	return strings.ToLower(value) == "true" || value == "1"
+}
 
 // Start runs both generic and language security
 func (results *RunAllInfo) Start(enryScan SecTestScanInfo) error {
@@ -108,6 +119,11 @@ func (results *RunAllInfo) runGenericScans(enryScan SecTestScanInfo) error {
 	}
 
 	for genericTestIndex := range genericTests {
+		// Skip disabled security tests
+		if isTestDisabled(genericTests[genericTestIndex].Name) {
+			log.Info("runGenericScans", "SECURITYTEST", 0, "Skipping disabled test: "+genericTests[genericTestIndex].Name)
+			continue
+		}
 		wg.Add(1)
 		go func(genericTest *types.SecurityTest) {
 			defer wg.Done()
@@ -174,6 +190,11 @@ func (results *RunAllInfo) runLanguageScans(enryScan SecTestScanInfo) error {
 	}
 
 	for languageTestIndex := range languageTests {
+		// Skip disabled security tests
+		if isTestDisabled(languageTests[languageTestIndex].Name) {
+			log.Info("runLanguageScans", "SECURITYTEST", 0, "Skipping disabled test: "+languageTests[languageTestIndex].Name)
+			continue
+		}
 		wg.Add(1)
 		go func(languageTest *types.SecurityTest) {
 			defer wg.Done()
