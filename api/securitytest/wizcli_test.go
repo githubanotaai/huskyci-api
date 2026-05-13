@@ -80,8 +80,9 @@ func TestParseWizCLIJSON_LibraryCVEs(t *testing.T) {
 	if high.Severity != "HIGH" {
 		t.Errorf("expected severity HIGH, got %q", high.Severity)
 	}
-	if !strings.Contains(high.File, "lodash:4.17.4") {
-		t.Errorf("expected location to contain 'lodash:4.17.4', got %q", high.File)
+	// Updated: we now use the manifest path directly, not package:version format
+	if high.File != "/package-lock.json" {
+		t.Errorf("expected file '/package-lock.json', got %q", high.File)
 	}
 	if high.Line != "5" {
 		t.Errorf("expected line '5', got %q", high.Line)
@@ -282,5 +283,412 @@ func TestAnalyzeWizCLI_EmptyOutputIsNoFindings(t *testing.T) {
 		len(scanInfo.Vulnerabilities.NoSecVulns)
 	if total != 0 {
 		t.Errorf("expected 0 findings for empty output, got %d", total)
+	}
+}
+
+// ── file path normalization tests (TDD for dependency findings) ───────────────
+
+func TestNormalizeFilePath_AlreadyValid(t *testing.T) {
+	tests := []struct {
+		name     string
+		filePath string
+		expected string
+	}{
+		{
+			name:     "regular source file",
+			filePath: "/src/main.py",
+			expected: "/src/main.py",
+		},
+		{
+			name:     "file with line reference",
+			filePath: "/app/handlers/user.py:42",
+			expected: "/app/handlers/user.py:42",
+		},
+		{
+			name:     "manifest file",
+			filePath: "/package-lock.json",
+			expected: "/package-lock.json",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := normalizeFilePath(tc.filePath, "")
+			if result != tc.expected {
+				t.Errorf("normalizeFilePath(%q) = %q, want %q", tc.filePath, result, tc.expected)
+			}
+		})
+	}
+}
+
+func TestNormalizeFilePath_DependencyPath(t *testing.T) {
+	tests := []struct {
+		name         string
+		filePath     string
+		manifestPath string
+		expected     string
+	}{
+		{
+			name:         "python package with requirements.txt",
+			filePath:     "pytest:7.4.3 (requirements.txt)",
+			manifestPath: "/requirements.txt",
+			expected:     "/requirements.txt:pytest:7.4.3",
+		},
+		{
+			name:         "fastapi dependency",
+			filePath:     "fastapi:0.104.1 (requirements.txt)",
+			manifestPath: "/requirements.txt",
+			expected:     "/requirements.txt:fastapi:0.104.1",
+		},
+		{
+			name:         "gunicorn without manifest detected",
+			filePath:     "gunicorn:21.2.0 (requirements.txt)",
+			manifestPath: "",
+			expected:     "/requirements.txt:gunicorn:21.2.0",
+		},
+		{
+			name:         "npm package with package-lock.json",
+			filePath:     "lodash:4.17.4 (package-lock.json)",
+			manifestPath: "/package-lock.json",
+			expected:     "/package-lock.json:lodash:4.17.4",
+		},
+		{
+			name:         "package without parentheses",
+			filePath:     "requests:2.28.0",
+			manifestPath: "/requirements.txt",
+			expected:     "/requirements.txt:requests:2.28.0",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := normalizeFilePath(tc.filePath, tc.manifestPath)
+			if result != tc.expected {
+				t.Errorf("normalizeFilePath(%q, %q) = %q, want %q",
+					tc.filePath, tc.manifestPath, result, tc.expected)
+			}
+		})
+	}
+}
+
+func TestNormalizeFilePath_PlaceholderFile(t *testing.T) {
+	tests := []struct {
+		name     string
+		filePath string
+		expected string
+	}{
+		{
+			name:     "huskyci placeholder",
+			filePath: "huskyCI/huskyCI_Placeholder_File",
+			expected: "huskyCI/huskyCI_Placeholder_File",
+		},
+		{
+			name:     "generic placeholder without extension",
+			filePath: "/placeholder",
+			expected: "/placeholder",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := normalizeFilePath(tc.filePath, "")
+			if result != tc.expected {
+				t.Errorf("normalizeFilePath(%q) = %q, want %q", tc.filePath, result, tc.expected)
+			}
+		})
+	}
+}
+
+func TestParseWizCLIJSON_LibraryCVEs_NormalizePaths(t *testing.T) {
+	const input = `{"result":{"libraries":[
+		{"name":"pytest","version":"7.4.3","path":"/requirements.txt",
+		 "vulnerabilities":[{"name":"CVE-2023-XXXX","severity":"HIGH","fixedVersion":"7.4.4"}]},
+		{"name":"lodash","version":"4.17.4","path":"/package-lock.json",
+		 "vulnerabilities":[{"name":"CVE-2021-23337","severity":"HIGH","fixedVersion":"4.17.21"}]}
+	]}}`
+	out, err := parseWizCLIJSON(input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(out) != 2 {
+		t.Fatalf("expected 2 findings, got %d", len(out))
+	}
+
+	// Verify paths are preserved as manifest files (not transformed to package:version)
+	for _, v := range out {
+		if !strings.HasPrefix(v.File, "/") {
+			t.Errorf("expected file path starting with '/', got %q", v.File)
+		}
+		if strings.Contains(v.File, "(") && strings.Contains(v.File, ")") {
+			t.Errorf("expected normalized path without parentheses, got %q", v.File)
+		}
+	}
+}
+
+// ── manifest file detection tests ──────────────────────────────────────────────
+
+func TestDetectManifestType(t *testing.T) {
+	tests := []struct {
+		name     string
+		filePath string
+		expected string
+	}{
+		{
+			name:     "python requirements.txt",
+			filePath: "/requirements.txt",
+			expected: "python",
+		},
+		{
+			name:     "python requirements-dev.txt",
+			filePath: "/requirements-dev.txt",
+			expected: "python",
+		},
+		{
+			name:     "python pyproject.toml",
+			filePath: "/pyproject.toml",
+			expected: "python",
+		},
+		{
+			name:     "python setup.py",
+			filePath: "/setup.py",
+			expected: "python",
+		},
+		{
+			name:     "node package-lock.json",
+			filePath: "/package-lock.json",
+			expected: "node",
+		},
+		{
+			name:     "node yarn.lock",
+			filePath: "/yarn.lock",
+			expected: "node",
+		},
+		{
+			name:     "node package.json",
+			filePath: "/package.json",
+			expected: "node",
+		},
+		{
+			name:     "go go.mod",
+			filePath: "/go.mod",
+			expected: "go",
+		},
+		{
+			name:     "go go.sum",
+			filePath: "/go.sum",
+			expected: "go",
+		},
+		{
+			name:     "java pom.xml",
+			filePath: "/pom.xml",
+			expected: "java",
+		},
+		{
+			name:     "ruby gemfile",
+			filePath: "/Gemfile",
+			expected: "ruby",
+		},
+		{
+			name:     "ruby gemfile.lock",
+			filePath: "/Gemfile.lock",
+			expected: "ruby",
+		},
+		{
+			name:     "php composer.json",
+			filePath: "/composer.json",
+			expected: "php",
+		},
+		{
+			name:     "php composer.lock",
+			filePath: "/composer.lock",
+			expected: "php",
+		},
+		{
+			name:     "unknown manifest",
+			filePath: "/some-random.lock",
+			expected: "",
+		},
+		{
+			name:     "regular source file",
+			filePath: "/src/main.py",
+			expected: "",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := detectManifestType(tc.filePath)
+			if result != tc.expected {
+				t.Errorf("detectManifestType(%q) = %q, want %q", tc.filePath, result, tc.expected)
+			}
+		})
+	}
+}
+
+func TestIsManifestFile(t *testing.T) {
+	tests := []struct {
+		name     string
+		filePath string
+		expected bool
+	}{
+		{
+			name:     "requirements.txt is manifest",
+			filePath: "/requirements.txt",
+			expected: true,
+		},
+		{
+			name:     "package-lock.json is manifest",
+			filePath: "/package-lock.json",
+			expected: true,
+		},
+		{
+			name:     "go.mod is manifest",
+			filePath: "/go.mod",
+			expected: true,
+		},
+		{
+			name:     "regular python file is not manifest",
+			filePath: "/src/app.py",
+			expected: false,
+		},
+		{
+			name:     "regular js file is not manifest",
+			filePath: "/index.js",
+			expected: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := isManifestFile(tc.filePath)
+			if result != tc.expected {
+				t.Errorf("isManifestFile(%q) = %v, want %v", tc.filePath, result, tc.expected)
+			}
+		})
+	}
+}
+
+// ── SonarQube output validation tests ───────────────────────────────────────────
+
+func TestValidateSonarQubeFilePath(t *testing.T) {
+	tests := []struct {
+		name        string
+		filePath    string
+		shouldError bool
+		description string
+	}{
+		{
+			name:        "valid_source_file",
+			filePath:    "/src/main.py",
+			shouldError: false,
+			description: "Regular source files should pass validation",
+		},
+		{
+			name:        "valid_manifest_file",
+			filePath:    "/requirements.txt",
+			shouldError: false,
+			description: "Manifest files like requirements.txt should pass",
+		},
+		{
+			name:        "valid_composite_path",
+			filePath:    "/requirements.txt:pytest:7.4.3",
+			shouldError: false,
+			description: "Composite manifest:package:version paths should pass",
+		},
+		{
+			name:        "invalid_package_version_only",
+			filePath:    "pytest:7.4.3 (requirements.txt)",
+			shouldError: true,
+			description: "Raw package:version (requirements.txt) format should fail - SonarQube rejects it",
+		},
+		{
+			name:        "invalid_no_leading_slash",
+			filePath:    "src/main.py",
+			shouldError: true,
+			description: "Relative paths without leading slash should fail",
+		},
+		{
+			name:        "invalid_placeholder",
+			filePath:    "huskyCI/huskyCI_Placeholder_File",
+			shouldError: true,
+			description: "Placeholder files should fail - not real files in project",
+		},
+		{
+			name:        "empty_path",
+			filePath:    "",
+			shouldError: true,
+			description: "Empty paths should fail validation",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateSonarQubeFilePath(tc.filePath)
+			if tc.shouldError && err == nil {
+				t.Errorf("%s: expected error for %q, got nil", tc.description, tc.filePath)
+			}
+			if !tc.shouldError && err != nil {
+				t.Errorf("%s: expected no error for %q, got %v", tc.description, tc.filePath, err)
+			}
+		})
+	}
+}
+
+func TestGenerateSonarQubeExternalIssue(t *testing.T) {
+	tests := []struct {
+		name string
+		vuln types.HuskyCIVulnerability
+	}{
+		{
+			name: "dependency vulnerability in manifest",
+			vuln: types.HuskyCIVulnerability{
+				Title:        "CVE-2023-XXXX",
+				Severity:     "HIGH",
+				File:         "/requirements.txt:pytest:7.4.3",
+				Line:         "5",
+				Details:       "CVE-2023-XXXX (fixed: 7.4.4)",
+				SecurityTool: "WizCLI",
+			},
+		},
+		{
+			name: "source code vulnerability",
+			vuln: types.HuskyCIVulnerability{
+				Title:        "SQL Injection",
+				Severity:     "CRITICAL",
+				File:         "/app/db/queries.py",
+				Line:         "42",
+				Details:       "Potential SQL injection in user input",
+				SecurityTool: "WizCLI",
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			issue := generateSonarQubeExternalIssue(tc.vuln)
+
+			// Verify the issue has required fields
+			if issue.EngineID == "" {
+				t.Error("expected EngineID to be set")
+			}
+			if issue.RuleID == "" {
+				t.Error("expected RuleID to be set")
+			}
+			if issue.PrimaryLocation.Message == "" {
+				t.Error("expected Message to be set")
+			}
+			if issue.PrimaryLocation.FilePath == "" {
+				t.Error("expected FilePath to be set")
+			}
+
+			// Verify file path is normalized (doesn't contain parentheses)
+			if strings.Contains(issue.PrimaryLocation.FilePath, "(") {
+				t.Errorf("file path should not contain parentheses: %q", issue.PrimaryLocation.FilePath)
+			}
+			// Verify file path starts with /
+			if !strings.HasPrefix(issue.PrimaryLocation.FilePath, "/") {
+				t.Errorf("file path should start with '/': %q", issue.PrimaryLocation.FilePath)
+			}
+		})
 	}
 }
