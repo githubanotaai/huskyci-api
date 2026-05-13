@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -103,6 +104,209 @@ func analyzeWizCLI(scanInfo *SecTestScanInfo) error {
 	return nil
 }
 
+// manifestFileTypes maps manifest file names/basenames to their language ecosystem.
+var manifestFileTypes = map[string]string{
+	// Python
+	"requirements.txt":    "python",
+	"requirements":        "python", // prefix match for requirements-*.txt
+	"pyproject.toml":      "python",
+	"setup.py":            "python",
+	"Pipfile":             "python",
+	"Pipfile.lock":        "python",
+	// Node.js
+	"package-lock.json": "node",
+	"package.json":       "node",
+	"yarn.lock":          "node",
+	"npm-shrinkwrap.json": "node",
+	"pnpm-lock.yaml":    "node",
+	// Go
+	"go.mod": "go",
+	"go.sum": "go",
+	// Java
+	"pom.xml":           "java",
+	"build.gradle":      "java",
+	"build.gradle.kts":  "java",
+	// Ruby
+	"Gemfile":      "ruby",
+	"Gemfile.lock": "ruby",
+	// PHP
+	"composer.json": "php",
+	"composer.lock": "php",
+	// .NET
+	"packages.config":  "dotnet",
+	"project.json":     "dotnet",
+	"project.lock.json": "dotnet",
+	// Rust
+	"Cargo.toml": "rust",
+	"Cargo.lock": "rust",
+}
+
+// detectManifestType returns the language/ecosystem type for a manifest file path.
+// Returns empty string if not a recognized manifest file.
+func detectManifestType(filePath string) string {
+	// Get basename of file
+	base := filepath.Base(filePath)
+
+	// Direct match
+	if lang, ok := manifestFileTypes[base]; ok {
+		return lang
+	}
+
+	// Special case: requirements-*.txt pattern
+	if strings.HasPrefix(base, "requirements") && strings.HasSuffix(base, ".txt") {
+		return "python"
+	}
+
+	// Special case: *.gradle files
+	if strings.HasSuffix(base, ".gradle") || strings.HasSuffix(base, ".gradle.kts") {
+		return "java"
+	}
+
+	return ""
+}
+
+// isManifestFile returns true if the file path points to a known dependency manifest file.
+func isManifestFile(filePath string) bool {
+	return detectManifestType(filePath) != ""
+}
+
+// normalizeFilePath ensures file paths are valid for SonarQube's generic issue import.
+// Dependency findings often arrive as "package:version (manifest)" which SonarQube rejects
+// as unknown files. This normalizes them to "/manifest:package:version" format.
+func normalizeFilePath(filePath, manifestPath string) string {
+	// Already a proper absolute path - return as-is
+	if strings.HasPrefix(filePath, "/") && !strings.Contains(filePath, "(") {
+		return filePath
+	}
+
+	// Handle dependency format: "package:version (manifest_file)"
+	// Pattern: package:version or package:version (requirements.txt)
+	if strings.Contains(filePath, ":") {
+		// Extract manifest name from parentheses if present
+		manifestName := ""
+		if idx := strings.Index(filePath, "("); idx != -1 {
+			closeParen := strings.Index(filePath[idx:], ")")
+			if closeParen != -1 {
+				manifestName = filePath[idx+1 : idx+closeParen]
+			}
+		}
+
+		// Extract package:version (remove parentheses suffix)
+		pkgVersion := filePath
+		if idx := strings.Index(pkgVersion, " ("); idx != -1 {
+			pkgVersion = pkgVersion[:idx]
+		}
+
+		// Determine manifest path
+		var manifest string
+		if manifestPath != "" {
+			manifest = manifestPath
+		} else if manifestName != "" {
+			manifest = "/" + manifestName
+		} else {
+			// Default manifest based on common patterns
+			// This fallback handles cases where manifest isn't specified
+			manifest = "/unknown_manifest"
+		}
+
+		return manifest + ":" + pkgVersion
+	}
+
+	// Default: return as-is (placeholder files, etc.)
+	return filePath
+}
+
+// validateSonarQubeFilePath checks if a file path is valid for SonarQube's generic issue import.
+// SonarQube rejects paths that don't match actual files in the project.
+func validateSonarQubeFilePath(filePath string) error {
+	if filePath == "" {
+		return errors.New("empty file path")
+	}
+
+	// Must start with / (absolute path in project)
+	if !strings.HasPrefix(filePath, "/") {
+		return fmt.Errorf("path must start with '/': %q", filePath)
+	}
+
+	// Reject placeholder files
+	if strings.Contains(filePath, "huskyCI_Placeholder_File") {
+		return fmt.Errorf("placeholder file not valid for SonarQube: %q", filePath)
+	}
+
+	// Reject the raw "package:version (manifest)" format that SonarQube ignores
+	// This format appears in external tool output when not properly normalized
+	if strings.Contains(filePath, "(") && strings.Contains(filePath, ")") {
+		// Allow composite paths like "/requirements.txt:package:version"
+		// but reject "package:version (manifest)" format
+		if !strings.HasPrefix(filePath, "/") || strings.HasPrefix(filePath, "(") {
+			return fmt.Errorf("invalid package:version (manifest) format: %q", filePath)
+		}
+	}
+
+	return nil
+}
+
+// sonarQubeExternalIssue represents a single external issue for SonarQube import.
+type sonarQubeExternalIssue struct {
+	EngineID       string `json:"engineId"`
+	RuleID         string `json:"ruleId"`
+	Severity       string `json:"severity,omitempty"`
+	Type           string `json:"type,omitempty"`
+	PrimaryLocation struct {
+		Message  string `json:"message"`
+		FilePath string `json:"filePath"`
+		Line     int    `json:"line,omitempty"`
+	} `json:"primaryLocation"`
+}
+
+// generateSonarQubeExternalIssue converts a HuskyCIVulnerability to SonarQube external issue format.
+func generateSonarQubeExternalIssue(vuln types.HuskyCIVulnerability) sonarQubeExternalIssue {
+	issue := sonarQubeExternalIssue{
+		EngineID: vuln.SecurityTool,
+		RuleID:   vuln.Title,
+	}
+
+	// Map severity from HuskyCI to SonarQube format
+	switch strings.ToUpper(vuln.Severity) {
+	case "CRITICAL":
+		issue.Severity = "CRITICAL"
+		issue.Type = "VULNERABILITY"
+	case "HIGH":
+		issue.Severity = "MAJOR"
+		issue.Type = "VULNERABILITY"
+	case "MEDIUM":
+		issue.Severity = "MINOR"
+		issue.Type = "VULNERABILITY"
+	case "LOW":
+		issue.Severity = "INFO"
+		issue.Type = "VULNERABILITY"
+	default:
+		issue.Severity = "MAJOR"
+		issue.Type = "VULNERABILITY"
+	}
+
+	// Set message (combine title and details)
+	msg := vuln.Title
+	if vuln.Details != "" {
+		msg += " - " + vuln.Details
+	}
+	issue.PrimaryLocation.Message = msg
+
+	// Normalize the file path for SonarQube
+	filePath := vuln.File
+	filePath = normalizeFilePath(filePath, "")
+	issue.PrimaryLocation.FilePath = filePath
+
+	// Parse line number
+	if vuln.Line != "" {
+		if lineNum, err := strconv.Atoi(vuln.Line); err == nil && lineNum > 0 {
+			issue.PrimaryLocation.Line = lineNum
+		}
+	}
+
+	return issue
+}
+
 // parseWizCLIJSON converts the JSON produced by `wizcli dir scan -f json`
 // into HuskyCIVulnerability entries, covering CVEs (libraries, OS packages),
 // secrets, data findings, and end-of-life technologies.
@@ -134,12 +338,14 @@ func parseWizCLIJSON(output string) ([]types.HuskyCIVulnerability, error) {
 
 	collectCVEs := func(pkgs []wizPackageWithVulns) {
 		for _, pkg := range pkgs {
-			location := pkg.Name
-			if pkg.Version != "" {
-				location += ":" + pkg.Version
-			}
-			if pkg.Path != "" {
-				location += " (" + strings.TrimLeft(pkg.Path, "/") + ")"
+			// Use the manifest path directly if available - WizCLI provides the actual file
+			location := pkg.Path
+			if location == "" {
+				// Fallback: construct from package name/version
+				location = pkg.Name
+				if pkg.Version != "" {
+					location += ":" + pkg.Version
+				}
 			}
 			line := ""
 			if pkg.StartLine > 0 {
@@ -158,7 +364,9 @@ func parseWizCLIJSON(output string) ([]types.HuskyCIVulnerability, error) {
 				if v.Description != "" {
 					details += " — " + v.Description
 				}
-				addFinding(v.Name, strings.ToUpper(v.Severity), location, line, details)
+				// Normalize the location for SonarQube compatibility
+				normalizedLocation := normalizeFilePath(location, pkg.Path)
+				addFinding(v.Name, strings.ToUpper(v.Severity), normalizedLocation, line, details)
 			}
 		}
 	}
