@@ -127,6 +127,7 @@ func (safetyScan *SecTestScanInfo) prepareSafetyVulns() {
 		safetyVuln := types.HuskyCIVulnerability{}
 		safetyVuln.Language = "Python"
 		safetyVuln.SecurityTool = "Safety"
+		safetyVuln.File = "requirements.txt"
 		safetyVuln.Severity = "high"
 		safetyVuln.Details = issue.Comment
 		safetyVuln.Code = issue.Dependency + " " + issue.Version

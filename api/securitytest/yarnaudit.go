@@ -129,6 +129,7 @@ func (yarnAuditScan *SecTestScanInfo) prepareYarnAuditVulns() {
 		yarnauditVuln := types.HuskyCIVulnerability{}
 		yarnauditVuln.Language = "JavaScript"
 		yarnauditVuln.SecurityTool = "YarnAudit"
+		yarnauditVuln.File = "yarn.lock"
 		yarnauditVuln.Details = issue.Overview
 		yarnauditVuln.Title = fmt.Sprintf("Vulnerable Dependency: %s %s (%s)", issue.ModuleName, issue.VulnerableVersions, issue.Title)
 		yarnauditVuln.VunerableBelow = issue.VulnerableVersions
