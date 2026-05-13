@@ -202,9 +202,9 @@ func getFilePath(vuln types.HuskyCIVulnerability, outputPath string) string {
 		endIdx := strings.Index(filePath, ")")
 		if startIdx != -1 && endIdx != -1 && endIdx > startIdx {
 			manifestName := filePath[startIdx+1 : endIdx]
-			pkgVersion := strings.TrimSpace(filePath[:startIdx])
-			// Construct normalized path: /manifest:package:version
-			return "/" + manifestName + ":" + pkgVersion
+			// Return just the manifest file path (e.g., "requirements.txt")
+			// SonarQube expects relative paths from project root
+			return manifestName
 		}
 	}
 
@@ -212,6 +212,10 @@ func getFilePath(vuln types.HuskyCIVulnerability, outputPath string) string {
 	if strings.Contains(filePath, "huskyCI_Placeholder_File") {
 		return filepath.Join(outputPath, placeholderFileName)
 	}
+
+	// Strip leading "./" prefix if present - SonarQube expects relative paths
+	// without the "./" prefix (e.g., "im_sync/auth.py" not "./im_sync/auth.py")
+	filePath = strings.TrimPrefix(filePath, "./")
 
 	return filePath
 }

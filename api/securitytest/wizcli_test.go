@@ -80,9 +80,9 @@ func TestParseWizCLIJSON_LibraryCVEs(t *testing.T) {
 	if high.Severity != "HIGH" {
 		t.Errorf("expected severity HIGH, got %q", high.Severity)
 	}
-	// Updated: we now use the manifest path directly, not package:version format
-	if high.File != "/package-lock.json" {
-		t.Errorf("expected file '/package-lock.json', got %q", high.File)
+	// Updated: we now use the manifest path directly (without leading /)
+	if high.File != "package-lock.json" {
+		t.Errorf("expected file 'package-lock.json', got %q", high.File)
 	}
 	if high.Line != "5" {
 		t.Errorf("expected line '5', got %q", high.Line)
@@ -297,17 +297,17 @@ func TestNormalizeFilePath_AlreadyValid(t *testing.T) {
 		{
 			name:     "regular source file",
 			filePath: "/src/main.py",
-			expected: "/src/main.py",
+			expected: "src/main.py", // Leading / stripped for SonarQube relative paths
 		},
 		{
 			name:     "file with line reference",
 			filePath: "/app/handlers/user.py:42",
-			expected: "/app/handlers/user.py:42",
+			expected: "app/handlers/user.py:42", // Leading / stripped
 		},
 		{
 			name:     "manifest file",
 			filePath: "/package-lock.json",
-			expected: "/package-lock.json",
+			expected: "package-lock.json", // Leading / stripped
 		},
 	}
 
@@ -332,31 +332,31 @@ func TestNormalizeFilePath_DependencyPath(t *testing.T) {
 			name:         "python package with requirements.txt",
 			filePath:     "pytest:7.4.3 (requirements.txt)",
 			manifestPath: "/requirements.txt",
-			expected:     "/requirements.txt:pytest:7.4.3",
+			expected:     "requirements.txt:pytest:7.4.3", // No leading / for SonarQube
 		},
 		{
 			name:         "fastapi dependency",
 			filePath:     "fastapi:0.104.1 (requirements.txt)",
 			manifestPath: "/requirements.txt",
-			expected:     "/requirements.txt:fastapi:0.104.1",
+			expected:     "requirements.txt:fastapi:0.104.1",
 		},
 		{
 			name:         "gunicorn without manifest detected",
 			filePath:     "gunicorn:21.2.0 (requirements.txt)",
 			manifestPath: "",
-			expected:     "/requirements.txt:gunicorn:21.2.0",
+			expected:     "requirements.txt:gunicorn:21.2.0", // Extracted from parentheses
 		},
 		{
 			name:         "npm package with package-lock.json",
 			filePath:     "lodash:4.17.4 (package-lock.json)",
 			manifestPath: "/package-lock.json",
-			expected:     "/package-lock.json:lodash:4.17.4",
+			expected:     "package-lock.json:lodash:4.17.4",
 		},
 		{
 			name:         "package without parentheses",
 			filePath:     "requests:2.28.0",
 			manifestPath: "/requirements.txt",
-			expected:     "/requirements.txt:requests:2.28.0",
+			expected:     "requirements.txt:requests:2.28.0",
 		},
 	}
 
@@ -385,7 +385,7 @@ func TestNormalizeFilePath_PlaceholderFile(t *testing.T) {
 		{
 			name:     "generic placeholder without extension",
 			filePath: "/placeholder",
-			expected: "/placeholder",
+			expected: "placeholder", // Leading / stripped for SonarQube
 		},
 	}
 
@@ -414,10 +414,10 @@ func TestParseWizCLIJSON_LibraryCVEs_NormalizePaths(t *testing.T) {
 		t.Fatalf("expected 2 findings, got %d", len(out))
 	}
 
-	// Verify paths are preserved as manifest files (not transformed to package:version)
+	// Verify paths are normalized (no leading /) for SonarQube compatibility
 	for _, v := range out {
-		if !strings.HasPrefix(v.File, "/") {
-			t.Errorf("expected file path starting with '/', got %q", v.File)
+		if strings.HasPrefix(v.File, "/") {
+			t.Errorf("expected file path without leading '/', got %q", v.File)
 		}
 		if strings.Contains(v.File, "(") && strings.Contains(v.File, ")") {
 			t.Errorf("expected normalized path without parentheses, got %q", v.File)
@@ -579,19 +579,19 @@ func TestValidateSonarQubeFilePath(t *testing.T) {
 	}{
 		{
 			name:        "valid_source_file",
-			filePath:    "/src/main.py",
+			filePath:    "src/main.py",
 			shouldError: false,
 			description: "Regular source files should pass validation",
 		},
 		{
 			name:        "valid_manifest_file",
-			filePath:    "/requirements.txt",
+			filePath:    "requirements.txt",
 			shouldError: false,
 			description: "Manifest files like requirements.txt should pass",
 		},
 		{
 			name:        "valid_composite_path",
-			filePath:    "/requirements.txt:pytest:7.4.3",
+			filePath:    "requirements.txt:pytest:7.4.3",
 			shouldError: false,
 			description: "Composite manifest:package:version paths should pass",
 		},
@@ -602,10 +602,16 @@ func TestValidateSonarQubeFilePath(t *testing.T) {
 			description: "Raw package:version (requirements.txt) format should fail - SonarQube rejects it",
 		},
 		{
-			name:        "invalid_no_leading_slash",
-			filePath:    "src/main.py",
+			name:        "invalid_leading_slash",
+			filePath:    "/src/main.py",
 			shouldError: true,
-			description: "Relative paths without leading slash should fail",
+			description: "Paths with leading slash should fail - SonarQube expects relative paths",
+		},
+		{
+			name:        "invalid_leading_dot_slash",
+			filePath:    "./src/main.py",
+			shouldError: true,
+			description: "Paths with ./ prefix should fail - SonarQube expects relative paths",
 		},
 		{
 			name:        "invalid_placeholder",
@@ -644,7 +650,7 @@ func TestGenerateSonarQubeExternalIssue(t *testing.T) {
 			vuln: types.HuskyCIVulnerability{
 				Title:        "CVE-2023-XXXX",
 				Severity:     "HIGH",
-				File:         "/requirements.txt:pytest:7.4.3",
+				File:         "requirements.txt:pytest:7.4.3",
 				Line:         "5",
 				Details:       "CVE-2023-XXXX (fixed: 7.4.4)",
 				SecurityTool: "WizCLI",
@@ -655,7 +661,7 @@ func TestGenerateSonarQubeExternalIssue(t *testing.T) {
 			vuln: types.HuskyCIVulnerability{
 				Title:        "SQL Injection",
 				Severity:     "CRITICAL",
-				File:         "/app/db/queries.py",
+				File:         "app/db/queries.py",
 				Line:         "42",
 				Details:       "Potential SQL injection in user input",
 				SecurityTool: "WizCLI",
@@ -685,9 +691,9 @@ func TestGenerateSonarQubeExternalIssue(t *testing.T) {
 			if strings.Contains(issue.PrimaryLocation.FilePath, "(") {
 				t.Errorf("file path should not contain parentheses: %q", issue.PrimaryLocation.FilePath)
 			}
-			// Verify file path starts with /
-			if !strings.HasPrefix(issue.PrimaryLocation.FilePath, "/") {
-				t.Errorf("file path should start with '/': %q", issue.PrimaryLocation.FilePath)
+			// Verify file path does NOT start with / (SonarQube expects relative paths)
+			if strings.HasPrefix(issue.PrimaryLocation.FilePath, "/") {
+				t.Errorf("file path should not start with '/': %q", issue.PrimaryLocation.FilePath)
 			}
 		})
 	}

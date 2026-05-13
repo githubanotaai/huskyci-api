@@ -174,9 +174,13 @@ func isManifestFile(filePath string) bool {
 // Dependency findings often arrive as "package:version (manifest)" which SonarQube rejects
 // as unknown files. This normalizes them to "/manifest:package:version" format.
 func normalizeFilePath(filePath, manifestPath string) string {
-	// Already a proper absolute path - return as-is
+	// Strip leading "./" prefix if present - scanners like Bandit output paths like "./im_sync/auth.py"
+	filePath = strings.TrimPrefix(filePath, "./")
+
+	// Already a proper absolute path - return as-is (but strip leading / for SonarQube)
+	// SonarQube expects relative paths from project root, not absolute paths
 	if strings.HasPrefix(filePath, "/") && !strings.Contains(filePath, "(") {
-		return filePath
+		return strings.TrimPrefix(filePath, "/")
 	}
 
 	// Handle dependency format: "package:version (manifest_file)"
@@ -200,13 +204,15 @@ func normalizeFilePath(filePath, manifestPath string) string {
 		// Determine manifest path
 		var manifest string
 		if manifestPath != "" {
-			manifest = manifestPath
+			// Strip leading "/" from manifestPath for SonarQube relative paths
+			manifest = strings.TrimPrefix(manifestPath, "/")
 		} else if manifestName != "" {
-			manifest = "/" + manifestName
+			// Do NOT add leading "/" - SonarQube expects relative paths
+			manifest = manifestName
 		} else {
 			// Default manifest based on common patterns
 			// This fallback handles cases where manifest isn't specified
-			manifest = "/unknown_manifest"
+			manifest = "unknown_manifest"
 		}
 
 		return manifest + ":" + pkgVersion
@@ -217,15 +223,20 @@ func normalizeFilePath(filePath, manifestPath string) string {
 }
 
 // validateSonarQubeFilePath checks if a file path is valid for SonarQube's generic issue import.
-// SonarQube rejects paths that don't match actual files in the project.
+// SonarQube expects relative paths from project root (no leading /).
 func validateSonarQubeFilePath(filePath string) error {
 	if filePath == "" {
 		return errors.New("empty file path")
 	}
 
-	// Must start with / (absolute path in project)
-	if !strings.HasPrefix(filePath, "/") {
-		return fmt.Errorf("path must start with '/': %q", filePath)
+	// Reject leading "/" - SonarQube expects relative paths without leading /
+	if strings.HasPrefix(filePath, "/") {
+		return fmt.Errorf("path should be relative (no leading '/'): %q", filePath)
+	}
+
+	// Reject leading "./" - SonarQube expects paths without ./
+	if strings.HasPrefix(filePath, "./") {
+		return fmt.Errorf("path should not start with './': %q", filePath)
 	}
 
 	// Reject placeholder files
@@ -235,12 +246,9 @@ func validateSonarQubeFilePath(filePath string) error {
 
 	// Reject the raw "package:version (manifest)" format that SonarQube ignores
 	// This format appears in external tool output when not properly normalized
+	// Valid formats are like "requirements.txt:package:version" or "src/main.py"
 	if strings.Contains(filePath, "(") && strings.Contains(filePath, ")") {
-		// Allow composite paths like "/requirements.txt:package:version"
-		// but reject "package:version (manifest)" format
-		if !strings.HasPrefix(filePath, "/") || strings.HasPrefix(filePath, "(") {
-			return fmt.Errorf("invalid package:version (manifest) format: %q", filePath)
-		}
+		return fmt.Errorf("invalid package:version (manifest) format: %q", filePath)
 	}
 
 	return nil
