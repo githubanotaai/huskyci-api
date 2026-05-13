@@ -1,0 +1,33 @@
+{
+  "containerID": "test-wizcli-dependency-scan",
+  "huskyciresults": {
+    "genericresults": {
+      "wizclioutput": {
+        "lowvulns": [],
+        "mediumvulns": [],
+        "highvulns": [
+          {
+            "language": "Generic",
+            "securitytool": "WizCLI",
+            "severity": "HIGH",
+            "title": "CVE-2024-12345",
+            "code": "CVE-2024-12345",
+            "details": "pytest:7.4.3 has vulnerability CVE-2024-12345 (fixed in 7.4.4)",
+            "file": "pytest:7.4.3 (requirements.txt)",
+            "line": ""
+          },
+          {
+            "language": "Generic",
+            "securitytool": "WizCLI",
+            "severity": "HIGH",
+            "title": "CVE-2024-67890",
+            "code": "CVE-2024-67890",
+            "details": "fastapi:0.104.1 has vulnerability CVE-2024-67890 (fixed in 0.105.0)",
+            "file": "fastapi:0.104.1 (requirements.txt)",
+            "line": ""
+          }
+        ]
+      }
+    }
+  }
+}

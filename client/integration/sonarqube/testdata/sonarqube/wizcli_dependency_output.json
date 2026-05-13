@@ -1,0 +1,56 @@
+{
+  "rules": [
+    {
+      "id": "Generic - CVE-2024-12345",
+      "name": "CVE-2024-12345",
+      "description": "pytest:7.4.3 has vulnerability CVE-2024-12345 (fixed in 7.4.4)",
+      "engineId": "huskyCI/WizCLI",
+      "cleanCodeAttribute": "TRUSTWORTHY",
+      "type": "VULNERABILITY",
+      "severity": "BLOCKER",
+      "impacts": [
+        {
+          "softwareQuality": "SECURITY",
+          "severity": "HIGH"
+        }
+      ]
+    },
+    {
+      "id": "Generic - CVE-2024-67890",
+      "name": "CVE-2024-67890",
+      "description": "fastapi:0.104.1 has vulnerability CVE-2024-67890 (fixed in 0.105.0)",
+      "engineId": "huskyCI/WizCLI",
+      "cleanCodeAttribute": "TRUSTWORTHY",
+      "type": "VULNERABILITY",
+      "severity": "BLOCKER",
+      "impacts": [
+        {
+          "softwareQuality": "SECURITY",
+          "severity": "HIGH"
+        }
+      ]
+    }
+  ],
+  "issues": [
+    {
+      "ruleId": "Generic - CVE-2024-12345",
+      "primaryLocation": {
+        "message": "pytest:7.4.3 has vulnerability CVE-2024-12345 (fixed in 7.4.4)",
+        "filePath": "/requirements.txt:pytest:7.4.3",
+        "textRange": {
+          "startLine": 1
+        }
+      }
+    },
+    {
+      "ruleId": "Generic - CVE-2024-67890",
+      "primaryLocation": {
+        "message": "fastapi:0.104.1 has vulnerability CVE-2024-67890 (fixed in 0.105.0)",
+        "filePath": "/requirements.txt:fastapi:0.104.1",
+        "textRange": {
+          "startLine": 1
+        }
+      }
+    }
+  ]
+}
