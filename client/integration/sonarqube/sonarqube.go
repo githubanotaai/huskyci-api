@@ -176,6 +176,7 @@ func mapImpactSeverity(severity string) string {
 
 // Helper function to get the file path
 func getFilePath(vuln types.HuskyCIVulnerability, outputPath string) string {
+	// Handle empty file - create placeholder
 	if vuln.File == "" {
 		err := util.CreateFile([]byte(placeholderFileText), outputPath, placeholderFileName)
 		if err != nil {
@@ -183,10 +184,36 @@ func getFilePath(vuln types.HuskyCIVulnerability, outputPath string) string {
 		}
 		return filepath.Join(outputPath, placeholderFileName)
 	}
+
+	// Handle Go container paths
 	if vuln.Language == "Go" {
 		return strings.Replace(vuln.File, goContainerBasePath, "", 1)
 	}
-	return vuln.File
+
+	// Handle dependency findings: normalize "package:version (manifest)" format
+	// These come from tools like Safety, NpmAudit, WizCLI for library CVEs
+	filePath := vuln.File
+
+	// If the file path contains parentheses like "pytest:7.4.3 (requirements.txt)",
+	// normalize it to a proper path
+	if strings.Contains(filePath, "(") && strings.Contains(filePath, ")") {
+		// Extract manifest name from parentheses
+		startIdx := strings.Index(filePath, "(")
+		endIdx := strings.Index(filePath, ")")
+		if startIdx != -1 && endIdx != -1 && endIdx > startIdx {
+			manifestName := filePath[startIdx+1 : endIdx]
+			pkgVersion := strings.TrimSpace(filePath[:startIdx])
+			// Construct normalized path: /manifest:package:version
+			return "/" + manifestName + ":" + pkgVersion
+		}
+	}
+
+	// Handle placeholder file references
+	if strings.Contains(filePath, "huskyCI_Placeholder_File") {
+		return filepath.Join(outputPath, placeholderFileName)
+	}
+
+	return filePath
 }
 
 // Helper function to get the start line
