@@ -7,7 +7,6 @@ package sonarqube
 import (
 	"encoding/json"
 	"fmt"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -17,12 +16,7 @@ import (
 )
 
 const goContainerBasePath = `/go/src/code/`
-const placeholderFileName = "huskyCI_Placeholder_File"
-const placeholderFileText = `
-Placeholder file indicating that no file was associated with this vulnerability.
-This usually means that the vulnerability is related to a missing file
-or is not associated with any specific file, i.e.: vulnerable dependency versions.
-`
+const placeholderFileFallback = "README.md"
 
 // GenerateOutputFile prints the analysis output in a JSON format
 func GenerateOutputFile(analysis types.Analysis, outputPath, outputFileName string) error {
@@ -176,13 +170,12 @@ func mapImpactSeverity(severity string) string {
 
 // Helper function to get the file path
 func getFilePath(vuln types.HuskyCIVulnerability, outputPath string) string {
-	// Handle empty file - create placeholder
+	// Handle empty file - remap to README.md for SonarQube compatibility
+	// SonarQube requires issues to be attached to existing files in the project.
+	// README.md exists in almost all repositories and provides a visible location
+	// for these findings.
 	if vuln.File == "" {
-		err := util.CreateFile([]byte(placeholderFileText), outputPath, placeholderFileName)
-		if err != nil {
-			return filepath.Join(outputPath, placeholderFileName)
-		}
-		return filepath.Join(outputPath, placeholderFileName)
+		return placeholderFileFallback
 	}
 
 	// Handle Go container paths
@@ -208,9 +201,10 @@ func getFilePath(vuln types.HuskyCIVulnerability, outputPath string) string {
 		}
 	}
 
-	// Handle placeholder file references
+	// Handle placeholder file references - remap to README.md for SonarQube compatibility
+	// SonarQube requires issues to be attached to existing files in the project.
 	if strings.Contains(filePath, "huskyCI_Placeholder_File") {
-		return filepath.Join(outputPath, placeholderFileName)
+		return placeholderFileFallback
 	}
 
 	// Strip leading "./" prefix if present - SonarQube expects relative paths
