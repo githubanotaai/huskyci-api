@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/githubanotaai/huskyci-api/api/types"
+	"github.com/githubanotaai/huskyci-api/api/util"
 )
 
 // wizCLIReport models the subset of `wizcli dir scan -f json` output that
@@ -398,7 +399,7 @@ func parseWizCLIJSON(output string) ([]types.HuskyCIVulnerability, error) {
 		if severity == "INFORMATIONAL" || severity == "INFO" || severity == "" {
 			severity = "INFO"
 		}
-		addFinding(title, severity, s.Path, line, title)
+		addFinding(title, severity, util.NormalizeFilePath(s.Path), line, title)
 	}
 
 	for _, df := range report.Result.DataFindings {
@@ -413,7 +414,7 @@ func parseWizCLIJSON(output string) ([]types.HuskyCIVulnerability, error) {
 		if severity == "INFORMATIONAL" || severity == "INFO" || severity == "" {
 			severity = "INFO"
 		}
-		addFinding(title, severity, df.Path, "", title)
+		addFinding(title, severity, util.NormalizeFilePath(df.Path), "", title)
 	}
 
 	for _, eol := range report.Result.EndOfLifeTechnologies {

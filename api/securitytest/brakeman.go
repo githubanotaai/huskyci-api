@@ -66,7 +66,7 @@ func (brakemanScan *SecTestScanInfo) prepareBrakemanVulns() {
 		brakemanVuln.Confidence = warning.Confidence
 		brakemanVuln.Title = fmt.Sprintf("Vulnerable Dependency: %s %s", warning.Type, warning.Message)
 		brakemanVuln.Details = warning.Details
-		brakemanVuln.File = warning.File
+		brakemanVuln.File = util.NormalizeFilePath(warning.File)
 		brakemanVuln.Line = strconv.Itoa(warning.Line)
 		brakemanVuln.Code = warning.Code
 		brakemanVuln.Type = warning.Type
@@ -88,7 +88,7 @@ func (brakemanScan *SecTestScanInfo) prepareBrakemanVulns() {
 		brakemanVuln.Title = fmt.Sprintf("Vulnerable Dependency: %s %s", ignoredWarning.Type, ignoredWarning.Message)
 		brakemanVuln.Severity = "NOSEC"
 		brakemanVuln.Details = ignoredWarning.Details
-		brakemanVuln.File = ignoredWarning.File
+		brakemanVuln.File = util.NormalizeFilePath(ignoredWarning.File)
 		brakemanVuln.Line = strconv.Itoa(ignoredWarning.Line)
 		brakemanVuln.Code = ignoredWarning.Code
 		brakemanVuln.Type = ignoredWarning.Type

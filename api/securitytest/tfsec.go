@@ -76,7 +76,7 @@ func (tfsecScan *SecTestScanInfo) prepareTFSecVulns() {
 		endLine := strconv.Itoa(result.Location.EndLine)
 		tfsecVuln.Line = startLine
 		tfsecVuln.Code = fmt.Sprintf("Code beetween Line %s and Line %s.", startLine, endLine)
-		tfsecVuln.File = result.Location.Filename
+		tfsecVuln.File = util.NormalizeFilePath(result.Location.Filename)
 
 		switch tfsecVuln.Severity {
 		case "LOW":

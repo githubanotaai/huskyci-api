@@ -172,7 +172,7 @@ func (spotbugsScan *SecTestScanInfo) prepareSpotBugsVulns() {
 			endLine := spotbugsOutput.SpotBugsIssue[i].SourceLine[j].End
 			spotbugsVuln.Code = fmt.Sprintf("Code beetween Line %s and Line %s.", startLine, endLine)
 			spotbugsVuln.Line = startLine
-			spotbugsVuln.File = spotbugsOutput.SpotBugsIssue[i].SourceLine[j].SourcePath
+			spotbugsVuln.File = util.NormalizeFilePath(spotbugsOutput.SpotBugsIssue[i].SourceLine[j].SourcePath)
 			spotbugsVuln.Title = spotbugsVuln.Details
 
 			switch spotbugsOutput.SpotBugsIssue[i].Priority {

@@ -118,9 +118,9 @@ func (s *SecTestScanInfo) prepareSecurityCodeScanVulns() {
 			securityCodeScanVuln.Code = fmt.Sprintf("Code beetween Line %s and Line %s.", startLine, endLine)
 			pathSlice := strings.Split(result.Locations[0].PhysicalLocation.ArtifactLocation.URI, "code/")
 			if len(pathSlice) > 1 {
-				securityCodeScanVuln.File = pathSlice[1]
+			securityCodeScanVuln.File = util.NormalizeFilePath(pathSlice[1])
 			} else {
-				securityCodeScanVuln.File = result.Locations[0].PhysicalLocation.ArtifactLocation.URI
+				securityCodeScanVuln.File = util.NormalizeFilePath(result.Locations[0].PhysicalLocation.ArtifactLocation.URI)
 			}
 		}
 

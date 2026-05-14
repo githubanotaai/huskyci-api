@@ -158,7 +158,7 @@ func (gitleaksScan *SecTestScanInfo) prepareGitleaksVulns() {
 		rule := issue.effectiveRule()
 		gitleaksVuln := types.HuskyCIVulnerability{}
 		gitleaksVuln.SecurityTool = "GitLeaks"
-		gitleaksVuln.File = issue.File
+		gitleaksVuln.File = util.NormalizeFilePath(issue.File)
 		gitleaksVuln.Code = issue.codeSnippet()
 		gitleaksVuln.Line = issue.lineNumberString()
 		if issue.Description != "" {

@@ -281,3 +281,10 @@ func SliceContains(slice []string, str string) bool {
 	}
 	return false
 }
+
+// NormalizeFilePath removes leading "./" prefix from file paths.
+// Many security tools (Bandit, Gitleaks, etc.) output paths with "./" prefix,
+// but SonarQube expects paths without this prefix.
+func NormalizeFilePath(path string) string {
+	return strings.TrimPrefix(path, "./")
+}

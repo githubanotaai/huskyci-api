@@ -76,7 +76,7 @@ func (gosecScan *SecTestScanInfo) prepareGosecVulns() {
 		gosecVuln.Severity = issue.Severity
 		gosecVuln.Confidence = issue.Confidence
 		gosecVuln.Details = issue.Details
-		gosecVuln.File = issue.File
+		gosecVuln.File = util.NormalizeFilePath(issue.File)
 		gosecVuln.Line = issue.Line
 		gosecVuln.Code = issue.Code
 
