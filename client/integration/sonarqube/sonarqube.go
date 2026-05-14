@@ -183,12 +183,12 @@ func getFilePath(vuln types.HuskyCIVulnerability, outputPath string) string {
 		return strings.Replace(vuln.File, goContainerBasePath, "", 1)
 	}
 
-	// Handle dependency findings: normalize "package:version (manifest)" format
+	// Handle dependency findings: normalize various formats to manifest file path
 	// These come from tools like Safety, NpmAudit, WizCLI for library CVEs
 	filePath := vuln.File
 
-	// If the file path contains parentheses like "pytest:7.4.3 (requirements.txt)",
-	// normalize it to a proper path
+	// Format 1: "package:version (manifest)" - from Safety, some WizCLI versions
+	// Example: "pytest:7.4.3 (requirements.txt)"
 	if strings.Contains(filePath, "(") && strings.Contains(filePath, ")") {
 		// Extract manifest name from parentheses
 		startIdx := strings.Index(filePath, "(")
@@ -198,6 +198,40 @@ func getFilePath(vuln types.HuskyCIVulnerability, outputPath string) string {
 			// Return just the manifest file path (e.g., "requirements.txt")
 			// SonarQube expects relative paths from project root
 			return manifestName
+		}
+	}
+
+	// Format 2: "manifest:package:version" - from WizCLI normalized output
+	// Example: "requirements.txt:pytest:7.4.3" or "poetry.lock:requests:2.28.0"
+	// Detect this by checking if it starts with a known manifest file pattern
+	if strings.Contains(filePath, ":") {
+		// Common manifest file patterns
+		manifestPatterns := []string{
+			"requirements.txt:",
+			"requirements-dev.txt:",
+			"poetry.lock:",
+			"Pipfile.lock:",
+			"pyproject.toml:",
+			"package-lock.json:",
+			"yarn.lock:",
+			"pnpm-lock.yaml:",
+			"package.json:",
+			"go.sum:",
+			"go.mod:",
+			"pom.xml:",
+			"build.gradle:",
+			"Gemfile.lock:",
+			"Cargo.lock:",
+			"composer.lock:",
+		}
+		for _, pattern := range manifestPatterns {
+			if strings.HasPrefix(filePath, pattern) {
+				// Extract just the manifest file name (before the first colon)
+				colonIdx := strings.Index(filePath, ":")
+				if colonIdx != -1 {
+					return filePath[:colonIdx]
+				}
+			}
 		}
 	}
 
