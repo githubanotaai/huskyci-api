@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"strings"
+	"sync"
 
 	apiContext "github.com/githubanotaai/huskyci-api/api/context"
 	"github.com/githubanotaai/huskyci-api/api/log"
@@ -14,6 +15,7 @@ import (
 // RunAllInfo store all scans results of an Analysis
 type RunAllInfo struct {
 	runner         scanRunner        `json:"-" bson:"-"`
+	mu             sync.Mutex        `json:"-" bson:"-"`
 	RID            string
 	Status         string
 	Containers     []types.Container
@@ -97,6 +99,7 @@ func (results *RunAllInfo) runGenericScans(ctx context.Context, enryScan SecTest
 			if err := runner.startScan(scan); err != nil {
 				return err
 			}
+			results.mu.Lock()
 			results.Containers = append(results.Containers, scan.Container)
 			switch testName {
 			case "gitauthors":
@@ -104,6 +107,7 @@ func (results *RunAllInfo) runGenericScans(ctx context.Context, enryScan SecTest
 			case "gitleaks", "wizcli":
 				results.setVulns(*scan)
 			}
+			results.mu.Unlock()
 			return nil
 		})
 	}
@@ -142,11 +146,15 @@ func (results *RunAllInfo) runLanguageScans(ctx context.Context, enryScan SecTes
 				return err
 			}
 			if err := runner.startScan(scan); err != nil {
+				results.mu.Lock()
 				results.Containers = append(results.Containers, scan.Container)
+				results.mu.Unlock()
 				return err
 			}
+			results.mu.Lock()
 			results.Containers = append(results.Containers, scan.Container)
 			results.setVulns(*scan)
+			results.mu.Unlock()
 			return nil
 		})
 	}
