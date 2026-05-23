@@ -193,3 +193,52 @@ func TestStart_AllScansPass(t *testing.T) {
 		t.Errorf("expected nil, got %v", err)
 	}
 }
+
+func TestStart_ConcurrentWritesDataRace(t *testing.T) {
+	mockGenericTests := []types.SecurityTest{
+		{Name: "gitleaks"},
+		{Name: "gitauthors"},
+	}
+
+	runner := &mockRunner{
+		genericTests: mockGenericTests,
+		newScanFunc: func(RID, URL, branch, name string, le map[string]bool, dh string) (*SecTestScanInfo, error) {
+			scan := &SecTestScanInfo{
+				RID:              RID,
+				SecurityTestName: name,
+				Container: types.Container{
+					CID:     "cid-" + name,
+					CResult: "passed",
+					CStatus: "finished",
+				},
+				CommitAuthors: GitAuthorsOutput{
+					Authors: []string{"author-" + name},
+				},
+			}
+			// Add vulns for gitleaks so setVulns has data to append
+			if name == "gitleaks" {
+				scan.Vulnerabilities = types.HuskyCISecurityTestOutput{
+					HighVulns: []types.HuskyCIVulnerability{{Details: name + "-high-vuln"}},
+				}
+			}
+			return scan, nil
+		},
+		startScanFunc: func(scan *SecTestScanInfo) error { return nil },
+	}
+
+	results := &RunAllInfo{runner: runner}
+	enryScan := SecTestScanInfo{
+		RID: "race-test-rid", URL: "https://example.com/repo", Branch: "main",
+	}
+
+	// This triggers concurrent Container append + CommitAuthors + setVulns writes
+	err := results.Start(enryScan)
+	if err != nil {
+		t.Errorf("expected nil, got %v", err)
+	}
+
+	// Verify we got results from both scans (basic correctness)
+	if len(results.Containers) < 2 {
+		t.Errorf("expected at least 2 containers, got %d", len(results.Containers))
+	}
+}
