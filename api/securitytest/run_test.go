@@ -5,8 +5,12 @@
 package securitytest
 
 import (
+	"fmt"
 	"os"
 	"testing"
+
+
+	"github.com/githubanotaai/huskyci-api/api/types"
 )
 
 func TestIsTestDisabled(t *testing.T) {
@@ -71,8 +75,14 @@ func TestIsTestDisabled(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			envVarName := "HUSKYCI_DISABLE_" + upper(tt.testName)
 			if tt.setEnv {
-				os.Setenv(envVarName, tt.envValue)
-				defer os.Unsetenv(envVarName)
+				if err := os.Setenv(envVarName, tt.envValue); err != nil {
+					t.Fatal(err)
+				}
+				defer func() {
+					if err := os.Unsetenv(envVarName); err != nil {
+						t.Fatal(err)
+					}
+				}()
 			}
 
 			got := isTestDisabled(tt.testName)
@@ -95,4 +105,147 @@ func upper(s string) string {
 		}
 	}
 	return string(result)
+}
+
+func TestStart_FirstErrorCancelsRemaining(t *testing.T) {
+	mockGenericTests := []types.SecurityTest{
+		{Name: "gitleaks"},
+		{Name: "gitauthors"},
+	}
+
+	runner := &mockRunner{
+		genericTests: mockGenericTests,
+		newScanFunc: func(RID, URL, branch, name string, le map[string]bool, dh string) (*SecTestScanInfo, error) {
+			return &SecTestScanInfo{
+				RID:              RID,
+				SecurityTestName: name,
+				Container:        types.Container{CID: "cid-" + name, CResult: "passed"},
+			}, nil
+		},
+		startScanFunc: func(scan *SecTestScanInfo) error {
+			if scan.SecurityTestName == "gitleaks" {
+				return fmt.Errorf("gitleaks scan failed")
+			}
+			return nil
+		},
+	}
+
+	results := &RunAllInfo{runner: runner}
+	enryScan := SecTestScanInfo{
+		RID: "test-rid", URL: "https://example.com/repo", Branch: "main",
+	}
+
+	err := results.Start(enryScan)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if err.Error() != "gitleaks scan failed" {
+		t.Errorf("expected 'gitleaks scan failed', got %q", err.Error())
+	}
+}
+
+func TestStart_ConcurrentErrorsNoPanic(t *testing.T) {
+	mockGenericTests := []types.SecurityTest{
+		{Name: "gitleaks"}, {Name: "gitauthors"},
+	}
+
+	runner := &mockRunner{
+		genericTests: mockGenericTests,
+		newScanFunc: func(RID, URL, branch, name string, le map[string]bool, dh string) (*SecTestScanInfo, error) {
+			return &SecTestScanInfo{
+				RID: RID, SecurityTestName: name,
+				Container: types.Container{CID: "cid-" + name},
+			}, nil
+		},
+		startScanFunc: func(scan *SecTestScanInfo) error {
+			return fmt.Errorf("scan %s failed", scan.SecurityTestName)
+		},
+	}
+
+	results := &RunAllInfo{runner: runner}
+	enryScan := SecTestScanInfo{
+		RID: "test-rid-stress", URL: "https://example.com/repo", Branch: "main",
+	}
+
+	err := results.Start(enryScan)
+	if err == nil {
+		t.Fatal("expected error with all scans failing")
+	}
+	// Key: no panic occurred
+}
+
+func TestStart_AllScansPass(t *testing.T) {
+	mockGenericTests := []types.SecurityTest{
+		{Name: "gitleaks"}, {Name: "gitauthors"},
+	}
+
+	runner := &mockRunner{
+		genericTests: mockGenericTests,
+		newScanFunc: func(RID, URL, branch, name string, le map[string]bool, dh string) (*SecTestScanInfo, error) {
+			return &SecTestScanInfo{
+				RID: RID, SecurityTestName: name,
+				Container: types.Container{CID: "cid-" + name, CResult: "passed", CStatus: "finished"},
+			}, nil
+		},
+		startScanFunc: func(scan *SecTestScanInfo) error { return nil },
+	}
+
+	results := &RunAllInfo{runner: runner}
+	enryScan := SecTestScanInfo{
+		RID: "test-rid-pass", URL: "https://example.com/repo", Branch: "main",
+	}
+
+	err := results.Start(enryScan)
+	if err != nil {
+		t.Errorf("expected nil, got %v", err)
+	}
+}
+
+func TestStart_ConcurrentWritesDataRace(t *testing.T) {
+	mockGenericTests := []types.SecurityTest{
+		{Name: "gitleaks"},
+		{Name: "gitauthors"},
+	}
+
+	runner := &mockRunner{
+		genericTests: mockGenericTests,
+		newScanFunc: func(RID, URL, branch, name string, le map[string]bool, dh string) (*SecTestScanInfo, error) {
+			scan := &SecTestScanInfo{
+				RID:              RID,
+				SecurityTestName: name,
+				Container: types.Container{
+					CID:     "cid-" + name,
+					CResult: "passed",
+					CStatus: "finished",
+				},
+				CommitAuthors: GitAuthorsOutput{
+					Authors: []string{"author-" + name},
+				},
+			}
+			// Add vulns for gitleaks so setVulns has data to append
+			if name == "gitleaks" {
+				scan.Vulnerabilities = types.HuskyCISecurityTestOutput{
+					HighVulns: []types.HuskyCIVulnerability{{Details: name + "-high-vuln"}},
+				}
+			}
+			return scan, nil
+		},
+		startScanFunc: func(scan *SecTestScanInfo) error { return nil },
+	}
+
+	results := &RunAllInfo{runner: runner}
+	enryScan := SecTestScanInfo{
+		RID: "race-test-rid", URL: "https://example.com/repo", Branch: "main",
+	}
+
+	// This triggers concurrent Container append + CommitAuthors + setVulns writes
+	err := results.Start(enryScan)
+	if err != nil {
+		t.Errorf("expected nil, got %v", err)
+	}
+
+	// Verify we got results from both scans (basic correctness)
+	if len(results.Containers) < 2 {
+		t.Errorf("expected at least 2 containers, got %d", len(results.Containers))
+	}
 }
