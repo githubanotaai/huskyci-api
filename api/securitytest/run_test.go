@@ -9,6 +9,7 @@ import (
 	"os"
 	"testing"
 
+
 	"github.com/githubanotaai/huskyci-api/api/types"
 )
 
@@ -74,8 +75,14 @@ func TestIsTestDisabled(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			envVarName := "HUSKYCI_DISABLE_" + upper(tt.testName)
 			if tt.setEnv {
-				os.Setenv(envVarName, tt.envValue)
-				defer os.Unsetenv(envVarName)
+				if err := os.Setenv(envVarName, tt.envValue); err != nil {
+					t.Fatal(err)
+				}
+				defer func() {
+					if err := os.Unsetenv(envVarName); err != nil {
+						t.Fatal(err)
+					}
+				}()
 			}
 
 			got := isTestDisabled(tt.testName)
