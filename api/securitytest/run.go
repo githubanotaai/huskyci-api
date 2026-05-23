@@ -1,6 +1,7 @@
 package securitytest
 
 import (
+	"context" // needed for errgroup refactor (GREEN phase)
 	"os"
 	"strings"
 	"sync"
@@ -10,8 +11,12 @@ import (
 	"github.com/githubanotaai/huskyci-api/api/types"
 )
 
+// Ensure context import compiles until errgroup refactor uses it.
+var _ = context.Background
+
 // RunAllInfo store all scans results of an Analysis
 type RunAllInfo struct {
+	runner         scanRunner        `json:"-" bson:"-"`
 	RID            string
 	Status         string
 	Containers     []types.Container
@@ -419,4 +424,11 @@ func (results *RunAllInfo) setFinalResult() {
 	} else {
 		results.FinalResult = "failed"
 	}
+}
+
+func (results *RunAllInfo) getRunner() scanRunner {
+	if results.runner != nil {
+		return results.runner
+	}
+	return realRunner{}
 }
