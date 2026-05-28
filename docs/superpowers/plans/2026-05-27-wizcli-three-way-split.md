@@ -48,7 +48,7 @@
 |---|---|
 | `wizcli_secrets` | `Vulnerability,Misconfiguration,SAST,Malware,AIModels,SoftwareSupplyChain` |
 | `wizcli_iac_sast` | `Vulnerability,Secret,SensitiveData,Malware,AIModels,SoftwareSupplyChain` |
-| `wizcli_vulns` | `Secret,SensitiveData,Misconfiguration,SAST,AIModels,SoftwareSupplyChain` |
+| `wizcli_vulns` | `Secret,SensitiveData,Misconfiguration,SAST` |
 
 ---
 

@@ -12,7 +12,7 @@ import (
 	"github.com/githubanotaai/huskyci-api/api/util"
 )
 
-// wizCLIReport models the subset of `wizcli dir scan -f json` output that
+// wizCLIReport models the subset of `wizcli scan dir --stdout=json` output that
 // huskyCI surfaces as findings. Unrelated metadata (analytics, sbomOutput,
 // hostConfiguration, ...) is intentionally ignored.
 type wizCLIReport struct {
@@ -119,7 +119,7 @@ func analyzeWizCLI(scanInfo *SecTestScanInfo) error {
 	}
 
 	if strings.Contains(output, "ERROR_RUNNING_WIZCLI_SCAN") {
-		scanInfo.ErrorFound = errors.New("wizcli dir scan failed with a non-findings exit code")
+		scanInfo.ErrorFound = errors.New("wizcli scan dir failed with a non-findings exit code")
 		return scanInfo.ErrorFound
 	}
 
@@ -361,7 +361,7 @@ func generateSonarQubeExternalIssue(vuln types.HuskyCIVulnerability) sonarQubeEx
 	return issue
 }
 
-// parseWizCLIJSON converts the JSON produced by `wizcli dir scan -f json`
+// parseWizCLIJSON converts the JSON produced by `wizcli scan dir --stdout=json`
 // into HuskyCIVulnerability entries, covering CVEs (libraries, OS packages),
 // secrets, data findings, and end-of-life technologies.
 func parseWizCLIJSON(output string) ([]types.HuskyCIVulnerability, error) {

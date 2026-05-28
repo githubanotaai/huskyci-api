@@ -134,7 +134,7 @@ type RubyResults struct {
 type GenericResults struct {
 	HuskyCIGitleaksOutput  HuskyCISecurityTestOutput `bson:"gitleaksoutput,omitempty" json:"gitleaksoutput,omitempty"`
 	HuskyCIWizCLISecretsOutput HuskyCISecurityTestOutput `bson:"wizclisecretsoutput,omitempty" json:"wizclisecretsoutput,omitempty"`
-	HuskyCIIacSastOutput       HuskyCISecurityTestOutput `bson:"iavsastoutput,omitempty" json:"iavsastoutput,omitempty"`
+	HuskyCIIacSastOutput       HuskyCISecurityTestOutput `bson:"iacsastoutput,omitempty" json:"iacsastoutput,omitempty"`
 	HuskyCIWizCLIVulnsOutput   HuskyCISecurityTestOutput `bson:"wizclivulnsoutput,omitempty" json:"wizclivulnsoutput,omitempty"`
 }
 

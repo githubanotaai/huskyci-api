@@ -510,7 +510,7 @@ wizcli_vulns:
             cat /tmp/errorWizAuth
         else
             wizcli scan dir ./code \
-              --disabled-scanners Secret,SensitiveData,Misconfiguration,SAST,AIModels,SoftwareSupplyChain \
+              --disabled-scanners Secret,SensitiveData,Misconfiguration,SAST \
               --by-policy-hits=DISABLED \
               --stdout=json --json-output-file=/tmp/wizResult.json 2> /tmp/errorWizScan
             SCAN_RC=$?
