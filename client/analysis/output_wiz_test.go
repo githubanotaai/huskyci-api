@@ -60,6 +60,25 @@ func testAgentDebugLog(t *testing.T, hypothesisID, message string, data map[stri
 
 // #endregion
 
+func TestShortImageName(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"939030204144.dkr.ecr.us-east-1.amazonaws.com/huskyci-wiz", "huskyci-wiz"},
+		{"939030204144.dkr.ecr.us-east-1.amazonaws.com/huskyci-gitleaks", "huskyci-gitleaks"},
+		{"huskyci/safety", "huskyci/safety"},
+		{"gosec", "gosec"},
+		{"123456789012.dkr.ecr.eu-west-1.amazonaws.com/my-tool", "my-tool"},
+	}
+	for _, tc := range tests {
+		got := shortImageName(tc.input)
+		if got != tc.expected {
+			t.Errorf("shortImageName(%q) = %q, want %q", tc.input, got, tc.expected)
+		}
+	}
+}
+
 func TestPrintSTDOUTOutput_IncludesWizCLIDetailsGroup(t *testing.T) {
 	types.FoundVuln = false
 	types.FoundInfo = false
@@ -68,7 +87,7 @@ func TestPrintSTDOUTOutput_IncludesWizCLIDetailsGroup(t *testing.T) {
 	analysis := types.Analysis{
 		Containers: []types.Container{
 			{
-				SecurityTest: types.SecurityTest{Name: "wizcli_secrets", Image: "ecr/huskyci-wiz", ImageTag: "latest-amd64"},
+				SecurityTest: types.SecurityTest{Name: "wizcli_secrets", Image: "939030204144.dkr.ecr.us-east-1.amazonaws.com/huskyci-wiz", ImageTag: "f793155-amd64"},
 			},
 		},
 		HuskyCIResults: types.HuskyCIResults{
@@ -144,8 +163,12 @@ func TestPrintSTDOUTOutput_IncludesWizCLIDetailsGroup(t *testing.T) {
 	if !bytes.Contains([]byte(out), []byte("::group::Generic - Wiz CLI (Vulns)")) {
 		t.Fatalf("expected Wiz CLI Vulns collapsible group in stdout, got excerpt:\n%s", truncate(out, 2000))
 	}
-	if !bytes.Contains([]byte(out), []byte("[HUSKYCI][SUMMARY] Generic ->")) || !bytes.Contains([]byte(out), []byte("huskyci-wiz")) {
-		t.Fatalf("expected Wiz summary line with image ref")
+	if !bytes.Contains([]byte(out), []byte("[HUSKYCI][SUMMARY] Generic -> huskyci-wiz:f793155-amd64")) {
+		t.Fatalf("expected Wiz summary line with short image ref 'huskyci-wiz:f793155-amd64', got excerpt:\n%s", truncate(out, 2000))
+	}
+	// Verify ECR registry prefix is NOT present in output
+	if bytes.Contains([]byte(out), []byte("939030204144.dkr.ecr.us-east-1.amazonaws.com")) {
+		t.Fatalf("ECR registry prefix should be stripped from version string, got excerpt:\n%s", truncate(out, 2000))
 	}
 	if !bytes.Contains([]byte(out), []byte("CVE-2024-0001")) {
 		t.Fatalf("expected Wiz finding title in stdout")
