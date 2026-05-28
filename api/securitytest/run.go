@@ -185,7 +185,7 @@ func (results *RunAllInfo) vulnOutput(securityTestName string) *types.HuskyCISec
 		return &results.HuskyCIResults.JavaResults.HuskyCISpotBugsOutput
 	case gitleaks:
 		return &results.HuskyCIResults.GenericResults.HuskyCIGitleaksOutput
-	case wizcliSecrets:
+	case wizcliSecrets, "wizcli": // "wizcli" migration safeguard — routes to secrets output
 		return &results.HuskyCIResults.GenericResults.HuskyCIWizCLISecretsOutput
 	case wizcliIacSast:
 		return &results.HuskyCIResults.GenericResults.HuskyCIIacSastOutput
