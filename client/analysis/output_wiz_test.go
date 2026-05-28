@@ -78,6 +78,31 @@ func TestPrintSTDOUTOutput_IncludesWizCLIDetailsGroup(t *testing.T) {
 						{Title: "Secret in env", SecurityTool: "WizCLI", Severity: "MEDIUM", Details: "mock", File: "x.env"},
 					},
 				},
+				HuskyCIIacSastOutput: types.HuskyCISecurityTestOutput{
+					HighVulns: []types.HuskyCIVulnerability{
+						{
+							Title:        "S3 bucket without encryption",
+							Language:     "HCL",
+							SecurityTool: "WizCLI",
+							Severity:     "HIGH",
+							Details:      "Enable server-side encryption",
+							File:         "main.tf",
+							Line:         "15",
+							Code:         "aws_s3_bucket.example",
+						},
+					},
+					LowVulns: []types.HuskyCIVulnerability{
+						{
+							Title:        "Missing tags on resource",
+							Language:     "HCL",
+							SecurityTool: "WizCLI",
+							Severity:     "LOW",
+							Details:      "Add tags for cost tracking",
+							File:         "main.tf",
+							Line:         "22",
+						},
+					},
+				},
 				HuskyCIWizCLIVulnsOutput: types.HuskyCISecurityTestOutput{
 					HighVulns: []types.HuskyCIVulnerability{
 						{
@@ -113,6 +138,9 @@ func TestPrintSTDOUTOutput_IncludesWizCLIDetailsGroup(t *testing.T) {
 	if !bytes.Contains([]byte(out), []byte("::group::Generic - Wiz CLI (Secrets)")) {
 		t.Fatalf("expected Wiz CLI Secrets collapsible group in stdout, got excerpt:\n%s", truncate(out, 2000))
 	}
+	if !bytes.Contains([]byte(out), []byte("::group::Generic - Wiz CLI (IaC+SAST)")) {
+		t.Fatalf("expected Wiz CLI IaC+SAST collapsible group in stdout, got excerpt:\n%s", truncate(out, 2000))
+	}
 	if !bytes.Contains([]byte(out), []byte("::group::Generic - Wiz CLI (Vulns)")) {
 		t.Fatalf("expected Wiz CLI Vulns collapsible group in stdout, got excerpt:\n%s", truncate(out, 2000))
 	}
@@ -121,6 +149,12 @@ func TestPrintSTDOUTOutput_IncludesWizCLIDetailsGroup(t *testing.T) {
 	}
 	if !bytes.Contains([]byte(out), []byte("CVE-2024-0001")) {
 		t.Fatalf("expected Wiz finding title in stdout")
+	}
+	if !bytes.Contains([]byte(out), []byte("S3 bucket without encryption")) {
+		t.Fatalf("expected IaC+SAST finding title in stdout")
+	}
+	if !bytes.Contains([]byte(out), []byte("Missing tags on resource")) {
+		t.Fatalf("expected IaC+SAST low finding title in stdout")
 	}
 }
 

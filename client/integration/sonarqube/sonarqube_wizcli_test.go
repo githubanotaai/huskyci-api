@@ -26,6 +26,34 @@ func makeWizSecretsAnalysis(high, medium, low []types.HuskyCIVulnerability) type
 	}
 }
 
+func makeWizIacSastAnalysis(high, medium, low []types.HuskyCIVulnerability) types.Analysis {
+	return types.Analysis{
+		HuskyCIResults: types.HuskyCIResults{
+			GenericResults: types.GenericResults{
+				HuskyCIIacSastOutput: types.HuskyCISecurityTestOutput{
+					HighVulns:   high,
+					MediumVulns: medium,
+					LowVulns:    low,
+				},
+			},
+		},
+	}
+}
+
+func makeWizVulnsAnalysis(high, medium, low []types.HuskyCIVulnerability) types.Analysis {
+	return types.Analysis{
+		HuskyCIResults: types.HuskyCIResults{
+			GenericResults: types.GenericResults{
+				HuskyCIWizCLIVulnsOutput: types.HuskyCISecurityTestOutput{
+					HighVulns:   high,
+					MediumVulns: medium,
+					LowVulns:    low,
+				},
+			},
+		},
+	}
+}
+
 func makeWizVuln(title, severity, file string) types.HuskyCIVulnerability {
 	return types.HuskyCIVulnerability{
 		Language:     "Generic",
@@ -225,6 +253,170 @@ func TestGenerateOutputFile_WizCLI_AllSeverities(t *testing.T) {
 		"CVE-2021-23337": "BLOCKER",
 		"Generic API Key": "MAJOR",
 		"Email Address":  "MINOR",
+	}
+
+	for title, expectedRuleSev := range severityMap {
+		issue := findIssueByTitle(out, title)
+		if issue == nil {
+			t.Errorf("expected issue for %q not found", title)
+			continue
+		}
+		var rule *SonarRule
+		for i := range out.Rules {
+			if out.Rules[i].ID == issue.RuleID {
+				rule = &out.Rules[i]
+				break
+			}
+		}
+		if rule == nil {
+			t.Errorf("no rule found for issue %q (ruleId=%s)", title, issue.RuleID)
+			continue
+		}
+		if rule.Severity != expectedRuleSev {
+			t.Errorf("issue %q: expected rule severity %s, got %s", title, expectedRuleSev, rule.Severity)
+		}
+	}
+}
+
+// ── TestGenerateOutputFile_WizCLI_IacSast_HighVuln ─────────────────────────────
+
+func TestGenerateOutputFile_WizCLI_IacSast_HighVuln(t *testing.T) {
+	outputPath := t.TempDir()
+	outputFileName := "sonarqube.json"
+
+	vuln := makeWizVuln("S3 bucket without encryption", "HIGH", "./infra/main.tf")
+	analysis := makeWizIacSastAnalysis([]types.HuskyCIVulnerability{vuln}, nil, nil)
+
+	if err := GenerateOutputFile(analysis, outputPath+"/", outputFileName); err != nil {
+		t.Fatalf("GenerateOutputFile returned error: %v", err)
+	}
+
+	out := readSonarOutput(t, outputPath, outputFileName)
+
+	if len(out.Issues) == 0 {
+		t.Fatal("expected at least one issue in sonar output, got none")
+	}
+	issue := findIssueByTitle(out, "S3 bucket without encryption")
+	if issue == nil {
+		t.Fatalf("expected issue for 'S3 bucket without encryption', not found in: %+v", out.Issues)
+	}
+	if issue.RuleID == "" {
+		t.Error("expected non-empty ruleId")
+	}
+}
+
+// ── TestGenerateOutputFile_WizCLI_IacSast_AllSeverities ────────────────────────
+
+func TestGenerateOutputFile_WizCLI_IacSast_AllSeverities(t *testing.T) {
+	outputPath := t.TempDir()
+	outputFileName := "sonarqube.json"
+
+	highVuln := makeWizVuln("S3 bucket without encryption", "HIGH", "./infra/main.tf")
+	medVuln := makeWizVuln("IAM policy too permissive", "MEDIUM", "./infra/iam.tf")
+	lowVuln := makeWizVuln("Missing tags on resource", "LOW", "./infra/tags.tf")
+
+	analysis := makeWizIacSastAnalysis(
+		[]types.HuskyCIVulnerability{highVuln},
+		[]types.HuskyCIVulnerability{medVuln},
+		[]types.HuskyCIVulnerability{lowVuln},
+	)
+
+	if err := GenerateOutputFile(analysis, outputPath+"/", outputFileName); err != nil {
+		t.Fatalf("GenerateOutputFile returned error: %v", err)
+	}
+
+	out := readSonarOutput(t, outputPath, outputFileName)
+
+	if len(out.Issues) < 3 {
+		t.Errorf("expected at least 3 issues (one per severity), got %d", len(out.Issues))
+	}
+
+	severityMap := map[string]string{
+		"S3 bucket without encryption":  "BLOCKER",
+		"IAM policy too permissive":      "MAJOR",
+		"Missing tags on resource":       "MINOR",
+	}
+
+	for title, expectedRuleSev := range severityMap {
+		issue := findIssueByTitle(out, title)
+		if issue == nil {
+			t.Errorf("expected issue for %q not found", title)
+			continue
+		}
+		var rule *SonarRule
+		for i := range out.Rules {
+			if out.Rules[i].ID == issue.RuleID {
+				rule = &out.Rules[i]
+				break
+			}
+		}
+		if rule == nil {
+			t.Errorf("no rule found for issue %q (ruleId=%s)", title, issue.RuleID)
+			continue
+		}
+		if rule.Severity != expectedRuleSev {
+			t.Errorf("issue %q: expected rule severity %s, got %s", title, expectedRuleSev, rule.Severity)
+		}
+	}
+}
+
+// ── TestGenerateOutputFile_WizCLI_Vulns_HighVuln ──────────────────────────────
+
+func TestGenerateOutputFile_WizCLI_Vulns_HighVuln(t *testing.T) {
+	outputPath := t.TempDir()
+	outputFileName := "sonarqube.json"
+
+	vuln := makeWizVuln("CVE-2024-0001 in library foo", "HIGH", "./code/package-lock.json")
+	analysis := makeWizVulnsAnalysis([]types.HuskyCIVulnerability{vuln}, nil, nil)
+
+	if err := GenerateOutputFile(analysis, outputPath+"/", outputFileName); err != nil {
+		t.Fatalf("GenerateOutputFile returned error: %v", err)
+	}
+
+	out := readSonarOutput(t, outputPath, outputFileName)
+
+	if len(out.Issues) == 0 {
+		t.Fatal("expected at least one issue in sonar output, got none")
+	}
+	issue := findIssueByTitle(out, "CVE-2024-0001")
+	if issue == nil {
+		t.Fatalf("expected issue for 'CVE-2024-0001', not found in: %+v", out.Issues)
+	}
+	if issue.RuleID == "" {
+		t.Error("expected non-empty ruleId")
+	}
+}
+
+// ── TestGenerateOutputFile_WizCLI_Vulns_AllSeverities ──────────────────────────
+
+func TestGenerateOutputFile_WizCLI_Vulns_AllSeverities(t *testing.T) {
+	outputPath := t.TempDir()
+	outputFileName := "sonarqube.json"
+
+	highVuln := makeWizVuln("CVE-2024-0001 in library foo", "HIGH", "./code/package-lock.json")
+	medVuln := makeWizVuln("CVE-2023-9999 in library bar", "MEDIUM", "./code/yarn.lock")
+	lowVuln := makeWizVuln("CVE-2022-5555 in library baz", "LOW", "./code/requirements.txt")
+
+	analysis := makeWizVulnsAnalysis(
+		[]types.HuskyCIVulnerability{highVuln},
+		[]types.HuskyCIVulnerability{medVuln},
+		[]types.HuskyCIVulnerability{lowVuln},
+	)
+
+	if err := GenerateOutputFile(analysis, outputPath+"/", outputFileName); err != nil {
+		t.Fatalf("GenerateOutputFile returned error: %v", err)
+	}
+
+	out := readSonarOutput(t, outputPath, outputFileName)
+
+	if len(out.Issues) < 3 {
+		t.Errorf("expected at least 3 issues (one per severity), got %d", len(out.Issues))
+	}
+
+	severityMap := map[string]string{
+		"CVE-2024-0001": "BLOCKER",
+		"CVE-2023-9999": "MAJOR",
+		"CVE-2022-5555": "MINOR",
 	}
 
 	for title, expectedRuleSev := range severityMap {

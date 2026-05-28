@@ -641,11 +641,12 @@ allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIWizCLI
 
 ## Deployment Notes
 
-- **MongoDB:** Old `wizcli` document becomes orphaned on next API startup. The 3 new documents are upserted automatically. Manually delete the old `wizcli` document or leave inert.
-- **Wiz CLI version:** All three tests use the same Docker image (`latest-amd64`). The `--disabled-scanners` flag requires Wiz CLI v1.48+. Current Dockerfile pulls `latest`.
+- **MongoDB:** Old `wizcli` document becomes orphaned on next API startup. The 3 new documents are upserted automatically. **Cleanup step:** After deploying, run `db.securityTest.deleteOne({name: "wizcli"})` in the HuskyCI MongoDB to remove the orphaned document. Leaving it inert is also safe — the API won't dispatch it.
+- **Image tags:** ECR tag immutability prevents re-pushing `latest-amd64`. This release uses commit-hash tags (e.g. `f793155-amd64` for scanner, `prod.main.<sha>-amd64` for API/client). Future releases will also use hash tags. To revert to `latest-amd64`, delete the old immutable tag in ECR first.
+- **Wiz CLI version:** All three tests use the same Docker image (`f793155-amd64`). The `--disabled-scanners` flag requires Wiz CLI v1.48+. Current Dockerfile pulls `latest`.
 - **Timeout tuning:** Initial timeouts (120s / 300s / 300s) are estimates. Monitor pod execution times and adjust.
 - **Parser field accuracy:** New struct fields are based on inferred JSON shapes. If field names differ, findings are silently skipped (same as today). Validate with real Wiz output in production.
-- **Backward compatibility:** Client JSON output shape changes (`wizclioutput` → `wizclisecretsoutput` + `iavsastoutput` + `wizclivulnsoutput`). Any downstream consumers parsing this JSON will need updating.
+- **Backward compatibility:** Client JSON output shape changes (`wizclioutput` → `wizclisecretsoutput` + `iacsastoutput` + `wizclivulnsoutput`). Any downstream consumers parsing this JSON will need updating.
 
 ---
 
@@ -985,5 +986,5 @@ This checklist applies to **any** new or updated HuskyCI security test. Use it a
 |---|---|
 | 1 | Monitor pod execution times — adjust timeouts if needed |
 | 2 | Monitor for timed-out pods — may need to adjust scan flags |
-| 3 | Check MongoDB for orphaned old test documents |
+| 3 | Delete orphaned `wizcli` document: `db.securityTest.deleteOne({name: "wizcli"})` |
 | 4 | Update documentation/skill if any gotchas discovered |

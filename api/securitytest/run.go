@@ -166,131 +166,49 @@ func (results *RunAllInfo) runLanguageScans(ctx context.Context, enryScan SecTes
 	return g.Wait()
 }
 
+// vulnOutput maps a security test name to its corresponding HuskyCISecurityTestOutput pointer.
+func (results *RunAllInfo) vulnOutput(securityTestName string) *types.HuskyCISecurityTestOutput {
+	switch securityTestName {
+	case bandit:
+		return &results.HuskyCIResults.PythonResults.HuskyCIBanditOutput
+	case brakeman:
+		return &results.HuskyCIResults.RubyResults.HuskyCIBrakemanOutput
+	case safety:
+		return &results.HuskyCIResults.PythonResults.HuskyCISafetyOutput
+	case gosec:
+		return &results.HuskyCIResults.GoResults.HuskyCIGosecOutput
+	case npmaudit:
+		return &results.HuskyCIResults.JavaScriptResults.HuskyCINpmAuditOutput
+	case yarnaudit:
+		return &results.HuskyCIResults.JavaScriptResults.HuskyCIYarnAuditOutput
+	case spotbugs:
+		return &results.HuskyCIResults.JavaResults.HuskyCISpotBugsOutput
+	case gitleaks:
+		return &results.HuskyCIResults.GenericResults.HuskyCIGitleaksOutput
+	case wizcliSecrets:
+		return &results.HuskyCIResults.GenericResults.HuskyCIWizCLISecretsOutput
+	case wizcliIacSast:
+		return &results.HuskyCIResults.GenericResults.HuskyCIIacSastOutput
+	case wizcliVulns:
+		return &results.HuskyCIResults.GenericResults.HuskyCIWizCLIVulnsOutput
+	case tfsec:
+		return &results.HuskyCIResults.HclResults.HuskyCITFSecOutput
+	case securitycodescan:
+		return &results.HuskyCIResults.CSharpResults.HuskyCISecurityCodeScanOutput
+	default:
+		return nil
+	}
+}
+
 func (results *RunAllInfo) setVulns(securityTestScan SecTestScanInfo) {
-
-	for _, highVuln := range securityTestScan.Vulnerabilities.HighVulns {
-		switch securityTestScan.SecurityTestName {
-		case bandit:
-			results.HuskyCIResults.PythonResults.HuskyCIBanditOutput.HighVulns = append(results.HuskyCIResults.PythonResults.HuskyCIBanditOutput.HighVulns, highVuln)
-		case brakeman:
-			results.HuskyCIResults.RubyResults.HuskyCIBrakemanOutput.HighVulns = append(results.HuskyCIResults.RubyResults.HuskyCIBrakemanOutput.HighVulns, highVuln)
-		case safety:
-			results.HuskyCIResults.PythonResults.HuskyCISafetyOutput.HighVulns = append(results.HuskyCIResults.PythonResults.HuskyCISafetyOutput.HighVulns, highVuln)
-		case gosec:
-			results.HuskyCIResults.GoResults.HuskyCIGosecOutput.HighVulns = append(results.HuskyCIResults.GoResults.HuskyCIGosecOutput.HighVulns, highVuln)
-		case npmaudit:
-			results.HuskyCIResults.JavaScriptResults.HuskyCINpmAuditOutput.HighVulns = append(results.HuskyCIResults.JavaScriptResults.HuskyCINpmAuditOutput.HighVulns, highVuln)
-		case yarnaudit:
-			results.HuskyCIResults.JavaScriptResults.HuskyCIYarnAuditOutput.HighVulns = append(results.HuskyCIResults.JavaScriptResults.HuskyCIYarnAuditOutput.HighVulns, highVuln)
-		case spotbugs:
-			results.HuskyCIResults.JavaResults.HuskyCISpotBugsOutput.HighVulns = append(results.HuskyCIResults.JavaResults.HuskyCISpotBugsOutput.HighVulns, highVuln)
-		case gitleaks:
-			results.HuskyCIResults.GenericResults.HuskyCIGitleaksOutput.HighVulns = append(results.HuskyCIResults.GenericResults.HuskyCIGitleaksOutput.HighVulns, highVuln)
-		case wizcliSecrets:
-			results.HuskyCIResults.GenericResults.HuskyCIWizCLISecretsOutput.HighVulns = append(results.HuskyCIResults.GenericResults.HuskyCIWizCLISecretsOutput.HighVulns, highVuln)
-		case wizcliIacSast:
-			results.HuskyCIResults.GenericResults.HuskyCIIacSastOutput.HighVulns = append(results.HuskyCIResults.GenericResults.HuskyCIIacSastOutput.HighVulns, highVuln)
-		case wizcliVulns:
-			results.HuskyCIResults.GenericResults.HuskyCIWizCLIVulnsOutput.HighVulns = append(results.HuskyCIResults.GenericResults.HuskyCIWizCLIVulnsOutput.HighVulns, highVuln)
-		case tfsec:
-			results.HuskyCIResults.HclResults.HuskyCITFSecOutput.HighVulns = append(results.HuskyCIResults.HclResults.HuskyCITFSecOutput.HighVulns, highVuln)
-		case securitycodescan:
-			results.HuskyCIResults.CSharpResults.HuskyCISecurityCodeScanOutput.HighVulns = append(results.HuskyCIResults.CSharpResults.HuskyCISecurityCodeScanOutput.HighVulns, highVuln)
-		}
+	output := results.vulnOutput(securityTestScan.SecurityTestName)
+	if output == nil {
+		return
 	}
-
-	for _, mediumVuln := range securityTestScan.Vulnerabilities.MediumVulns {
-		switch securityTestScan.SecurityTestName {
-		case bandit:
-			results.HuskyCIResults.PythonResults.HuskyCIBanditOutput.MediumVulns = append(results.HuskyCIResults.PythonResults.HuskyCIBanditOutput.MediumVulns, mediumVuln)
-		case brakeman:
-			results.HuskyCIResults.RubyResults.HuskyCIBrakemanOutput.MediumVulns = append(results.HuskyCIResults.RubyResults.HuskyCIBrakemanOutput.MediumVulns, mediumVuln)
-		case safety:
-			results.HuskyCIResults.PythonResults.HuskyCISafetyOutput.MediumVulns = append(results.HuskyCIResults.PythonResults.HuskyCISafetyOutput.MediumVulns, mediumVuln)
-		case gosec:
-			results.HuskyCIResults.GoResults.HuskyCIGosecOutput.MediumVulns = append(results.HuskyCIResults.GoResults.HuskyCIGosecOutput.MediumVulns, mediumVuln)
-		case npmaudit:
-			results.HuskyCIResults.JavaScriptResults.HuskyCINpmAuditOutput.MediumVulns = append(results.HuskyCIResults.JavaScriptResults.HuskyCINpmAuditOutput.MediumVulns, mediumVuln)
-		case yarnaudit:
-			results.HuskyCIResults.JavaScriptResults.HuskyCIYarnAuditOutput.MediumVulns = append(results.HuskyCIResults.JavaScriptResults.HuskyCIYarnAuditOutput.MediumVulns, mediumVuln)
-		case spotbugs:
-			results.HuskyCIResults.JavaResults.HuskyCISpotBugsOutput.MediumVulns = append(results.HuskyCIResults.JavaResults.HuskyCISpotBugsOutput.MediumVulns, mediumVuln)
-		case gitleaks:
-			results.HuskyCIResults.GenericResults.HuskyCIGitleaksOutput.MediumVulns = append(results.HuskyCIResults.GenericResults.HuskyCIGitleaksOutput.MediumVulns, mediumVuln)
-		case wizcliSecrets:
-			results.HuskyCIResults.GenericResults.HuskyCIWizCLISecretsOutput.MediumVulns = append(results.HuskyCIResults.GenericResults.HuskyCIWizCLISecretsOutput.MediumVulns, mediumVuln)
-		case wizcliIacSast:
-			results.HuskyCIResults.GenericResults.HuskyCIIacSastOutput.MediumVulns = append(results.HuskyCIResults.GenericResults.HuskyCIIacSastOutput.MediumVulns, mediumVuln)
-		case wizcliVulns:
-			results.HuskyCIResults.GenericResults.HuskyCIWizCLIVulnsOutput.MediumVulns = append(results.HuskyCIResults.GenericResults.HuskyCIWizCLIVulnsOutput.MediumVulns, mediumVuln)
-		case tfsec:
-			results.HuskyCIResults.HclResults.HuskyCITFSecOutput.MediumVulns = append(results.HuskyCIResults.HclResults.HuskyCITFSecOutput.MediumVulns, mediumVuln)
-		case securitycodescan:
-			results.HuskyCIResults.CSharpResults.HuskyCISecurityCodeScanOutput.MediumVulns = append(results.HuskyCIResults.CSharpResults.HuskyCISecurityCodeScanOutput.MediumVulns, mediumVuln)
-		}
-	}
-
-	for _, lowVuln := range securityTestScan.Vulnerabilities.LowVulns {
-		switch securityTestScan.SecurityTestName {
-		case bandit:
-			results.HuskyCIResults.PythonResults.HuskyCIBanditOutput.LowVulns = append(results.HuskyCIResults.PythonResults.HuskyCIBanditOutput.LowVulns, lowVuln)
-		case brakeman:
-			results.HuskyCIResults.RubyResults.HuskyCIBrakemanOutput.LowVulns = append(results.HuskyCIResults.RubyResults.HuskyCIBrakemanOutput.LowVulns, lowVuln)
-		case safety:
-			results.HuskyCIResults.PythonResults.HuskyCISafetyOutput.LowVulns = append(results.HuskyCIResults.PythonResults.HuskyCISafetyOutput.LowVulns, lowVuln)
-		case gosec:
-			results.HuskyCIResults.GoResults.HuskyCIGosecOutput.LowVulns = append(results.HuskyCIResults.GoResults.HuskyCIGosecOutput.LowVulns, lowVuln)
-		case npmaudit:
-			results.HuskyCIResults.JavaScriptResults.HuskyCINpmAuditOutput.LowVulns = append(results.HuskyCIResults.JavaScriptResults.HuskyCINpmAuditOutput.LowVulns, lowVuln)
-		case yarnaudit:
-			results.HuskyCIResults.JavaScriptResults.HuskyCIYarnAuditOutput.LowVulns = append(results.HuskyCIResults.JavaScriptResults.HuskyCIYarnAuditOutput.LowVulns, lowVuln)
-		case spotbugs:
-			results.HuskyCIResults.JavaResults.HuskyCISpotBugsOutput.LowVulns = append(results.HuskyCIResults.JavaResults.HuskyCISpotBugsOutput.LowVulns, lowVuln)
-		case gitleaks:
-			results.HuskyCIResults.GenericResults.HuskyCIGitleaksOutput.LowVulns = append(results.HuskyCIResults.GenericResults.HuskyCIGitleaksOutput.LowVulns, lowVuln)
-		case wizcliSecrets:
-			results.HuskyCIResults.GenericResults.HuskyCIWizCLISecretsOutput.LowVulns = append(results.HuskyCIResults.GenericResults.HuskyCIWizCLISecretsOutput.LowVulns, lowVuln)
-		case wizcliIacSast:
-			results.HuskyCIResults.GenericResults.HuskyCIIacSastOutput.LowVulns = append(results.HuskyCIResults.GenericResults.HuskyCIIacSastOutput.LowVulns, lowVuln)
-		case wizcliVulns:
-			results.HuskyCIResults.GenericResults.HuskyCIWizCLIVulnsOutput.LowVulns = append(results.HuskyCIResults.GenericResults.HuskyCIWizCLIVulnsOutput.LowVulns, lowVuln)
-		case tfsec:
-			results.HuskyCIResults.HclResults.HuskyCITFSecOutput.LowVulns = append(results.HuskyCIResults.HclResults.HuskyCITFSecOutput.LowVulns, lowVuln)
-		case securitycodescan:
-			results.HuskyCIResults.CSharpResults.HuskyCISecurityCodeScanOutput.LowVulns = append(results.HuskyCIResults.CSharpResults.HuskyCISecurityCodeScanOutput.LowVulns, lowVuln)
-		}
-	}
-
-	for _, noSec := range securityTestScan.Vulnerabilities.NoSecVulns {
-		switch securityTestScan.SecurityTestName {
-		case bandit:
-			results.HuskyCIResults.PythonResults.HuskyCIBanditOutput.NoSecVulns = append(results.HuskyCIResults.PythonResults.HuskyCIBanditOutput.NoSecVulns, noSec)
-		case brakeman:
-			results.HuskyCIResults.RubyResults.HuskyCIBrakemanOutput.NoSecVulns = append(results.HuskyCIResults.RubyResults.HuskyCIBrakemanOutput.NoSecVulns, noSec)
-		case safety:
-			results.HuskyCIResults.PythonResults.HuskyCISafetyOutput.NoSecVulns = append(results.HuskyCIResults.PythonResults.HuskyCISafetyOutput.NoSecVulns, noSec)
-		case gosec:
-			results.HuskyCIResults.GoResults.HuskyCIGosecOutput.NoSecVulns = append(results.HuskyCIResults.GoResults.HuskyCIGosecOutput.NoSecVulns, noSec)
-		case npmaudit:
-			results.HuskyCIResults.JavaScriptResults.HuskyCINpmAuditOutput.NoSecVulns = append(results.HuskyCIResults.JavaScriptResults.HuskyCINpmAuditOutput.NoSecVulns, noSec)
-		case yarnaudit:
-			results.HuskyCIResults.JavaScriptResults.HuskyCIYarnAuditOutput.NoSecVulns = append(results.HuskyCIResults.JavaScriptResults.HuskyCIYarnAuditOutput.NoSecVulns, noSec)
-		case spotbugs:
-			results.HuskyCIResults.JavaResults.HuskyCISpotBugsOutput.NoSecVulns = append(results.HuskyCIResults.JavaResults.HuskyCISpotBugsOutput.NoSecVulns, noSec)
-		case gitleaks:
-			results.HuskyCIResults.GenericResults.HuskyCIGitleaksOutput.NoSecVulns = append(results.HuskyCIResults.GenericResults.HuskyCIGitleaksOutput.NoSecVulns, noSec)
-		case wizcliSecrets:
-			results.HuskyCIResults.GenericResults.HuskyCIWizCLISecretsOutput.NoSecVulns = append(results.HuskyCIResults.GenericResults.HuskyCIWizCLISecretsOutput.NoSecVulns, noSec)
-		case wizcliIacSast:
-			results.HuskyCIResults.GenericResults.HuskyCIIacSastOutput.NoSecVulns = append(results.HuskyCIResults.GenericResults.HuskyCIIacSastOutput.NoSecVulns, noSec)
-		case wizcliVulns:
-			results.HuskyCIResults.GenericResults.HuskyCIWizCLIVulnsOutput.NoSecVulns = append(results.HuskyCIResults.GenericResults.HuskyCIWizCLIVulnsOutput.NoSecVulns, noSec)
-		case tfsec:
-			results.HuskyCIResults.HclResults.HuskyCITFSecOutput.NoSecVulns = append(results.HuskyCIResults.HclResults.HuskyCITFSecOutput.NoSecVulns, noSec)
-		case securitycodescan:
-			results.HuskyCIResults.CSharpResults.HuskyCISecurityCodeScanOutput.NoSecVulns = append(results.HuskyCIResults.CSharpResults.HuskyCISecurityCodeScanOutput.NoSecVulns, noSec)
-		}
-	}
+	output.HighVulns = append(output.HighVulns, securityTestScan.Vulnerabilities.HighVulns...)
+	output.MediumVulns = append(output.MediumVulns, securityTestScan.Vulnerabilities.MediumVulns...)
+	output.LowVulns = append(output.LowVulns, securityTestScan.Vulnerabilities.LowVulns...)
+	output.NoSecVulns = append(output.NoSecVulns, securityTestScan.Vulnerabilities.NoSecVulns...)
 }
 
 // SetAnalysisError sets error on an analysis that did not got to the setToAnalysis phase

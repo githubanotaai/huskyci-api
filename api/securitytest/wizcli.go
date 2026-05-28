@@ -26,8 +26,8 @@ type wizCLIReport struct {
 		Secrets               []wizSecretFinding     `json:"secrets"`
 		DataFindings          []wizDataFinding       `json:"dataFindings"`
 		EndOfLifeTechnologies []wizEndOfLifeFinding     `json:"endOfLifeTechnologies"`
-		Iac                 []wizIacFinding           `json:"iac"`
-		Sast                []wizSastFinding          `json:"sast"`
+		Iac                 []wizCodeFinding          `json:"iac"`
+		Sast                []wizCodeFinding          `json:"sast"`
 		Malwares            []wizMalwareFinding       `json:"malwares"`
 		AIModels            []wizAIModelFinding       `json:"aiModels"`
 		SoftwareSupplyChain []wizSupplyChainFinding   `json:"softwareSupplyChain"`
@@ -70,16 +70,7 @@ type wizEndOfLifeFinding struct {
 	Version string `json:"version"`
 }
 
-type wizIacFinding struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Severity    string `json:"severity"`
-	File        string `json:"file"`
-	Line        int    `json:"line"`
-	Rule        string `json:"rule"`
-}
-
-type wizSastFinding struct {
+type wizCodeFinding struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Severity    string `json:"severity"`
@@ -473,37 +464,26 @@ func parseWizCLIJSON(output string) ([]types.HuskyCIVulnerability, error) {
 		addFinding("End of Life Technology", "MEDIUM", location, "", eol.Name+" is end of life")
 	}
 
-	for _, finding := range report.Result.Iac {
-		title := finding.Name
-		if title == "" {
-			title = finding.Rule
+	collectCodeFindings := func(findings []wizCodeFinding) {
+		for _, finding := range findings {
+			title := finding.Name
+			if title == "" {
+				title = finding.Rule
+			}
+			severity := strings.ToUpper(finding.Severity)
+			if severity == "" {
+				severity = "MEDIUM"
+			}
+			line := ""
+			if finding.Line > 0 {
+				line = strconv.Itoa(finding.Line)
+			}
+			addFinding(title, severity, util.NormalizeFilePath(finding.File), line, finding.Description)
 		}
-		severity := strings.ToUpper(finding.Severity)
-		if severity == "" {
-			severity = "MEDIUM"
-		}
-		line := ""
-		if finding.Line > 0 {
-			line = strconv.Itoa(finding.Line)
-		}
-		addFinding(title, severity, util.NormalizeFilePath(finding.File), line, finding.Description)
 	}
 
-	for _, finding := range report.Result.Sast {
-		title := finding.Name
-		if title == "" {
-			title = finding.Rule
-		}
-		severity := strings.ToUpper(finding.Severity)
-		if severity == "" {
-			severity = "MEDIUM"
-		}
-		line := ""
-		if finding.Line > 0 {
-			line = strconv.Itoa(finding.Line)
-		}
-		addFinding(title, severity, util.NormalizeFilePath(finding.File), line, finding.Description)
-	}
+	collectCodeFindings(report.Result.Iac)
+	collectCodeFindings(report.Result.Sast)
 
 	for _, finding := range report.Result.Malwares {
 		title := finding.Name

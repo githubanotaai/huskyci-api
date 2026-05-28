@@ -269,7 +269,7 @@ func prepareAllSummary(analysis types.Analysis) {
 
 func printAllSummary(analysis types.Analysis) {
 
-	var gosecVersion, banditVersion, safetyVersion, brakemanVersion, npmauditVersion, yarnauditVersion, gitleaksVersion, wizcliVersion, spotbugsVersion, tfsecVersion, securityCodeScanVersion string
+	var gosecVersion, banditVersion, safetyVersion, brakemanVersion, npmauditVersion, yarnauditVersion, gitleaksVersion, wizcliSecretsVersion, wizcliIacSastVersion, wizcliVulnsVersion, spotbugsVersion, tfsecVersion, securityCodeScanVersion string
 
 	for _, container := range analysis.Containers {
 		switch container.SecurityTest.Name {
@@ -289,8 +289,12 @@ func printAllSummary(analysis types.Analysis) {
 			spotbugsVersion = fmt.Sprintf("%s:%s", container.SecurityTest.Image, container.SecurityTest.ImageTag)
 		case "gitleaks":
 			gitleaksVersion = fmt.Sprintf("%s:%s", container.SecurityTest.Image, container.SecurityTest.ImageTag)
-		case "wizcli_secrets", "wizcli_iac_sast", "wizcli_vulns":
-			wizcliVersion = fmt.Sprintf("%s:%s", container.SecurityTest.Image, container.SecurityTest.ImageTag)
+		case "wizcli_secrets":
+			wizcliSecretsVersion = fmt.Sprintf("%s:%s", container.SecurityTest.Image, container.SecurityTest.ImageTag)
+		case "wizcli_iac_sast":
+			wizcliIacSastVersion = fmt.Sprintf("%s:%s", container.SecurityTest.Image, container.SecurityTest.ImageTag)
+		case "wizcli_vulns":
+			wizcliVulnsVersion = fmt.Sprintf("%s:%s", container.SecurityTest.Image, container.SecurityTest.ImageTag)
 		case "tfsec":
 			tfsecVersion = fmt.Sprintf("%s:%s", container.SecurityTest.Image, container.SecurityTest.ImageTag)
 		case "securitycodescan":
@@ -390,7 +394,7 @@ func printAllSummary(analysis types.Analysis) {
 
 	if outputJSON.Summary.WizCLISecretsSummary.FoundVuln || outputJSON.Summary.WizCLISecretsSummary.FoundInfo {
 		fmt.Println()
-		fmt.Printf("[HUSKYCI][SUMMARY] Generic -> %s\n", wizcliVersion)
+		fmt.Printf("[HUSKYCI][SUMMARY] Generic -> %s\n", wizcliSecretsVersion)
 		fmt.Printf("[HUSKYCI][SUMMARY] Wiz CLI (Secrets) High: %d\n", outputJSON.Summary.WizCLISecretsSummary.HighVuln)
 		fmt.Printf("[HUSKYCI][SUMMARY] Wiz CLI (Secrets) Medium: %d\n", outputJSON.Summary.WizCLISecretsSummary.MediumVuln)
 		fmt.Printf("[HUSKYCI][SUMMARY] Wiz CLI (Secrets) Low: %d\n", outputJSON.Summary.WizCLISecretsSummary.LowVuln)
@@ -399,7 +403,7 @@ func printAllSummary(analysis types.Analysis) {
 
 	if outputJSON.Summary.WizCLIIacSastSummary.FoundVuln || outputJSON.Summary.WizCLIIacSastSummary.FoundInfo {
 		fmt.Println()
-		fmt.Printf("[HUSKYCI][SUMMARY] Generic -> %s\n", wizcliVersion)
+		fmt.Printf("[HUSKYCI][SUMMARY] Generic -> %s\n", wizcliIacSastVersion)
 		fmt.Printf("[HUSKYCI][SUMMARY] Wiz CLI (IaC+SAST) High: %d\n", outputJSON.Summary.WizCLIIacSastSummary.HighVuln)
 		fmt.Printf("[HUSKYCI][SUMMARY] Wiz CLI (IaC+SAST) Medium: %d\n", outputJSON.Summary.WizCLIIacSastSummary.MediumVuln)
 		fmt.Printf("[HUSKYCI][SUMMARY] Wiz CLI (IaC+SAST) Low: %d\n", outputJSON.Summary.WizCLIIacSastSummary.LowVuln)
@@ -408,7 +412,7 @@ func printAllSummary(analysis types.Analysis) {
 
 	if outputJSON.Summary.WizCLIVulnsSummary.FoundVuln || outputJSON.Summary.WizCLIVulnsSummary.FoundInfo {
 		fmt.Println()
-		fmt.Printf("[HUSKYCI][SUMMARY] Generic -> %s\n", wizcliVersion)
+		fmt.Printf("[HUSKYCI][SUMMARY] Generic -> %s\n", wizcliVulnsVersion)
 		fmt.Printf("[HUSKYCI][SUMMARY] Wiz CLI (Vulns) High: %d\n", outputJSON.Summary.WizCLIVulnsSummary.HighVuln)
 		fmt.Printf("[HUSKYCI][SUMMARY] Wiz CLI (Vulns) Medium: %d\n", outputJSON.Summary.WizCLIVulnsSummary.MediumVuln)
 		fmt.Printf("[HUSKYCI][SUMMARY] Wiz CLI (Vulns) Low: %d\n", outputJSON.Summary.WizCLIVulnsSummary.LowVuln)
