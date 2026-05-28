@@ -28,7 +28,12 @@ var securityTestAnalyze = map[string]func(scanInfo *SecTestScanInfo) error{
 	"safety":           analyzeSafety,
 	"tfsec":            analyzeTFSec,
 	"securitycodescan": analyzeSecurityCodeScan,
-	"wizcli":           analyzeWizCLI,
+	"wizcli_secrets":   analyzeWizCLI,
+	"wizcli_iac_sast":  analyzeWizCLI,
+	"wizcli_vulns":     analyzeWizCLI,
+	// Migration safeguard: old "wizcli" documents may persist in MongoDB.
+	// Remove this entry after db.securityTest.deleteOne({name:"wizcli"}) is run.
+	"wizcli": analyzeWizCLI,
 }
 
 // SecTestScanInfo holds all information of securityTest scan.
@@ -153,8 +158,13 @@ func (scanInfo *SecTestScanInfo) analyze() error {
 		scanInfo.ErrorFound = errorMsg
 		return errorMsg
 	}
-	securityTestAnalyze := securityTestAnalyze[scanInfo.SecurityTestName]
-	return securityTestAnalyze(scanInfo)
+	securityTestAnalyzeFn := securityTestAnalyze[scanInfo.SecurityTestName]
+	if securityTestAnalyzeFn == nil {
+		errMsg := fmt.Errorf("unknown security test: %s", scanInfo.SecurityTestName)
+		scanInfo.ErrorFound = errMsg
+		return errMsg
+	}
+	return securityTestAnalyzeFn(scanInfo)
 }
 
 func (scanInfo *SecTestScanInfo) prepareContainerAfterScan() {

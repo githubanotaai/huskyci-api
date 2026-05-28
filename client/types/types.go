@@ -151,8 +151,10 @@ type RubyResults struct {
 
 // GenericResults represents all generic securityTests results.
 type GenericResults struct {
-	HuskyCIGitleaksOutput HuskyCISecurityTestOutput `bson:"gitleaksoutput,omitempty" json:"gitleaksoutput,omitempty"`
-	HuskyCIWizCLIOutput   HuskyCISecurityTestOutput `bson:"wizclioutput,omitempty" json:"wizclioutput,omitempty"`
+	HuskyCIGitleaksOutput      HuskyCISecurityTestOutput `bson:"gitleaksoutput,omitempty" json:"gitleaksoutput,omitempty"`
+	HuskyCIWizCLISecretsOutput HuskyCISecurityTestOutput `bson:"wizclisecretsoutput,omitempty" json:"wizclisecretsoutput,omitempty"`
+	HuskyCIIacSastOutput       HuskyCISecurityTestOutput `bson:"iacsastoutput,omitempty" json:"iacsastoutput,omitempty"`
+	HuskyCIWizCLIVulnsOutput   HuskyCISecurityTestOutput `bson:"wizclivulnsoutput,omitempty" json:"wizclivulnsoutput,omitempty"`
 }
 
 // HclResults represents all HCL security tests results.
@@ -186,7 +188,9 @@ type Summary struct {
 	BrakemanSummary         HuskyCISummary `json:"brakemansummary,omitempty"`
 	SpotBugsSummary         HuskyCISummary `json:"spotbugssummary,omitempty"`
 	GitleaksSummary         HuskyCISummary `json:"gitleakssummary,omitempty"`
-	WizCLISummary           HuskyCISummary `json:"wizclisummary,omitempty"`
+	WizCLISecretsSummary   HuskyCISummary `json:"wizclisecretssummary,omitempty"`
+	WizCLIIacSastSummary   HuskyCISummary `json:"wizcliiacsastsummary,omitempty"`
+	WizCLIVulnsSummary     HuskyCISummary `json:"wizclivulnssummary,omitempty"`
 	TFSecSummary            HuskyCISummary `json:"tfsecsummary,omitempty"`
 	SecurityCodeScanSummary HuskyCISummary `json:"securitycodescansummary,omitempty"`
 	TotalSummary            HuskyCISummary `json:"totalsummary,omitempty"`

@@ -43,7 +43,9 @@ func KubeRun(image, imageTag, cmd, securityTestName, id string, podSchedulingTim
 	log.Info(logActionRun, logInfoHuskyKube, 41, k.PID)
 
 	_, fullContainerImage := configureImagePath(image, imageTag)
-	podName := fmt.Sprintf("%s-%s", strings.ToLower(id), securityTestName)
+	// Sanitize test name for DNS label compliance (RFC 1123): replace underscores with hyphens
+	sanitizedTestName := strings.ReplaceAll(securityTestName, "_", "-")
+	podName := fmt.Sprintf("%s-%s", strings.ToLower(id), sanitizedTestName)
 
 	// step 3: create a new container given an image and it's cmd
 	podUID, err := k.CreatePod(fullContainerImage, cmd, podName, securityTestName)

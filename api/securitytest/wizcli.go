@@ -12,7 +12,7 @@ import (
 	"github.com/githubanotaai/huskyci-api/api/util"
 )
 
-// wizCLIReport models the subset of `wizcli dir scan -f json` output that
+// wizCLIReport models the subset of `wizcli scan dir --stdout=json` output that
 // huskyCI surfaces as findings. Unrelated metadata (analytics, sbomOutput,
 // hostConfiguration, ...) is intentionally ignored.
 type wizCLIReport struct {
@@ -25,7 +25,12 @@ type wizCLIReport struct {
 		OSPackages            []wizPackageWithVulns  `json:"osPackages"`
 		Secrets               []wizSecretFinding     `json:"secrets"`
 		DataFindings          []wizDataFinding       `json:"dataFindings"`
-		EndOfLifeTechnologies []wizEndOfLifeFinding  `json:"endOfLifeTechnologies"`
+		EndOfLifeTechnologies []wizEndOfLifeFinding     `json:"endOfLifeTechnologies"`
+		Iac                 []wizCodeFinding          `json:"iac"`
+		Sast                []wizCodeFinding          `json:"sast"`
+		Malwares            []wizMalwareFinding       `json:"malwares"`
+		AIModels            []wizAIModelFinding       `json:"aiModels"`
+		SoftwareSupplyChain []wizSupplyChainFinding   `json:"softwareSupplyChain"`
 	} `json:"result"`
 }
 
@@ -65,6 +70,37 @@ type wizEndOfLifeFinding struct {
 	Version string `json:"version"`
 }
 
+type wizCodeFinding struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Severity    string `json:"severity"`
+	File        string `json:"file"`
+	Line        int    `json:"line"`
+	Rule        string `json:"rule"`
+}
+
+type wizMalwareFinding struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Severity    string `json:"severity"`
+	Path        string `json:"path"`
+}
+
+type wizAIModelFinding struct {
+	Name     string `json:"name"`
+	Version  string `json:"version"`
+	Severity string `json:"severity"`
+	Path     string `json:"path"`
+}
+
+type wizSupplyChainFinding struct {
+	Name     string `json:"name"`
+	Version  string `json:"version"`
+	Severity string `json:"severity"`
+	License  string `json:"license"`
+	Path     string `json:"path"`
+}
+
 func analyzeWizCLI(scanInfo *SecTestScanInfo) error {
 	output := scanInfo.Container.COutput
 
@@ -74,7 +110,7 @@ func analyzeWizCLI(scanInfo *SecTestScanInfo) error {
 	}
 
 	if strings.Contains(output, "ERROR_RUNNING_WIZCLI_SCAN") {
-		scanInfo.ErrorFound = errors.New("wizcli dir scan failed with a non-findings exit code")
+		scanInfo.ErrorFound = errors.New("wizcli scan dir failed with a non-findings exit code")
 		return scanInfo.ErrorFound
 	}
 
@@ -316,7 +352,7 @@ func generateSonarQubeExternalIssue(vuln types.HuskyCIVulnerability) sonarQubeEx
 	return issue
 }
 
-// parseWizCLIJSON converts the JSON produced by `wizcli dir scan -f json`
+// parseWizCLIJSON converts the JSON produced by `wizcli scan dir --stdout=json`
 // into HuskyCIVulnerability entries, covering CVEs (libraries, OS packages),
 // secrets, data findings, and end-of-life technologies.
 func parseWizCLIJSON(output string) ([]types.HuskyCIVulnerability, error) {
@@ -426,6 +462,54 @@ func parseWizCLIJSON(output string) ([]types.HuskyCIVulnerability, error) {
 			location += ":" + eol.Version
 		}
 		addFinding("End of Life Technology", "MEDIUM", location, "", eol.Name+" is end of life")
+	}
+
+	collectCodeFindings := func(findings []wizCodeFinding) {
+		for _, finding := range findings {
+			title := finding.Name
+			if title == "" {
+				title = finding.Rule
+			}
+			severity := strings.ToUpper(finding.Severity)
+			if severity == "" {
+				severity = "MEDIUM"
+			}
+			line := ""
+			if finding.Line > 0 {
+				line = strconv.Itoa(finding.Line)
+			}
+			addFinding(title, severity, util.NormalizeFilePath(finding.File), line, finding.Description)
+		}
+	}
+
+	collectCodeFindings(report.Result.Iac)
+	collectCodeFindings(report.Result.Sast)
+
+	for _, finding := range report.Result.Malwares {
+		title := finding.Name
+		severity := strings.ToUpper(finding.Severity)
+		if severity == "" {
+			severity = "HIGH"
+		}
+		addFinding(title, severity, util.NormalizeFilePath(finding.Path), "", finding.Description)
+	}
+
+	for _, finding := range report.Result.AIModels {
+		title := finding.Name
+		severity := strings.ToUpper(finding.Severity)
+		if severity == "" {
+			severity = "INFO"
+		}
+		addFinding(title, severity, util.NormalizeFilePath(finding.Path), "", fmt.Sprintf("%s:%s", finding.Name, finding.Version))
+	}
+
+	for _, finding := range report.Result.SoftwareSupplyChain {
+		title := finding.Name
+		severity := strings.ToUpper(finding.Severity)
+		if severity == "" {
+			severity = "MEDIUM"
+		}
+		addFinding(title, severity, util.NormalizeFilePath(finding.Path), "", fmt.Sprintf("%s:%s (license: %s)", finding.Name, finding.Version, finding.License))
 	}
 
 	return findings, nil

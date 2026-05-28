@@ -117,14 +117,20 @@ var _ = Describe("Util API", func() {
 		})
 	})
 
-	Describe("APIConfig WizcliSecurityTest wiring", func() {
-		Context("When WizcliSecurityTest is provided in configAPI", func() {
-			It("WizcliSecurityTest should be non-nil when provided in configAPI", func() {
+	Describe("APIConfig WizCLI split security test wiring", func() {
+		Context("When WizCLI split security tests are provided in configAPI", func() {
+			It("WizCLI split security tests should be non-nil when provided in configAPI", func() {
 				cfg := &apiContext.APIConfig{
-					WizcliSecurityTest: &types.SecurityTest{Name: "wizcli"},
+					WizcliSecretsSecurityTest: &types.SecurityTest{Name: "wizcli_secrets"},
+					WizcliIacSastSecurityTest:  &types.SecurityTest{Name: "wizcli_iac_sast"},
+					WizcliVulnsSecurityTest:   &types.SecurityTest{Name: "wizcli_vulns"},
 				}
-				Expect(cfg.WizcliSecurityTest).NotTo(BeNil())
-				Expect(cfg.WizcliSecurityTest.Name).To(Equal("wizcli"))
+				Expect(cfg.WizcliSecretsSecurityTest).NotTo(BeNil())
+				Expect(cfg.WizcliSecretsSecurityTest.Name).To(Equal("wizcli_secrets"))
+				Expect(cfg.WizcliIacSastSecurityTest).NotTo(BeNil())
+				Expect(cfg.WizcliIacSastSecurityTest.Name).To(Equal("wizcli_iac_sast"))
+				Expect(cfg.WizcliVulnsSecurityTest).NotTo(BeNil())
+				Expect(cfg.WizcliVulnsSecurityTest.Name).To(Equal("wizcli_vulns"))
 			})
 		})
 	})

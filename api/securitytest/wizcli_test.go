@@ -178,6 +178,162 @@ func TestParseWizCLIJSON_EOLTechnologies(t *testing.T) {
 	}
 }
 
+func TestParseWizCLIJSON_IacFindings(t *testing.T) {
+	const input = `{"result":{"iac":[
+		{"name":"S3 Bucket without versioning","description":"Bucket should have versioning","severity":"HIGH","file":"main.tf","line":42,"rule":"CKV_AWS_1"}
+	]}}`
+	out, err := parseWizCLIJSON(input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(out) != 1 {
+		t.Fatalf("expected 1 IaC finding, got %d", len(out))
+	}
+	v := out[0]
+	if v.Title != "S3 Bucket without versioning" {
+		t.Errorf("expected Title 'S3 Bucket without versioning', got %q", v.Title)
+	}
+	if v.Severity != "HIGH" {
+		t.Errorf("expected Severity HIGH, got %q", v.Severity)
+	}
+	if v.File != "main.tf" {
+		t.Errorf("expected File 'main.tf', got %q", v.File)
+	}
+	if v.Line != "42" {
+		t.Errorf("expected Line '42', got %q", v.Line)
+	}
+	if v.Details != "Bucket should have versioning" {
+		t.Errorf("expected Details 'Bucket should have versioning', got %q", v.Details)
+	}
+	if v.SecurityTool != "WizCLI" {
+		t.Errorf("expected SecurityTool WizCLI, got %q", v.SecurityTool)
+	}
+}
+
+func TestParseWizCLIJSON_SastFindings(t *testing.T) {
+	const input = `{"result":{"sast":[
+		{"name":"SQL Injection","description":"Unsanitized input in SQL query","severity":"CRITICAL","file":"handler.go","line":100,"rule":"SQL_INJECTION"}
+	]}}`
+	out, err := parseWizCLIJSON(input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(out) != 1 {
+		t.Fatalf("expected 1 SAST finding, got %d", len(out))
+	}
+	v := out[0]
+	if v.Title != "SQL Injection" {
+		t.Errorf("expected Title 'SQL Injection', got %q", v.Title)
+	}
+	if v.Severity != "CRITICAL" {
+		t.Errorf("expected Severity CRITICAL, got %q", v.Severity)
+	}
+	if v.File != "handler.go" {
+		t.Errorf("expected File 'handler.go', got %q", v.File)
+	}
+	if v.Line != "100" {
+		t.Errorf("expected Line '100', got %q", v.Line)
+	}
+	if v.Details != "Unsanitized input in SQL query" {
+		t.Errorf("expected Details 'Unsanitized input in SQL query', got %q", v.Details)
+	}
+}
+
+func TestParseWizCLIJSON_MalwareFindings(t *testing.T) {
+	const input = `{"result":{"malwares":[
+		{"name":"Trojan.GenericKD","description":"Known malware detected","severity":"HIGH","path":"vendor/evil/lib.so"}
+	]}}`
+	out, err := parseWizCLIJSON(input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(out) != 1 {
+		t.Fatalf("expected 1 Malware finding, got %d", len(out))
+	}
+	v := out[0]
+	if v.Title != "Trojan.GenericKD" {
+		t.Errorf("expected Title 'Trojan.GenericKD', got %q", v.Title)
+	}
+	if v.Severity != "HIGH" {
+		t.Errorf("expected Severity HIGH, got %q", v.Severity)
+	}
+	if v.File != "vendor/evil/lib.so" {
+		t.Errorf("expected File (Code/Path) 'vendor/evil/lib.so', got %q", v.File)
+	}
+	if v.Line != "" {
+		t.Errorf("expected Line '' (line=0 in JSON), got %q", v.Line)
+	}
+	if v.Details != "Known malware detected" {
+		t.Errorf("expected Details 'Known malware detected', got %q", v.Details)
+	}
+}
+
+func TestParseWizCLIJSON_AIModelFindings(t *testing.T) {
+	const input = `{"result":{"aiModels":[
+		{"name":"gpt-4","version":"2024-03","severity":"INFO","path":"requirements.txt"}
+	]}}`
+	out, err := parseWizCLIJSON(input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(out) != 1 {
+		t.Fatalf("expected 1 AIModel finding, got %d", len(out))
+	}
+	v := out[0]
+	if v.Title != "gpt-4" {
+		t.Errorf("expected Title 'gpt-4', got %q", v.Title)
+	}
+	if v.Severity != "INFO" {
+		t.Errorf("expected Severity INFO, got %q", v.Severity)
+	}
+	if v.File != "requirements.txt" {
+		t.Errorf("expected File (Path) 'requirements.txt', got %q", v.File)
+	}
+	if !strings.Contains(v.Details, "gpt-4:2024-03") {
+		t.Errorf("expected Details to contain 'gpt-4:2024-03', got %q", v.Details)
+	}
+}
+
+func TestParseWizCLIJSON_SoftwareSupplyChainFindings(t *testing.T) {
+	const input = `{"result":{"softwareSupplyChain":[
+		{"name":"lodash","version":"4.17.20","severity":"MEDIUM","license":"MIT","path":"package.json"}
+	]}}`
+	out, err := parseWizCLIJSON(input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(out) != 1 {
+		t.Fatalf("expected 1 Supply Chain finding, got %d", len(out))
+	}
+	v := out[0]
+	if v.Title != "lodash" {
+		t.Errorf("expected Title 'lodash', got %q", v.Title)
+	}
+	if v.Severity != "MEDIUM" {
+		t.Errorf("expected Severity MEDIUM, got %q", v.Severity)
+	}
+	if v.File != "package.json" {
+		t.Errorf("expected File (Path) 'package.json', got %q", v.File)
+	}
+	if !strings.Contains(v.Details, "lodash:4.17.20") {
+		t.Errorf("expected Details to contain 'lodash:4.17.20', got %q", v.Details)
+	}
+	if !strings.Contains(v.Details, "license: MIT") {
+		t.Errorf("expected Details to contain 'license: MIT', got %q", v.Details)
+	}
+}
+
+func TestParseWizCLIJSON_NullNewFieldsIsNoError(t *testing.T) {
+	const input = `{"result":{"iac":null,"sast":null,"malwares":null,"aiModels":null,"softwareSupplyChain":null}}`
+	out, err := parseWizCLIJSON(input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(out) != 0 {
+		t.Errorf("expected 0 findings with null new fields, got %d", len(out))
+	}
+}
+
 func TestParseWizCLIJSON_Deduplicates(t *testing.T) {
 	const input = `{"result":{"libraries":[
 		{"name":"lodash","version":"4.17.4","path":"/package-lock.json",

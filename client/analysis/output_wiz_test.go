@@ -60,6 +60,25 @@ func testAgentDebugLog(t *testing.T, hypothesisID, message string, data map[stri
 
 // #endregion
 
+func TestShortImageName(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"939030204144.dkr.ecr.us-east-1.amazonaws.com/huskyci-wiz", "huskyci-wiz"},
+		{"939030204144.dkr.ecr.us-east-1.amazonaws.com/huskyci-gitleaks", "huskyci-gitleaks"},
+		{"huskyci/safety", "huskyci/safety"},
+		{"gosec", "gosec"},
+		{"123456789012.dkr.ecr.eu-west-1.amazonaws.com/my-tool", "my-tool"},
+	}
+	for _, tc := range tests {
+		got := shortImageName(tc.input)
+		if got != tc.expected {
+			t.Errorf("shortImageName(%q) = %q, want %q", tc.input, got, tc.expected)
+		}
+	}
+}
+
 func TestPrintSTDOUTOutput_IncludesWizCLIDetailsGroup(t *testing.T) {
 	types.FoundVuln = false
 	types.FoundInfo = false
@@ -68,12 +87,42 @@ func TestPrintSTDOUTOutput_IncludesWizCLIDetailsGroup(t *testing.T) {
 	analysis := types.Analysis{
 		Containers: []types.Container{
 			{
-				SecurityTest: types.SecurityTest{Name: "wizcli", Image: "ecr/huskyci-wiz", ImageTag: "latest-amd64"},
+				SecurityTest: types.SecurityTest{Name: "wizcli_secrets", Image: "939030204144.dkr.ecr.us-east-1.amazonaws.com/huskyci-wiz", ImageTag: "f793155-amd64"},
 			},
 		},
 		HuskyCIResults: types.HuskyCIResults{
 			GenericResults: types.GenericResults{
-				HuskyCIWizCLIOutput: types.HuskyCISecurityTestOutput{
+				HuskyCIWizCLISecretsOutput: types.HuskyCISecurityTestOutput{
+					MediumVulns: []types.HuskyCIVulnerability{
+						{Title: "Secret in env", SecurityTool: "WizCLI", Severity: "MEDIUM", Details: "mock", File: "x.env"},
+					},
+				},
+				HuskyCIIacSastOutput: types.HuskyCISecurityTestOutput{
+					HighVulns: []types.HuskyCIVulnerability{
+						{
+							Title:        "S3 bucket without encryption",
+							Language:     "HCL",
+							SecurityTool: "WizCLI",
+							Severity:     "HIGH",
+							Details:      "Enable server-side encryption",
+							File:         "main.tf",
+							Line:         "15",
+							Code:         "aws_s3_bucket.example",
+						},
+					},
+					LowVulns: []types.HuskyCIVulnerability{
+						{
+							Title:        "Missing tags on resource",
+							Language:     "HCL",
+							SecurityTool: "WizCLI",
+							Severity:     "LOW",
+							Details:      "Add tags for cost tracking",
+							File:         "main.tf",
+							Line:         "22",
+						},
+					},
+				},
+				HuskyCIWizCLIVulnsOutput: types.HuskyCISecurityTestOutput{
 					HighVulns: []types.HuskyCIVulnerability{
 						{
 							Title:        "CVE-2024-0001 in library foo",
@@ -86,18 +135,17 @@ func TestPrintSTDOUTOutput_IncludesWizCLIDetailsGroup(t *testing.T) {
 							Code:         "foo@1.0.0",
 						},
 					},
-					MediumVulns: []types.HuskyCIVulnerability{
-						{Title: "Secret in env", SecurityTool: "WizCLI", Severity: "MEDIUM", Details: "mock", File: "x.env"},
-					},
 				},
 			},
 		},
 	}
 
 	// #region agent log
-	wiz := analysis.HuskyCIResults.GenericResults.HuskyCIWizCLIOutput
+	secrets := analysis.HuskyCIResults.GenericResults.HuskyCIWizCLISecretsOutput
+	vulns := analysis.HuskyCIResults.GenericResults.HuskyCIWizCLIVulnsOutput
 	testAgentDebugLog(t, "H1", "fixture wiz counts", map[string]any{
-		"high": len(wiz.HighVulns), "medium": len(wiz.MediumVulns), "low": len(wiz.LowVulns),
+		"secrets_high": len(secrets.HighVulns), "secrets_medium": len(secrets.MediumVulns),
+		"vulns_high": len(vulns.HighVulns), "vulns_medium": len(vulns.MediumVulns),
 	})
 	// #endregion
 
@@ -106,14 +154,30 @@ func TestPrintSTDOUTOutput_IncludesWizCLIDetailsGroup(t *testing.T) {
 		printSTDOUTOutput(analysis)
 	})
 
-	if !bytes.Contains([]byte(out), []byte("::group::Generic - Wiz CLI Details")) {
-		t.Fatalf("expected Wiz CLI collapsible group in stdout, got excerpt:\n%s", truncate(out, 2000))
+	if !bytes.Contains([]byte(out), []byte("::group::Generic - Wiz CLI (Secrets)")) {
+		t.Fatalf("expected Wiz CLI Secrets collapsible group in stdout, got excerpt:\n%s", truncate(out, 2000))
 	}
-	if !bytes.Contains([]byte(out), []byte("[HUSKYCI][SUMMARY] Generic ->")) || !bytes.Contains([]byte(out), []byte("huskyci-wiz")) {
-		t.Fatalf("expected Wiz summary line with image ref")
+	if !bytes.Contains([]byte(out), []byte("::group::Generic - Wiz CLI (IaC+SAST)")) {
+		t.Fatalf("expected Wiz CLI IaC+SAST collapsible group in stdout, got excerpt:\n%s", truncate(out, 2000))
+	}
+	if !bytes.Contains([]byte(out), []byte("::group::Generic - Wiz CLI (Vulns)")) {
+		t.Fatalf("expected Wiz CLI Vulns collapsible group in stdout, got excerpt:\n%s", truncate(out, 2000))
+	}
+	if !bytes.Contains([]byte(out), []byte("[HUSKYCI][SUMMARY] Generic -> huskyci-wiz:f793155-amd64")) {
+		t.Fatalf("expected Wiz summary line with short image ref 'huskyci-wiz:f793155-amd64', got excerpt:\n%s", truncate(out, 2000))
+	}
+	// Verify ECR registry prefix is NOT present in output
+	if bytes.Contains([]byte(out), []byte("939030204144.dkr.ecr.us-east-1.amazonaws.com")) {
+		t.Fatalf("ECR registry prefix should be stripped from version string, got excerpt:\n%s", truncate(out, 2000))
 	}
 	if !bytes.Contains([]byte(out), []byte("CVE-2024-0001")) {
 		t.Fatalf("expected Wiz finding title in stdout")
+	}
+	if !bytes.Contains([]byte(out), []byte("S3 bucket without encryption")) {
+		t.Fatalf("expected IaC+SAST finding title in stdout")
+	}
+	if !bytes.Contains([]byte(out), []byte("Missing tags on resource")) {
+		t.Fatalf("expected IaC+SAST low finding title in stdout")
 	}
 }
 

@@ -160,7 +160,7 @@ func (cH *CheckUtils) checkEachSecurityTest(configAPI *apiContext.APIConfig) err
 	securityTests := []string{
 		"enry", "gitauthors", "gosec", "brakeman", "bandit",
 		"npmaudit", "yarnaudit", "spotbugs", "gitleaks", "safety",
-		"tfsec", "securitycodescan", "wizcli",
+		"tfsec", "securitycodescan", "wizcli_secrets", "wizcli_iac_sast", "wizcli_vulns",
 	}
 	for _, securityTest := range securityTests {
 		if err := checkSecurityTest(securityTest, configAPI); err != nil {
@@ -228,8 +228,12 @@ func checkSecurityTest(securityTestName string, configAPI *apiContext.APIConfig)
 		securityTestConfig = *configAPI.TFSecSecurityTest
 	case "securitycodescan":
 		securityTestConfig = *configAPI.SecurityCodeScanSecurityTest
-	case "wizcli":
-		securityTestConfig = *configAPI.WizcliSecurityTest
+	case "wizcli_secrets":
+		securityTestConfig = *configAPI.WizcliSecretsSecurityTest
+	case "wizcli_iac_sast":
+		securityTestConfig = *configAPI.WizcliIacSastSecurityTest
+	case "wizcli_vulns":
+		securityTestConfig = *configAPI.WizcliVulnsSecurityTest
 	default:
 		return errors.New("securityTest name not defined")
 	}

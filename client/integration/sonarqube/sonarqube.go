@@ -60,9 +60,15 @@ func GenerateOutputFile(analysis types.Analysis, outputPath, outputFileName stri
 	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIGitleaksOutput.HighVulns...)
 
 	// wizcli
-	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIWizCLIOutput.LowVulns...)
-	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIWizCLIOutput.MediumVulns...)
-	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIWizCLIOutput.HighVulns...)
+	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIWizCLISecretsOutput.LowVulns...)
+	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIWizCLISecretsOutput.MediumVulns...)
+	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIWizCLISecretsOutput.HighVulns...)
+	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIIacSastOutput.LowVulns...)
+	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIIacSastOutput.MediumVulns...)
+	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIIacSastOutput.HighVulns...)
+	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIWizCLIVulnsOutput.LowVulns...)
+	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIWizCLIVulnsOutput.MediumVulns...)
+	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIWizCLIVulnsOutput.HighVulns...)
 
 	// spotbugs
 	allVulns = append(allVulns, analysis.HuskyCIResults.JavaResults.HuskyCISpotBugsOutput.LowVulns...)
