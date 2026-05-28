@@ -12,11 +12,11 @@ import (
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
-func makeWizAnalysis(high, medium, low []types.HuskyCIVulnerability) types.Analysis {
+func makeWizSecretsAnalysis(high, medium, low []types.HuskyCIVulnerability) types.Analysis {
 	return types.Analysis{
 		HuskyCIResults: types.HuskyCIResults{
 			GenericResults: types.GenericResults{
-				HuskyCIWizCLIOutput: types.HuskyCISecurityTestOutput{
+				HuskyCIWizCLISecretsOutput: types.HuskyCISecurityTestOutput{
 					HighVulns:   high,
 					MediumVulns: medium,
 					LowVulns:    low,
@@ -66,7 +66,7 @@ func TestGenerateOutputFile_WizCLI_HighVuln(t *testing.T) {
 	outputFileName := "sonarqube.json"
 
 	vuln := makeWizVuln("AWS Access Key", "HIGH", "./code/config/settings.py")
-	analysis := makeWizAnalysis([]types.HuskyCIVulnerability{vuln}, nil, nil)
+	analysis := makeWizSecretsAnalysis([]types.HuskyCIVulnerability{vuln}, nil, nil)
 
 	if err := GenerateOutputFile(analysis, outputPath+"/", outputFileName); err != nil {
 		t.Fatalf("GenerateOutputFile returned error: %v", err)
@@ -93,7 +93,7 @@ func TestGenerateOutputFile_WizCLI_MediumVuln(t *testing.T) {
 	outputFileName := "sonarqube.json"
 
 	vuln := makeWizVuln("Generic API Key", "MEDIUM", "./code/src/client.go")
-	analysis := makeWizAnalysis(nil, []types.HuskyCIVulnerability{vuln}, nil)
+	analysis := makeWizSecretsAnalysis(nil, []types.HuskyCIVulnerability{vuln}, nil)
 
 	if err := GenerateOutputFile(analysis, outputPath+"/", outputFileName); err != nil {
 		t.Fatalf("GenerateOutputFile returned error: %v", err)
@@ -131,7 +131,7 @@ func TestGenerateOutputFile_WizCLI_LowVuln(t *testing.T) {
 	outputFileName := "sonarqube.json"
 
 	vuln := makeWizVuln("Email Address", "LOW", "./code/data/users.csv")
-	analysis := makeWizAnalysis(nil, nil, []types.HuskyCIVulnerability{vuln})
+	analysis := makeWizSecretsAnalysis(nil, nil, []types.HuskyCIVulnerability{vuln})
 
 	if err := GenerateOutputFile(analysis, outputPath+"/", outputFileName); err != nil {
 		t.Fatalf("GenerateOutputFile returned error: %v", err)
@@ -168,7 +168,7 @@ func TestGenerateOutputFile_WizCLI_NoVulns(t *testing.T) {
 	outputPath := t.TempDir()
 	outputFileName := "sonarqube.json"
 
-	analysis := makeWizAnalysis(nil, nil, nil)
+	analysis := makeWizSecretsAnalysis(nil, nil, nil)
 
 	if err := GenerateOutputFile(analysis, outputPath+"/", outputFileName); err != nil {
 		t.Fatalf("GenerateOutputFile returned error: %v", err)
@@ -205,7 +205,7 @@ func TestGenerateOutputFile_WizCLI_AllSeverities(t *testing.T) {
 	medVuln := makeWizVuln("Generic API Key", "MEDIUM", "./code/src/client.go")
 	lowVuln := makeWizVuln("Email Address", "LOW", "./code/data/users.csv")
 
-	analysis := makeWizAnalysis(
+	analysis := makeWizSecretsAnalysis(
 		[]types.HuskyCIVulnerability{highVuln},
 		[]types.HuskyCIVulnerability{medVuln},
 		[]types.HuskyCIVulnerability{lowVuln},

@@ -418,10 +418,10 @@ securitycodescan:
   default: true
   timeOutInSeconds: 360
 
-wizcli:
-  name: wizcli
+wizcli_secrets:
+  name: wizcli_secrets
   image: 939030204144.dkr.ecr.us-east-1.amazonaws.com/huskyci-wiz
-  imageTag: "latest-amd64"
+  imageTag: "f793155-amd64"
   cmd: |+
     mkdir -p ~/.ssh &&
     echo '%GIT_PRIVATE_SSH_KEY%' > ~/.ssh/huskyci_id_rsa &&
@@ -435,9 +435,10 @@ wizcli:
             echo 'ERROR_AUTH_WIZCLI'
             cat /tmp/errorWizAuth
         else
-            wizcli dir scan --path ./code --sensitive-data --secrets \
-              --file-hashes-scan --policy "aai-secrets-default-policy" \
-              -f json > /tmp/wizResult.json 2> /tmp/errorWizScan
+            wizcli scan dir ./code \
+              --disabled-scanners Vulnerability,Misconfiguration,SAST,Malware,AIModels,SoftwareSupplyChain \
+              --by-policy-hits=DISABLED \
+              --stdout=json --json-output-file=/tmp/wizResult.json 2> /tmp/errorWizScan
             SCAN_RC=$?
             if [ $SCAN_RC -ge 2 ]; then
               echo "ERROR_RUNNING_WIZCLI_SCAN"
@@ -452,4 +453,78 @@ wizcli:
     fi
   type: Generic
   default: true
-  timeOutInSeconds: 600
+  timeOutInSeconds: 120
+
+wizcli_iac_sast:
+  name: wizcli_iac_sast
+  image: 939030204144.dkr.ecr.us-east-1.amazonaws.com/huskyci-wiz
+  imageTag: "f793155-amd64"
+  cmd: |+
+    mkdir -p ~/.ssh &&
+    echo '%GIT_PRIVATE_SSH_KEY%' > ~/.ssh/huskyci_id_rsa &&
+    chmod 600 ~/.ssh/huskyci_id_rsa &&
+    echo "IdentityFile ~/.ssh/huskyci_id_rsa" >> /etc/ssh/ssh_config &&
+    echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config &&
+    GIT_TERMINAL_PROMPT=0 git clone -b %GIT_BRANCH% --single-branch --depth 1 %GIT_REPO% code --quiet 2>/tmp/errorGitCloneWiz
+    if [ $? -eq 0 ]; then
+        wizcli auth --id '%WIZ_CLIENT_ID%' --secret '%WIZ_CLIENT_SECRET%' > /tmp/errorWizAuth 2>&1
+        if [ $? -ne 0 ]; then
+            echo 'ERROR_AUTH_WIZCLI'
+            cat /tmp/errorWizAuth
+        else
+            wizcli scan dir ./code \
+              --disabled-scanners Vulnerability,Secret,SensitiveData,Malware,AIModels,SoftwareSupplyChain \
+              --by-policy-hits=DISABLED \
+              --stdout=json --json-output-file=/tmp/wizResult.json 2> /tmp/errorWizScan
+            SCAN_RC=$?
+            if [ $SCAN_RC -ge 2 ]; then
+              echo "ERROR_RUNNING_WIZCLI_SCAN"
+              cat /tmp/errorWizScan
+            else
+              cat /tmp/wizResult.json
+            fi
+        fi
+    else
+        echo "ERROR_CLONING"
+        cat /tmp/errorGitCloneWiz
+    fi
+  type: Generic
+  default: true
+  timeOutInSeconds: 300
+
+wizcli_vulns:
+  name: wizcli_vulns
+  image: 939030204144.dkr.ecr.us-east-1.amazonaws.com/huskyci-wiz
+  imageTag: "f793155-amd64"
+  cmd: |+
+    mkdir -p ~/.ssh &&
+    echo '%GIT_PRIVATE_SSH_KEY%' > ~/.ssh/huskyci_id_rsa &&
+    chmod 600 ~/.ssh/huskyci_id_rsa &&
+    echo "IdentityFile ~/.ssh/huskyci_id_rsa" >> /etc/ssh/ssh_config &&
+    echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config &&
+    GIT_TERMINAL_PROMPT=0 git clone -b %GIT_BRANCH% --single-branch --depth 1 %GIT_REPO% code --quiet 2>/tmp/errorGitCloneWiz
+    if [ $? -eq 0 ]; then
+        wizcli auth --id '%WIZ_CLIENT_ID%' --secret '%WIZ_CLIENT_SECRET%' > /tmp/errorWizAuth 2>&1
+        if [ $? -ne 0 ]; then
+            echo 'ERROR_AUTH_WIZCLI'
+            cat /tmp/errorWizAuth
+        else
+            wizcli scan dir ./code \
+              --disabled-scanners Secret,SensitiveData,Misconfiguration,SAST,AIModels,SoftwareSupplyChain \
+              --by-policy-hits=DISABLED \
+              --stdout=json --json-output-file=/tmp/wizResult.json 2> /tmp/errorWizScan
+            SCAN_RC=$?
+            if [ $SCAN_RC -ge 2 ]; then
+              echo "ERROR_RUNNING_WIZCLI_SCAN"
+              cat /tmp/errorWizScan
+            else
+              cat /tmp/wizResult.json
+            fi
+        fi
+    else
+        echo "ERROR_CLONING"
+        cat /tmp/errorGitCloneWiz
+    fi
+  type: Generic
+  default: true
+  timeOutInSeconds: 300

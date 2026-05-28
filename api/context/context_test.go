@@ -462,7 +462,27 @@ var _ = Describe("Context", func() {
 						Default:          fakeCaller.expectedBoolFromConfig,
 						TimeOutInSeconds: fakeCaller.expectedIntFromConfig,
 					},
-					WizcliSecurityTest: &types.SecurityTest{
+					WizcliSecretsSecurityTest: &types.SecurityTest{
+					Name:             fakeCaller.expectedStringFromConfig,
+					Image:            fakeCaller.expectedStringFromConfig,
+					ImageTag:         fakeCaller.expectedStringFromConfig,
+					Cmd:              fakeCaller.expectedStringFromConfig,
+					Type:             fakeCaller.expectedStringFromConfig,
+					Language:         fakeCaller.expectedStringFromConfig,
+					Default:          fakeCaller.expectedBoolFromConfig,
+					TimeOutInSeconds: fakeCaller.expectedIntFromConfig,
+				},
+				WizcliIacSastSecurityTest: &types.SecurityTest{
+					Name:             fakeCaller.expectedStringFromConfig,
+					Image:            fakeCaller.expectedStringFromConfig,
+					ImageTag:         fakeCaller.expectedStringFromConfig,
+					Cmd:              fakeCaller.expectedStringFromConfig,
+					Type:             fakeCaller.expectedStringFromConfig,
+					Language:         fakeCaller.expectedStringFromConfig,
+					Default:          fakeCaller.expectedBoolFromConfig,
+					TimeOutInSeconds: fakeCaller.expectedIntFromConfig,
+				},
+				WizcliVulnsSecurityTest: &types.SecurityTest{
 						Name:             fakeCaller.expectedStringFromConfig,
 						Image:            fakeCaller.expectedStringFromConfig,
 						ImageTag:         fakeCaller.expectedStringFromConfig,
@@ -481,18 +501,18 @@ var _ = Describe("Context", func() {
 		})
 	})
 	Describe("SetOnceConfig", func() {
-		Context("When SetOnceConfig is called with a FakeCaller returning 'wizcli' for string config", func() {
-			It("Should set WizcliSecurityTest with the expected name", func() {
+		Context("When SetOnceConfig is called with a FakeCaller returning 'wizcli_secrets' for string config", func() {
+			It("Should set WizcliSecretsSecurityTest with the expected name", func() {
 				fakeCaller := FakeCaller{
-					expectedStringFromConfig: "wizcli",
+					expectedStringFromConfig: "wizcli_secrets",
 				}
 				config := DefaultConfig{
 					Caller: &fakeCaller,
 				}
 				ResetOnceConfig()
 				config.SetOnceConfig()
-				Expect(APIConfiguration.WizcliSecurityTest).NotTo(BeNil())
-				Expect(APIConfiguration.WizcliSecurityTest.Name).To(Equal("wizcli"))
+				Expect(APIConfiguration.WizcliSecretsSecurityTest).NotTo(BeNil())
+				Expect(APIConfiguration.WizcliSecretsSecurityTest.Name).To(Equal("wizcli_secrets"))
 			})
 		})
 	})

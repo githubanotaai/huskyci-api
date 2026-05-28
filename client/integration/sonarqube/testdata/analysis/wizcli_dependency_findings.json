@@ -2,7 +2,7 @@
   "containerID": "test-wizcli-dependency-scan",
   "huskyciresults": {
     "genericresults": {
-      "wizclioutput": {
+      "wizclivulnsoutput": {
         "lowvulns": [],
         "mediumvulns": [],
         "highvulns": [

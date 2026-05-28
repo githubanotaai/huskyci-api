@@ -25,7 +25,12 @@ type wizCLIReport struct {
 		OSPackages            []wizPackageWithVulns  `json:"osPackages"`
 		Secrets               []wizSecretFinding     `json:"secrets"`
 		DataFindings          []wizDataFinding       `json:"dataFindings"`
-		EndOfLifeTechnologies []wizEndOfLifeFinding  `json:"endOfLifeTechnologies"`
+		EndOfLifeTechnologies []wizEndOfLifeFinding     `json:"endOfLifeTechnologies"`
+		Iac                 []wizIacFinding           `json:"iac"`
+		Sast                []wizSastFinding          `json:"sast"`
+		Malwares            []wizMalwareFinding       `json:"malwares"`
+		AIModels            []wizAIModelFinding       `json:"aiModels"`
+		SoftwareSupplyChain []wizSupplyChainFinding   `json:"softwareSupplyChain"`
 	} `json:"result"`
 }
 
@@ -63,6 +68,46 @@ type wizDataFinding struct {
 type wizEndOfLifeFinding struct {
 	Name    string `json:"name"`
 	Version string `json:"version"`
+}
+
+type wizIacFinding struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Severity    string `json:"severity"`
+	File        string `json:"file"`
+	Line        int    `json:"line"`
+	Rule        string `json:"rule"`
+}
+
+type wizSastFinding struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Severity    string `json:"severity"`
+	File        string `json:"file"`
+	Line        int    `json:"line"`
+	Rule        string `json:"rule"`
+}
+
+type wizMalwareFinding struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Severity    string `json:"severity"`
+	Path        string `json:"path"`
+}
+
+type wizAIModelFinding struct {
+	Name     string `json:"name"`
+	Version  string `json:"version"`
+	Severity string `json:"severity"`
+	Path     string `json:"path"`
+}
+
+type wizSupplyChainFinding struct {
+	Name     string `json:"name"`
+	Version  string `json:"version"`
+	Severity string `json:"severity"`
+	License  string `json:"license"`
+	Path     string `json:"path"`
 }
 
 func analyzeWizCLI(scanInfo *SecTestScanInfo) error {
@@ -426,6 +471,65 @@ func parseWizCLIJSON(output string) ([]types.HuskyCIVulnerability, error) {
 			location += ":" + eol.Version
 		}
 		addFinding("End of Life Technology", "MEDIUM", location, "", eol.Name+" is end of life")
+	}
+
+	for _, finding := range report.Result.Iac {
+		title := finding.Name
+		if title == "" {
+			title = finding.Rule
+		}
+		severity := strings.ToUpper(finding.Severity)
+		if severity == "" {
+			severity = "MEDIUM"
+		}
+		line := ""
+		if finding.Line > 0 {
+			line = strconv.Itoa(finding.Line)
+		}
+		addFinding(title, severity, util.NormalizeFilePath(finding.File), line, finding.Description)
+	}
+
+	for _, finding := range report.Result.Sast {
+		title := finding.Name
+		if title == "" {
+			title = finding.Rule
+		}
+		severity := strings.ToUpper(finding.Severity)
+		if severity == "" {
+			severity = "MEDIUM"
+		}
+		line := ""
+		if finding.Line > 0 {
+			line = strconv.Itoa(finding.Line)
+		}
+		addFinding(title, severity, util.NormalizeFilePath(finding.File), line, finding.Description)
+	}
+
+	for _, finding := range report.Result.Malwares {
+		title := finding.Name
+		severity := strings.ToUpper(finding.Severity)
+		if severity == "" {
+			severity = "HIGH"
+		}
+		addFinding(title, severity, util.NormalizeFilePath(finding.Path), "", finding.Description)
+	}
+
+	for _, finding := range report.Result.AIModels {
+		title := finding.Name
+		severity := strings.ToUpper(finding.Severity)
+		if severity == "" {
+			severity = "INFO"
+		}
+		addFinding(title, severity, util.NormalizeFilePath(finding.Path), "", fmt.Sprintf("%s:%s", finding.Name, finding.Version))
+	}
+
+	for _, finding := range report.Result.SoftwareSupplyChain {
+		title := finding.Name
+		severity := strings.ToUpper(finding.Severity)
+		if severity == "" {
+			severity = "MEDIUM"
+		}
+		addFinding(title, severity, util.NormalizeFilePath(finding.Path), "", fmt.Sprintf("%s:%s (license: %s)", finding.Name, finding.Version, finding.License))
 	}
 
 	return findings, nil

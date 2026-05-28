@@ -36,7 +36,11 @@ const spotbugs = "spotbugs"
 const gitleaks = "gitleaks"
 const tfsec = "tfsec"
 const securitycodescan = "securitycodescan"
-const wizcli = "wizcli"
+const (
+	wizcliSecrets = "wizcli_secrets"
+	wizcliIacSast  = "wizcli_iac_sast"
+	wizcliVulns    = "wizcli_vulns"
+)
 
 // isTestDisabled checks if a security test is disabled via environment variable.
 // The env var pattern is: HUSKYCI_DISABLE_<TESTNAME> (e.g., HUSKYCI_DISABLE_GITAUTHORS=true)
@@ -104,7 +108,7 @@ func (results *RunAllInfo) runGenericScans(ctx context.Context, enryScan SecTest
 			switch testName {
 			case "gitauthors":
 				results.CommitAuthors = scan.CommitAuthors.Authors
-			case "gitleaks", "wizcli":
+			case "gitleaks", "wizcli_secrets", "wizcli_iac_sast", "wizcli_vulns":
 				results.setVulns(*scan)
 			}
 			results.mu.Unlock()
@@ -182,8 +186,12 @@ func (results *RunAllInfo) setVulns(securityTestScan SecTestScanInfo) {
 			results.HuskyCIResults.JavaResults.HuskyCISpotBugsOutput.HighVulns = append(results.HuskyCIResults.JavaResults.HuskyCISpotBugsOutput.HighVulns, highVuln)
 		case gitleaks:
 			results.HuskyCIResults.GenericResults.HuskyCIGitleaksOutput.HighVulns = append(results.HuskyCIResults.GenericResults.HuskyCIGitleaksOutput.HighVulns, highVuln)
-		case wizcli:
-			results.HuskyCIResults.GenericResults.HuskyCIWizCLIOutput.HighVulns = append(results.HuskyCIResults.GenericResults.HuskyCIWizCLIOutput.HighVulns, highVuln)
+		case wizcliSecrets:
+			results.HuskyCIResults.GenericResults.HuskyCIWizCLISecretsOutput.HighVulns = append(results.HuskyCIResults.GenericResults.HuskyCIWizCLISecretsOutput.HighVulns, highVuln)
+		case wizcliIacSast:
+			results.HuskyCIResults.GenericResults.HuskyCIIacSastOutput.HighVulns = append(results.HuskyCIResults.GenericResults.HuskyCIIacSastOutput.HighVulns, highVuln)
+		case wizcliVulns:
+			results.HuskyCIResults.GenericResults.HuskyCIWizCLIVulnsOutput.HighVulns = append(results.HuskyCIResults.GenericResults.HuskyCIWizCLIVulnsOutput.HighVulns, highVuln)
 		case tfsec:
 			results.HuskyCIResults.HclResults.HuskyCITFSecOutput.HighVulns = append(results.HuskyCIResults.HclResults.HuskyCITFSecOutput.HighVulns, highVuln)
 		case securitycodescan:
@@ -209,8 +217,12 @@ func (results *RunAllInfo) setVulns(securityTestScan SecTestScanInfo) {
 			results.HuskyCIResults.JavaResults.HuskyCISpotBugsOutput.MediumVulns = append(results.HuskyCIResults.JavaResults.HuskyCISpotBugsOutput.MediumVulns, mediumVuln)
 		case gitleaks:
 			results.HuskyCIResults.GenericResults.HuskyCIGitleaksOutput.MediumVulns = append(results.HuskyCIResults.GenericResults.HuskyCIGitleaksOutput.MediumVulns, mediumVuln)
-		case wizcli:
-			results.HuskyCIResults.GenericResults.HuskyCIWizCLIOutput.MediumVulns = append(results.HuskyCIResults.GenericResults.HuskyCIWizCLIOutput.MediumVulns, mediumVuln)
+		case wizcliSecrets:
+			results.HuskyCIResults.GenericResults.HuskyCIWizCLISecretsOutput.MediumVulns = append(results.HuskyCIResults.GenericResults.HuskyCIWizCLISecretsOutput.MediumVulns, mediumVuln)
+		case wizcliIacSast:
+			results.HuskyCIResults.GenericResults.HuskyCIIacSastOutput.MediumVulns = append(results.HuskyCIResults.GenericResults.HuskyCIIacSastOutput.MediumVulns, mediumVuln)
+		case wizcliVulns:
+			results.HuskyCIResults.GenericResults.HuskyCIWizCLIVulnsOutput.MediumVulns = append(results.HuskyCIResults.GenericResults.HuskyCIWizCLIVulnsOutput.MediumVulns, mediumVuln)
 		case tfsec:
 			results.HuskyCIResults.HclResults.HuskyCITFSecOutput.MediumVulns = append(results.HuskyCIResults.HclResults.HuskyCITFSecOutput.MediumVulns, mediumVuln)
 		case securitycodescan:
@@ -236,8 +248,12 @@ func (results *RunAllInfo) setVulns(securityTestScan SecTestScanInfo) {
 			results.HuskyCIResults.JavaResults.HuskyCISpotBugsOutput.LowVulns = append(results.HuskyCIResults.JavaResults.HuskyCISpotBugsOutput.LowVulns, lowVuln)
 		case gitleaks:
 			results.HuskyCIResults.GenericResults.HuskyCIGitleaksOutput.LowVulns = append(results.HuskyCIResults.GenericResults.HuskyCIGitleaksOutput.LowVulns, lowVuln)
-		case wizcli:
-			results.HuskyCIResults.GenericResults.HuskyCIWizCLIOutput.LowVulns = append(results.HuskyCIResults.GenericResults.HuskyCIWizCLIOutput.LowVulns, lowVuln)
+		case wizcliSecrets:
+			results.HuskyCIResults.GenericResults.HuskyCIWizCLISecretsOutput.LowVulns = append(results.HuskyCIResults.GenericResults.HuskyCIWizCLISecretsOutput.LowVulns, lowVuln)
+		case wizcliIacSast:
+			results.HuskyCIResults.GenericResults.HuskyCIIacSastOutput.LowVulns = append(results.HuskyCIResults.GenericResults.HuskyCIIacSastOutput.LowVulns, lowVuln)
+		case wizcliVulns:
+			results.HuskyCIResults.GenericResults.HuskyCIWizCLIVulnsOutput.LowVulns = append(results.HuskyCIResults.GenericResults.HuskyCIWizCLIVulnsOutput.LowVulns, lowVuln)
 		case tfsec:
 			results.HuskyCIResults.HclResults.HuskyCITFSecOutput.LowVulns = append(results.HuskyCIResults.HclResults.HuskyCITFSecOutput.LowVulns, lowVuln)
 		case securitycodescan:
@@ -263,8 +279,12 @@ func (results *RunAllInfo) setVulns(securityTestScan SecTestScanInfo) {
 			results.HuskyCIResults.JavaResults.HuskyCISpotBugsOutput.NoSecVulns = append(results.HuskyCIResults.JavaResults.HuskyCISpotBugsOutput.NoSecVulns, noSec)
 		case gitleaks:
 			results.HuskyCIResults.GenericResults.HuskyCIGitleaksOutput.NoSecVulns = append(results.HuskyCIResults.GenericResults.HuskyCIGitleaksOutput.NoSecVulns, noSec)
-		case wizcli:
-			results.HuskyCIResults.GenericResults.HuskyCIWizCLIOutput.NoSecVulns = append(results.HuskyCIResults.GenericResults.HuskyCIWizCLIOutput.NoSecVulns, noSec)
+		case wizcliSecrets:
+			results.HuskyCIResults.GenericResults.HuskyCIWizCLISecretsOutput.NoSecVulns = append(results.HuskyCIResults.GenericResults.HuskyCIWizCLISecretsOutput.NoSecVulns, noSec)
+		case wizcliIacSast:
+			results.HuskyCIResults.GenericResults.HuskyCIIacSastOutput.NoSecVulns = append(results.HuskyCIResults.GenericResults.HuskyCIIacSastOutput.NoSecVulns, noSec)
+		case wizcliVulns:
+			results.HuskyCIResults.GenericResults.HuskyCIWizCLIVulnsOutput.NoSecVulns = append(results.HuskyCIResults.GenericResults.HuskyCIWizCLIVulnsOutput.NoSecVulns, noSec)
 		case tfsec:
 			results.HuskyCIResults.HclResults.HuskyCITFSecOutput.NoSecVulns = append(results.HuskyCIResults.HclResults.HuskyCITFSecOutput.NoSecVulns, noSec)
 		case securitycodescan:
