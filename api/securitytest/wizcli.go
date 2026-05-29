@@ -26,8 +26,8 @@ type wizCLIReport struct {
 		Secrets               []wizSecretFinding     `json:"secrets"`
 		DataFindings          []wizDataFinding       `json:"dataFindings"`
 		EndOfLifeTechnologies []wizEndOfLifeFinding     `json:"endOfLifeTechnologies"`
-		Iac                 []wizCodeFinding          `json:"iac"`
-		Sast                []wizCodeFinding          `json:"sast"`
+		Iac                 *wizIacSastResult      `json:"iac"`
+		Sast                *wizIacSastResult      `json:"sast"`
 		Malwares            []wizMalwareFinding       `json:"malwares"`
 		AIModels            []wizAIModelFinding       `json:"aiModels"`
 		SoftwareSupplyChain []wizSupplyChainFinding   `json:"softwareSupplyChain"`
@@ -68,6 +68,36 @@ type wizDataFinding struct {
 type wizEndOfLifeFinding struct {
 	Name    string `json:"name"`
 	Version string `json:"version"`
+}
+
+// wizIacSastResult models the nested result.iac / result.sast object.
+// Wiz returns a CICDIACScanResult / CICDSASTScanResult wrapper, not a flat array.
+type wizIacSastResult struct {
+	RuleMatches         []wizRuleMatch `json:"ruleMatches"`
+	FailedPolicyMatches []wizRuleMatch `json:"failedPolicyMatches"`
+}
+
+type wizRuleMatch struct {
+	Rule               wizRuleRef      `json:"rule"`
+	Severity           string          `json:"severity"`
+	FailedResourceCount int            `json:"failedResourceCount"`
+	Matches            []wizMatchEntry `json:"matches"`
+}
+
+type wizRuleRef struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+type wizMatchEntry struct {
+	ResourceName           string `json:"resourceName"`
+	FileName               string `json:"fileName"`
+	LineNumber             int    `json:"lineNumber"`
+	MatchContent           string `json:"matchContent"`
+	Expected               string `json:"expected"`
+	Found                  string `json:"found"`
+	FileType               string `json:"fileType"`
+	RemediationInstructions string `json:"remediationInstructions"`
 }
 
 type wizCodeFinding struct {
@@ -464,26 +494,37 @@ func parseWizCLIJSON(output string) ([]types.HuskyCIVulnerability, error) {
 		addFinding("End of Life Technology", "MEDIUM", location, "", eol.Name+" is end of life")
 	}
 
-	collectCodeFindings := func(findings []wizCodeFinding) {
-		for _, finding := range findings {
-			title := finding.Name
-			if title == "" {
-				title = finding.Rule
-			}
-			severity := strings.ToUpper(finding.Severity)
+	collectIacSastFindings := func(result *wizIacSastResult) {
+		if result == nil {
+			return
+		}
+		// Both RuleMatches and FailedPolicyMatches have the same structure
+		allMatches := append(result.RuleMatches, result.FailedPolicyMatches...)
+		for _, rm := range allMatches {
+			ruleName := rm.Rule.Name
+			severity := strings.ToUpper(rm.Severity)
 			if severity == "" {
 				severity = "MEDIUM"
 			}
-			line := ""
-			if finding.Line > 0 {
-				line = strconv.Itoa(finding.Line)
+			for _, m := range rm.Matches {
+				line := ""
+				if m.LineNumber > 0 {
+					line = strconv.Itoa(m.LineNumber)
+				}
+				desc := m.Expected
+				if desc == "" {
+					desc = m.Found
+				}
+				if desc == "" {
+					desc = m.MatchContent
+				}
+				addFinding(ruleName, severity, util.NormalizeFilePath(m.FileName), line, desc)
 			}
-			addFinding(title, severity, util.NormalizeFilePath(finding.File), line, finding.Description)
 		}
 	}
 
-	collectCodeFindings(report.Result.Iac)
-	collectCodeFindings(report.Result.Sast)
+	collectIacSastFindings(report.Result.Iac)
+	collectIacSastFindings(report.Result.Sast)
 
 	for _, finding := range report.Result.Malwares {
 		title := finding.Name

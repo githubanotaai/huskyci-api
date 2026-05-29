@@ -179,9 +179,7 @@ func TestParseWizCLIJSON_EOLTechnologies(t *testing.T) {
 }
 
 func TestParseWizCLIJSON_IacFindings(t *testing.T) {
-	const input = `{"result":{"iac":[
-		{"name":"S3 Bucket without versioning","description":"Bucket should have versioning","severity":"HIGH","file":"main.tf","line":42,"rule":"CKV_AWS_1"}
-	]}}`
+	const input = `{"result":{"iac":{"ruleMatches":[{"rule":{"id":"r1","name":"S3 Bucket without versioning"},"severity":"HIGH","failedResourceCount":1,"matches":[{"resourceName":"bucket","fileName":"main.tf","lineNumber":42,"matchContent":"versioning disabled","expected":"Bucket should have versioning","found":"Bucket lacks versioning","fileType":"TERRAFORM"}]}]}}}`
 	out, err := parseWizCLIJSON(input)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -211,9 +209,7 @@ func TestParseWizCLIJSON_IacFindings(t *testing.T) {
 }
 
 func TestParseWizCLIJSON_SastFindings(t *testing.T) {
-	const input = `{"result":{"sast":[
-		{"name":"SQL Injection","description":"Unsanitized input in SQL query","severity":"CRITICAL","file":"handler.go","line":100,"rule":"SQL_INJECTION"}
-	]}}`
+	const input = `{"result":{"sast":{"ruleMatches":[{"rule":{"id":"r2","name":"SQL Injection"},"severity":"CRITICAL","failedResourceCount":1,"matches":[{"resourceName":"query","fileName":"handler.go","lineNumber":100,"matchContent":"raw SQL","expected":"Use parameterized query","found":"Unsanitized input in SQL query","fileType":"GO"}]}]}}}`
 	out, err := parseWizCLIJSON(input)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -234,8 +230,8 @@ func TestParseWizCLIJSON_SastFindings(t *testing.T) {
 	if v.Line != "100" {
 		t.Errorf("expected Line '100', got %q", v.Line)
 	}
-	if v.Details != "Unsanitized input in SQL query" {
-		t.Errorf("expected Details 'Unsanitized input in SQL query', got %q", v.Details)
+	if v.Details != "Use parameterized query" {
+		t.Errorf("expected Details 'Use parameterized query', got %q", v.Details)
 	}
 }
 
