@@ -189,9 +189,13 @@ func getFilePath(vuln types.HuskyCIVulnerability, outputPath string) string {
 		return strings.Replace(vuln.File, goContainerBasePath, "", 1)
 	}
 
-	// Handle dependency findings: normalize various formats to manifest file path
-	// These come from tools like Safety, NpmAudit, WizCLI for library CVEs
+	// Handle WizCLI container mount prefix ("code/" or "/code/")
+	// WizCLI mounts the repo at /code inside the container
 	filePath := vuln.File
+	filePath = strings.TrimPrefix(filePath, "/code/")
+	filePath = strings.TrimPrefix(filePath, "code/")
+
+	// Handle dependency findings: normalize various formats to manifest file path
 
 	// Format 1: "package:version (manifest)" - from Safety, some WizCLI versions
 	// Example: "pytest:7.4.3 (requirements.txt)"
