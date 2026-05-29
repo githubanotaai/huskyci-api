@@ -515,3 +515,86 @@ func TestGenerateOutputFile_WizCLI_Secrets_NoSecVulns_DoesNotAffectOriginalObjec
 		t.Errorf("original NoSecVuln was mutated! Severity=%s, expected INFORMATIONAL", originalVuln.Severity)
 	}
 }
+
+// ── TestGenerateOutputFile_WizCLI_Secrets_NoSecVulns_DeltaOnly ─────────────────
+
+func TestGenerateOutputFile_WizCLI_Secrets_NoSecVulns_DeltaOnly(t *testing.T) {
+	outputPath := t.TempDir()
+	outputFileName := "sonarqube.json"
+
+	// Gitleaks already found the AWS secret at this file+line
+	gitleaksVuln := makeWizVuln("AWS Access Key ID detected", "HIGH", "./code/config/settings.py")
+	gitleaksVuln.Line = "42"
+
+	// WizCLI NoSecVuln at the SAME file+line → should be SKIPPED (duplicate)
+	wizDuplicate := makeWizVuln("AWS Access Key ID detected", "INFORMATIONAL", "./code/config/settings.py")
+	wizDuplicate.Line = "42"
+
+	// WizCLI NoSecVuln at a DIFFERENT file+line → should be PROMOTED (delta)
+	wizDelta := makeWizVuln("Database URL with embedded password", "INFORMATIONAL", "./code/config/db.js")
+	wizDelta.Line = "15"
+
+	analysis := types.Analysis{
+		HuskyCIResults: types.HuskyCIResults{
+			GenericResults: types.GenericResults{
+				HuskyCIGitleaksOutput: types.HuskyCISecurityTestOutput{
+					HighVulns: []types.HuskyCIVulnerability{gitleaksVuln},
+				},
+				HuskyCIWizCLISecretsOutput: types.HuskyCISecurityTestOutput{
+					NoSecVulns: []types.HuskyCIVulnerability{wizDuplicate, wizDelta},
+				},
+			},
+		},
+	}
+
+	if err := GenerateOutputFile(analysis, outputPath+"/", outputFileName); err != nil {
+		t.Fatalf("GenerateOutputFile returned error: %v", err)
+	}
+
+	out := readSonarOutput(t, outputPath, outputFileName)
+
+	// Count WizCLI issues — should have Gitleaks AWS + promoted WizCLI delta, but NOT duplicate
+	wizIssues := 0
+	for _, issue := range out.Issues {
+		if strings.Contains(issue.RuleID, "Database") {
+			wizIssues++
+		}
+	}
+	if wizIssues != 1 {
+		t.Errorf("expected exactly 1 promoted WizCLI delta issue, got %d", wizIssues)
+	}
+
+	// Verify the DUPLICATE (same file+line as Gitleaks) was NOT promoted
+	dupIssue := findIssueByTitle(out, "AWS Access Key ID detected")
+	if dupIssue == nil {
+		t.Fatal("expected Gitleaks AWS issue to exist (from Gitleaks, not WizCLI)")
+	}
+	// The AWS issue should come from Gitleaks (BLOCKER severity), not from promoted WizCLI (MAJOR)
+	for _, rule := range out.Rules {
+		if rule.ID == dupIssue.RuleID && rule.Severity == "MAJOR" && rule.EngineID == "huskyCI/WizCLI" {
+			t.Error("found promoted WizCLI duplicate for AWS key — should have been skipped")
+		}
+	}
+
+	// Verify the DELTA finding was promoted to MAJOR
+	deltaIssue := findIssueByTitle(out, "Database URL with embedded password")
+	if deltaIssue == nil {
+		t.Fatal("expected promoted WizCLI delta issue for Database URL to exist")
+	}
+	var deltaRule *SonarRule
+	for i := range out.Rules {
+		if out.Rules[i].ID == deltaIssue.RuleID {
+			deltaRule = &out.Rules[i]
+			break
+		}
+	}
+	if deltaRule == nil {
+		t.Fatalf("no rule found for delta issue (ruleId=%s)", deltaIssue.RuleID)
+	}
+	if deltaRule.Severity != "MAJOR" {
+		t.Errorf("expected delta NoSecVuln promoted to MAJOR, got %s", deltaRule.Severity)
+	}
+	if deltaRule.EngineID != "huskyCI/WizCLI" {
+		t.Errorf("expected delta engine ID huskyCI/WizCLI, got %s", deltaRule.EngineID)
+	}
+}

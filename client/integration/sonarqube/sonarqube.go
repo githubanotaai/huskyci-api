@@ -59,15 +59,32 @@ func GenerateOutputFile(analysis types.Analysis, outputPath, outputFileName stri
 	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIGitleaksOutput.MediumVulns...)
 	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIGitleaksOutput.HighVulns...)
 
+	// Build a set of (file, line) already covered by Gitleaks, so we don't
+	// duplicate the same secret in SonarQube when WizCLI also found it.
+	gitleaksSeen := make(map[string]bool)
+	for _, vuln := range analysis.HuskyCIResults.GenericResults.HuskyCIGitleaksOutput.LowVulns {
+		gitleaksSeen[vuln.File+"::"+vuln.Line] = true
+	}
+	for _, vuln := range analysis.HuskyCIResults.GenericResults.HuskyCIGitleaksOutput.MediumVulns {
+		gitleaksSeen[vuln.File+"::"+vuln.Line] = true
+	}
+	for _, vuln := range analysis.HuskyCIResults.GenericResults.HuskyCIGitleaksOutput.HighVulns {
+		gitleaksSeen[vuln.File+"::"+vuln.Line] = true
+	}
+
 	// wizcli
 	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIWizCLISecretsOutput.LowVulns...)
 	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIWizCLISecretsOutput.MediumVulns...)
 	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIWizCLISecretsOutput.HighVulns...)
-	// Promote WizCLI secrets informational findings (NoSecVulns) to MEDIUM for SonarQube visibility.
+	// Promote WizCLI secrets informational findings (NoSecVulns) to MEDIUM for SonarQube visibility,
+	// but ONLY for findings NOT already covered by Gitleaks (delta-only).
 	// Wiz classifies detected secrets as INFORMATIONAL, but SonarQube requires a severity
-	// to surface them as actionable issues. Promote only in the SonarQube export — the
-	// HuskyCI API and client summary retain the original INFORMATIONAL classification.
+	// to surface them as actionable issues. We skip findings where Gitleaks already reported
+	// the same file+line to avoid duplicates in the SonarQube UI.
 	for _, v := range analysis.HuskyCIResults.GenericResults.HuskyCIWizCLISecretsOutput.NoSecVulns {
+		if gitleaksSeen[v.File+"::"+v.Line] {
+			continue
+		}
 		promoted := v
 		promoted.Severity = "MEDIUM"
 		allVulns = append(allVulns, promoted)
