@@ -47,6 +47,15 @@ var _ = Describe("Util", func() {
 				Expect(util.HandleCmd(inputRepositoryURL, inputRepositoryBranch, "")).To(Equal(""))
 			})
 		})
+		Context("When branch name contains shell metacharacters like parentheses", func() {
+			It("Should substitute correctly when values are quoted in the template", func() {
+				quotedCmd := `git clone -b "%GIT_BRANCH%" --single-branch --depth 1 "%GIT_REPO%" code`
+				branchWithParens := "feat(ideia-intelligence)--add-service"
+				result := util.HandleCmd("git@github.com:org/repo.git", branchWithParens, quotedCmd)
+				expected := `git clone -b "feat(ideia-intelligence)--add-service" --single-branch --depth 1 "git@github.com:org/repo.git" code`
+				Expect(result).To(Equal(expected))
+			})
+		})
 	})
 
 	Describe("HandleGitURLSubstitution", func() {
