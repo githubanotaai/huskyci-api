@@ -63,6 +63,15 @@ func GenerateOutputFile(analysis types.Analysis, outputPath, outputFileName stri
 	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIWizCLISecretsOutput.LowVulns...)
 	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIWizCLISecretsOutput.MediumVulns...)
 	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIWizCLISecretsOutput.HighVulns...)
+	// Promote WizCLI secrets informational findings (NoSecVulns) to MEDIUM for SonarQube visibility.
+	// Wiz classifies detected secrets as INFORMATIONAL, but SonarQube requires a severity
+	// to surface them as actionable issues. Promote only in the SonarQube export — the
+	// HuskyCI API and client summary retain the original INFORMATIONAL classification.
+	for _, v := range analysis.HuskyCIResults.GenericResults.HuskyCIWizCLISecretsOutput.NoSecVulns {
+		promoted := v
+		promoted.Severity = "MEDIUM"
+		allVulns = append(allVulns, promoted)
+	}
 	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIIacSastOutput.LowVulns...)
 	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIIacSastOutput.MediumVulns...)
 	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIIacSastOutput.HighVulns...)

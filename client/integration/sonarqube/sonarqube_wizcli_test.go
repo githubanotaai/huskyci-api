@@ -13,6 +13,10 @@ import (
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 func makeWizSecretsAnalysis(high, medium, low []types.HuskyCIVulnerability) types.Analysis {
+	return makeWizSecretsAnalysisWithNoSec(high, medium, low, nil)
+}
+
+func makeWizSecretsAnalysisWithNoSec(high, medium, low, nosec []types.HuskyCIVulnerability) types.Analysis {
 	return types.Analysis{
 		HuskyCIResults: types.HuskyCIResults{
 			GenericResults: types.GenericResults{
@@ -20,6 +24,7 @@ func makeWizSecretsAnalysis(high, medium, low []types.HuskyCIVulnerability) type
 					HighVulns:   high,
 					MediumVulns: medium,
 					LowVulns:    low,
+					NoSecVulns:  nosec,
 				},
 			},
 		},
@@ -439,5 +444,74 @@ func TestGenerateOutputFile_WizCLI_Vulns_AllSeverities(t *testing.T) {
 		if rule.Severity != expectedRuleSev {
 			t.Errorf("issue %q: expected rule severity %s, got %s", title, expectedRuleSev, rule.Severity)
 		}
+	}
+}
+
+// ── TestGenerateOutputFile_WizCLI_Secrets_NoSecVulns_PromotedToMedium ────────
+
+func TestGenerateOutputFile_WizCLI_Secrets_NoSecVulns_PromotedToMedium(t *testing.T) {
+	outputPath := t.TempDir()
+	outputFileName := "sonarqube.json"
+
+	// Wiz classifies secrets as INFORMATIONAL → they land in NoSecVulns
+	infoVuln := makeWizVuln("AWS Access Key ID detected", "INFORMATIONAL", "./code/config/secrets.js")
+	analysis := makeWizSecretsAnalysisWithNoSec(nil, nil, nil, []types.HuskyCIVulnerability{infoVuln})
+
+	if err := GenerateOutputFile(analysis, outputPath+"/", outputFileName); err != nil {
+		t.Fatalf("GenerateOutputFile returned error: %v", err)
+	}
+
+	out := readSonarOutput(t, outputPath, outputFileName)
+
+	if len(out.Issues) == 0 {
+		t.Fatal("expected at least one issue (promoted NoSecVuln), got none")
+	}
+
+	issue := findIssueByTitle(out, "AWS Access Key ID detected")
+	if issue == nil {
+		t.Fatalf("expected issue for 'AWS Access Key ID detected', not found in: %+v", out.Issues)
+	}
+
+	// Verify the rule was created with MAJOR severity (MEDIUM → MAJOR in SonarQube format)
+	var foundRule *SonarRule
+	for i := range out.Rules {
+		if out.Rules[i].ID == issue.RuleID {
+			foundRule = &out.Rules[i]
+			break
+		}
+	}
+	if foundRule == nil {
+		t.Fatalf("no rule found for ruleId %s", issue.RuleID)
+	}
+	if foundRule.Severity != "MAJOR" {
+		t.Errorf("expected promoted NoSecVuln to have severity MAJOR, got %s", foundRule.Severity)
+	}
+
+	// Verify impact severity is also promoted
+	if len(foundRule.Impacts) == 0 {
+		t.Fatal("expected at least one impact on the rule")
+	}
+	if foundRule.Impacts[0].Severity != "MEDIUM" {
+		t.Errorf("expected impact severity MEDIUM for promoted NoSecVuln, got %s", foundRule.Impacts[0].Severity)
+	}
+}
+
+// ── TestGenerateOutputFile_WizCLI_Secrets_NoSecVulns_DoesNotAffectOriginalObject ──
+
+func TestGenerateOutputFile_WizCLI_Secrets_NoSecVulns_DoesNotAffectOriginalObject(t *testing.T) {
+	outputPath := t.TempDir()
+	outputFileName := "sonarqube.json"
+
+	// The original vuln object must retain INFORMATIONAL severity (promotion is copy-on-write)
+	originalVuln := makeWizVuln("Private Key detected", "INFORMATIONAL", "./code/config/keys.pem")
+	analysis := makeWizSecretsAnalysisWithNoSec(nil, nil, nil, []types.HuskyCIVulnerability{originalVuln})
+
+	if err := GenerateOutputFile(analysis, outputPath+"/", outputFileName); err != nil {
+		t.Fatalf("GenerateOutputFile returned error: %v", err)
+	}
+
+	// Verify original vuln was NOT mutated
+	if originalVuln.Severity != "INFORMATIONAL" {
+		t.Errorf("original NoSecVuln was mutated! Severity=%s, expected INFORMATIONAL", originalVuln.Severity)
 	}
 }
