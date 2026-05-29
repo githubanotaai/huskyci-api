@@ -438,7 +438,7 @@ wizcli_secrets:
             wizcli scan dir ./code \
               --disabled-scanners Vulnerability,Misconfiguration,SAST,Malware,AIModels,SoftwareSupplyChain \
               --by-policy-hits=DISABLED \
-              --stdout=json --json-output-file=/tmp/wizResult.json 2> /tmp/errorWizScan
+              --stdout=human --json-output-file=/tmp/wizResult.json 2> /tmp/errorWizScan
             SCAN_RC=$?
             if [ $SCAN_RC -ge 2 ]; then
               echo "ERROR_RUNNING_WIZCLI_SCAN"
@@ -475,7 +475,7 @@ wizcli_iac_sast:
             wizcli scan dir ./code \
               --disabled-scanners Vulnerability,Secret,SensitiveData,Malware,AIModels,SoftwareSupplyChain \
               --by-policy-hits=DISABLED \
-              --stdout=json --json-output-file=/tmp/wizResult.json 2> /tmp/errorWizScan
+              --stdout=human --json-output-file=/tmp/wizResult.json 2> /tmp/errorWizScan
             SCAN_RC=$?
             if [ $SCAN_RC -ge 2 ]; then
               echo "ERROR_RUNNING_WIZCLI_SCAN"
@@ -512,7 +512,7 @@ wizcli_vulns:
             wizcli scan dir ./code \
               --disabled-scanners Secret,SensitiveData,Misconfiguration,SAST \
               --by-policy-hits=DISABLED \
-              --stdout=json --json-output-file=/tmp/wizResult.json 2> /tmp/errorWizScan
+              --stdout=human --json-output-file=/tmp/wizResult.json 2> /tmp/errorWizScan
             SCAN_RC=$?
             if [ $SCAN_RC -ge 2 ]; then
               echo "ERROR_RUNNING_WIZCLI_SCAN"
