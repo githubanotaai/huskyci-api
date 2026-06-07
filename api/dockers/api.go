@@ -16,7 +16,7 @@ import (
 	"github.com/docker/docker/client"
 	apiContext "github.com/githubanotaai/huskyci-api/api/context"
 	"github.com/githubanotaai/huskyci-api/api/log"
-	goContext "golang.org/x/net/context"
+	goContext "context"
 )
 
 // Docker is the docker struct

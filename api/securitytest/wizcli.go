@@ -100,15 +100,6 @@ type wizMatchEntry struct {
 	RemediationInstructions string `json:"remediationInstructions"`
 }
 
-type wizCodeFinding struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Severity    string `json:"severity"`
-	File        string `json:"file"`
-	Line        int    `json:"line"`
-	Rule        string `json:"rule"`
-}
-
 type wizMalwareFinding struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
