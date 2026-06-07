@@ -72,9 +72,9 @@ func TestShortImageName(t *testing.T) {
 		{"123456789012.dkr.ecr.eu-west-1.amazonaws.com/my-tool", "my-tool"},
 	}
 	for _, tc := range tests {
-		got := shortImageName(tc.input)
+		got := ShortImageName(tc.input)
 		if got != tc.expected {
-			t.Errorf("shortImageName(%q) = %q, want %q", tc.input, got, tc.expected)
+			t.Errorf("ShortImageName(%q) = %q, want %q", tc.input, got, tc.expected)
 		}
 	}
 }
@@ -88,6 +88,12 @@ func TestPrintSTDOUTOutput_IncludesWizCLIDetailsGroup(t *testing.T) {
 		Containers: []types.Container{
 			{
 				SecurityTest: types.SecurityTest{Name: "wizcli_secrets", Image: "939030204144.dkr.ecr.us-east-1.amazonaws.com/huskyci-wiz", ImageTag: "f793155-amd64"},
+			},
+			{
+				SecurityTest: types.SecurityTest{Name: "wizcli_iac_sast", Image: "939030204144.dkr.ecr.us-east-1.amazonaws.com/huskyci-wiz", ImageTag: "f793155-amd64"},
+			},
+			{
+				SecurityTest: types.SecurityTest{Name: "wizcli_vulns", Image: "939030204144.dkr.ecr.us-east-1.amazonaws.com/huskyci-wiz", ImageTag: "f793155-amd64"},
 			},
 		},
 		HuskyCIResults: types.HuskyCIResults{
@@ -163,8 +169,8 @@ func TestPrintSTDOUTOutput_IncludesWizCLIDetailsGroup(t *testing.T) {
 	if !bytes.Contains([]byte(out), []byte("::group::Generic - Wiz CLI (Vulns)")) {
 		t.Fatalf("expected Wiz CLI Vulns collapsible group in stdout, got excerpt:\n%s", truncate(out, 2000))
 	}
-	if !bytes.Contains([]byte(out), []byte("[HUSKYCI][SUMMARY] Generic -> huskyci-wiz:f793155-amd64")) {
-		t.Fatalf("expected Wiz summary line with short image ref 'huskyci-wiz:f793155-amd64', got excerpt:\n%s", truncate(out, 2000))
+	if !bytes.Contains([]byte(out), []byte("[HUSKYCI][SUMMARY] Wiz CLI (Secrets) -> huskyci-wiz:f793155-amd64")) {
+		t.Fatalf("expected Wiz CLI (Secrets) summary line with short image ref 'huskyci-wiz:f793155-amd64', got excerpt:\n%s", truncate(out, 2000))
 	}
 	// Verify ECR registry prefix is NOT present in output
 	if bytes.Contains([]byte(out), []byte("939030204144.dkr.ecr.us-east-1.amazonaws.com")) {

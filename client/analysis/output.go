@@ -270,7 +270,7 @@ func prepareAllSummary(analysis types.Analysis) {
 // shortImageName strips ECR registry prefix, returning only repo name.
 // "939030204144.dkr.ecr.us-east-1.amazonaws.com/huskyci-wiz" → "huskyci-wiz"
 // "huskyci/safety" (already short) → "huskyci/safety"
-func shortImageName(image string) string {
+func ShortImageName(image string) string {
 	if idx := strings.LastIndex(image, "/"); idx != -1 {
 		// Check if "/" is part of an ECR domain (contains ".dkr." or ".amazonaws.com")
 		if strings.Contains(image[:idx], ".dkr.") || strings.Contains(image[:idx], ".amazonaws.com") {
@@ -287,31 +287,31 @@ func printAllSummary(analysis types.Analysis) {
 	for _, container := range analysis.Containers {
 		switch container.SecurityTest.Name {
 		case "gosec":
-			gosecVersion = fmt.Sprintf("%s:%s", shortImageName(container.SecurityTest.Image), container.SecurityTest.ImageTag)
+			gosecVersion = fmt.Sprintf("%s:%s", ShortImageName(container.SecurityTest.Image), container.SecurityTest.ImageTag)
 		case "bandit":
-			banditVersion = fmt.Sprintf("%s:%s", shortImageName(container.SecurityTest.Image), container.SecurityTest.ImageTag)
+			banditVersion = fmt.Sprintf("%s:%s", ShortImageName(container.SecurityTest.Image), container.SecurityTest.ImageTag)
 		case "safety":
-			safetyVersion = fmt.Sprintf("%s:%s", shortImageName(container.SecurityTest.Image), container.SecurityTest.ImageTag)
+			safetyVersion = fmt.Sprintf("%s:%s", ShortImageName(container.SecurityTest.Image), container.SecurityTest.ImageTag)
 		case "brakeman":
-			brakemanVersion = fmt.Sprintf("%s:%s", shortImageName(container.SecurityTest.Image), container.SecurityTest.ImageTag)
+			brakemanVersion = fmt.Sprintf("%s:%s", ShortImageName(container.SecurityTest.Image), container.SecurityTest.ImageTag)
 		case "npmaudit":
-			npmauditVersion = fmt.Sprintf("%s:%s", shortImageName(container.SecurityTest.Image), container.SecurityTest.ImageTag)
+			npmauditVersion = fmt.Sprintf("%s:%s", ShortImageName(container.SecurityTest.Image), container.SecurityTest.ImageTag)
 		case "yarnaudit":
-			yarnauditVersion = fmt.Sprintf("%s:%s", shortImageName(container.SecurityTest.Image), container.SecurityTest.ImageTag)
+			yarnauditVersion = fmt.Sprintf("%s:%s", ShortImageName(container.SecurityTest.Image), container.SecurityTest.ImageTag)
 		case "spotbugs":
-			spotbugsVersion = fmt.Sprintf("%s:%s", shortImageName(container.SecurityTest.Image), container.SecurityTest.ImageTag)
+			spotbugsVersion = fmt.Sprintf("%s:%s", ShortImageName(container.SecurityTest.Image), container.SecurityTest.ImageTag)
 		case "gitleaks":
-			gitleaksVersion = fmt.Sprintf("%s:%s", shortImageName(container.SecurityTest.Image), container.SecurityTest.ImageTag)
+			gitleaksVersion = fmt.Sprintf("%s:%s", ShortImageName(container.SecurityTest.Image), container.SecurityTest.ImageTag)
 		case "wizcli_secrets":
-			wizcliSecretsVersion = fmt.Sprintf("%s:%s", shortImageName(container.SecurityTest.Image), container.SecurityTest.ImageTag)
+			wizcliSecretsVersion = fmt.Sprintf("%s:%s", ShortImageName(container.SecurityTest.Image), container.SecurityTest.ImageTag)
 		case "wizcli_iac_sast":
-			wizcliIacSastVersion = fmt.Sprintf("%s:%s", shortImageName(container.SecurityTest.Image), container.SecurityTest.ImageTag)
+			wizcliIacSastVersion = fmt.Sprintf("%s:%s", ShortImageName(container.SecurityTest.Image), container.SecurityTest.ImageTag)
 		case "wizcli_vulns":
-			wizcliVulnsVersion = fmt.Sprintf("%s:%s", shortImageName(container.SecurityTest.Image), container.SecurityTest.ImageTag)
+			wizcliVulnsVersion = fmt.Sprintf("%s:%s", ShortImageName(container.SecurityTest.Image), container.SecurityTest.ImageTag)
 		case "tfsec":
-			tfsecVersion = fmt.Sprintf("%s:%s", shortImageName(container.SecurityTest.Image), container.SecurityTest.ImageTag)
+			tfsecVersion = fmt.Sprintf("%s:%s", ShortImageName(container.SecurityTest.Image), container.SecurityTest.ImageTag)
 		case "securitycodescan":
-			securityCodeScanVersion = fmt.Sprintf("%s:%s", shortImageName(container.SecurityTest.Image), container.SecurityTest.ImageTag)
+			securityCodeScanVersion = fmt.Sprintf("%s:%s", ShortImageName(container.SecurityTest.Image), container.SecurityTest.ImageTag)
 		}
 	}
 
@@ -407,7 +407,7 @@ func printAllSummary(analysis types.Analysis) {
 
 	if outputJSON.Summary.WizCLISecretsSummary.FoundVuln || outputJSON.Summary.WizCLISecretsSummary.FoundInfo {
 		fmt.Println()
-		fmt.Printf("[HUSKYCI][SUMMARY] Generic -> %s\n", wizcliSecretsVersion)
+		fmt.Printf("[HUSKYCI][SUMMARY] Wiz CLI (Secrets) -> %s\n", wizcliSecretsVersion)
 		fmt.Printf("[HUSKYCI][SUMMARY] Wiz CLI (Secrets) High: %d\n", outputJSON.Summary.WizCLISecretsSummary.HighVuln)
 		fmt.Printf("[HUSKYCI][SUMMARY] Wiz CLI (Secrets) Medium: %d\n", outputJSON.Summary.WizCLISecretsSummary.MediumVuln)
 		fmt.Printf("[HUSKYCI][SUMMARY] Wiz CLI (Secrets) Low: %d\n", outputJSON.Summary.WizCLISecretsSummary.LowVuln)
@@ -416,7 +416,7 @@ func printAllSummary(analysis types.Analysis) {
 
 	if outputJSON.Summary.WizCLIIacSastSummary.FoundVuln || outputJSON.Summary.WizCLIIacSastSummary.FoundInfo {
 		fmt.Println()
-		fmt.Printf("[HUSKYCI][SUMMARY] Generic -> %s\n", wizcliIacSastVersion)
+		fmt.Printf("[HUSKYCI][SUMMARY] Wiz CLI (IaC+SAST) -> %s\n", wizcliIacSastVersion)
 		fmt.Printf("[HUSKYCI][SUMMARY] Wiz CLI (IaC+SAST) High: %d\n", outputJSON.Summary.WizCLIIacSastSummary.HighVuln)
 		fmt.Printf("[HUSKYCI][SUMMARY] Wiz CLI (IaC+SAST) Medium: %d\n", outputJSON.Summary.WizCLIIacSastSummary.MediumVuln)
 		fmt.Printf("[HUSKYCI][SUMMARY] Wiz CLI (IaC+SAST) Low: %d\n", outputJSON.Summary.WizCLIIacSastSummary.LowVuln)
@@ -425,7 +425,7 @@ func printAllSummary(analysis types.Analysis) {
 
 	if outputJSON.Summary.WizCLIVulnsSummary.FoundVuln || outputJSON.Summary.WizCLIVulnsSummary.FoundInfo {
 		fmt.Println()
-		fmt.Printf("[HUSKYCI][SUMMARY] Generic -> %s\n", wizcliVulnsVersion)
+		fmt.Printf("[HUSKYCI][SUMMARY] Wiz CLI (Vulns) -> %s\n", wizcliVulnsVersion)
 		fmt.Printf("[HUSKYCI][SUMMARY] Wiz CLI (Vulns) High: %d\n", outputJSON.Summary.WizCLIVulnsSummary.HighVuln)
 		fmt.Printf("[HUSKYCI][SUMMARY] Wiz CLI (Vulns) Medium: %d\n", outputJSON.Summary.WizCLIVulnsSummary.MediumVuln)
 		fmt.Printf("[HUSKYCI][SUMMARY] Wiz CLI (Vulns) Low: %d\n", outputJSON.Summary.WizCLIVulnsSummary.LowVuln)

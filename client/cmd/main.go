@@ -60,7 +60,7 @@ func main() {
 	var failedList []string
 	var errorList []string
 	for _, container := range huskyAnalysis.Containers {
-		securityTestFullName := fmt.Sprintf("%s:%s", container.SecurityTest.Image, container.SecurityTest.ImageTag)
+		securityTestFullName := fmt.Sprintf("%s:%s", container.SecurityTest.Name, analysis.ShortImageName(container.SecurityTest.Image)+"-"+container.SecurityTest.ImageTag)
 		if container.CResult == "passed" && container.SecurityTest.Name != "gitauthors" {
 			passedList = append(passedList, securityTestFullName)
 		} else if container.CResult == "failed" {

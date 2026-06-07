@@ -11,7 +11,7 @@ import (
 
 	apiContext "github.com/githubanotaai/huskyci-api/api/context"
 	"github.com/githubanotaai/huskyci-api/api/log"
-	goContext "golang.org/x/net/context"
+	goContext "context"
 
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

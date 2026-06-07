@@ -286,5 +286,11 @@ func SliceContains(slice []string, str string) bool {
 // Many security tools (Bandit, Gitleaks, etc.) output paths with "./" prefix,
 // but SonarQube expects paths without this prefix.
 func NormalizeFilePath(path string) string {
+	// Strip container mount prefixes that leak into scan output
+	// WizCLI mounts repos at /code, so files appear as "code/Dockerfile" or "/code/Dockerfile"
+	path = strings.TrimPrefix(path, "/code/")
+	path = strings.TrimPrefix(path, "code/")
+	// Bandit/Gosec mount at /go/src/code
+	path = strings.TrimPrefix(path, "/go/src/code/")
 	return strings.TrimPrefix(path, "./")
 }
