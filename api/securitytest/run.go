@@ -32,6 +32,7 @@ const safety = "safety"
 const gosec = "gosec"
 const npmaudit = "npmaudit"
 const yarnaudit = "yarnaudit"
+const pnpmaudit = "pnpmaudit"
 const spotbugs = "spotbugs"
 const gitleaks = "gitleaks"
 const tfsec = "tfsec"
@@ -181,6 +182,8 @@ func (results *RunAllInfo) vulnOutput(securityTestName string) *types.HuskyCISec
 		return &results.HuskyCIResults.JavaScriptResults.HuskyCINpmAuditOutput
 	case yarnaudit:
 		return &results.HuskyCIResults.JavaScriptResults.HuskyCIYarnAuditOutput
+	case pnpmaudit:
+		return &results.HuskyCIResults.JavaScriptResults.HuskyCIPnpmAuditOutput
 	case spotbugs:
 		return &results.HuskyCIResults.JavaResults.HuskyCISpotBugsOutput
 	case gitleaks:

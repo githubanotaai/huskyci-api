@@ -135,8 +135,9 @@ type PythonResults struct {
 
 // JavaScriptResults represents all JavaScript security tests results.
 type JavaScriptResults struct {
-	HuskyCINpmAuditOutput  HuskyCISecurityTestOutput `bson:"npmauditoutput,omitempty" json:"npmauditoutput,omitempty"`
-	HuskyCIYarnAuditOutput HuskyCISecurityTestOutput `bson:"yarnauditoutput,omitempty" json:"yarnauditoutput,omitempty"`
+	HuskyCINpmAuditOutput   HuskyCISecurityTestOutput `bson:"npmauditoutput,omitempty" json:"npmauditoutput,omitempty"`
+	HuskyCIYarnAuditOutput  HuskyCISecurityTestOutput `bson:"yarnauditoutput,omitempty" json:"yarnauditoutput,omitempty"`
+	HuskyCIPnpmAuditOutput  HuskyCISecurityTestOutput `bson:"pnpmauditoutput,omitempty" json:"pnpmauditoutput,omitempty"`
 }
 
 // JavaResults represents all Java security tests results.
@@ -185,6 +186,7 @@ type Summary struct {
 	SafetySummary           HuskyCISummary `json:"safetysummary,omitempty"`
 	NpmAuditSummary         HuskyCISummary `json:"npmauditsummary,omitempty"`
 	YarnAuditSummary        HuskyCISummary `json:"yarnauditsummary,omitempty"`
+	PnpmAuditSummary        HuskyCISummary `json:"pnpmauditsummary,omitempty"`
 	BrakemanSummary         HuskyCISummary `json:"brakemansummary,omitempty"`
 	SpotBugsSummary         HuskyCISummary `json:"spotbugssummary,omitempty"`
 	GitleaksSummary         HuskyCISummary `json:"gitleakssummary,omitempty"`
