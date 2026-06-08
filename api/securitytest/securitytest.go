@@ -50,6 +50,7 @@ type SecTestScanInfo struct {
 	PackageNotFound              bool
 	YarnLockNotFound             bool
 	YarnErrorRunning             bool
+	PnpmLockNotFound             bool
 	GitleaksErrorRunning         bool
 	GitleaksTimeout              bool
 	SecurityCodeScanErrorRunning bool

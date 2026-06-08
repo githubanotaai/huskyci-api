@@ -7,6 +7,7 @@ package securitytest
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/githubanotaai/huskyci-api/api/log"
 	"github.com/githubanotaai/huskyci-api/api/types"
@@ -61,7 +62,16 @@ func analyzePnpmaudit(pnpmAuditScan *SecTestScanInfo) error {
 	pnpmAuditOutput := PnpmAuditOutput{}
 	pnpmAuditScan.FinalOutput = pnpmAuditOutput
 
-	// nil cOutput states that no Issues were found (pnpm-lock.yaml not present).
+	// if pnpm-lock was not found, a warning will be generated as a low vuln
+	pnpmLockNotFound := strings.Contains(pnpmAuditScan.Container.COutput, "ERROR_PNPM_LOCK_NOT_FOUND")
+	if pnpmLockNotFound {
+		pnpmAuditScan.PnpmLockNotFound = true
+		pnpmAuditScan.preparePnpmAuditVulns()
+		pnpmAuditScan.prepareContainerAfterScan()
+		return nil
+	}
+
+	// nil cOutput states that no Issues were found (another lockfile present, silent skip).
 	if pnpmAuditScan.Container.COutput == "" {
 		pnpmAuditScan.prepareContainerAfterScan()
 		return nil
@@ -84,6 +94,19 @@ func analyzePnpmaudit(pnpmAuditScan *SecTestScanInfo) error {
 func (pnpmAuditScan *SecTestScanInfo) preparePnpmAuditVulns() {
 
 	huskyCIPnpmauditResults := types.HuskyCISecurityTestOutput{}
+
+	if pnpmAuditScan.PnpmLockNotFound {
+		pnpmauditVuln := types.HuskyCIVulnerability{}
+		pnpmauditVuln.Language = "JavaScript"
+		pnpmauditVuln.SecurityTool = "PnpmAudit"
+		pnpmauditVuln.Severity = "low"
+		pnpmauditVuln.Title = "No pnpm-lock.yaml found."
+		pnpmauditVuln.Details = "It looks like your project doesn't have a pnpm-lock.yaml file. If you use pnpm to handle your dependencies, it would be a good idea to commit it so huskyCI can check for vulnerabilities."
+
+		pnpmAuditScan.Vulnerabilities.LowVulns = append(pnpmAuditScan.Vulnerabilities.LowVulns, pnpmauditVuln)
+		return
+	}
+
 	pnpmAuditOutput := pnpmAuditScan.FinalOutput.(PnpmAuditOutput)
 
 	for _, advisory := range pnpmAuditOutput.Advisories {

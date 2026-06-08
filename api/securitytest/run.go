@@ -24,6 +24,12 @@ type RunAllInfo struct {
 	FinalResult    string
 	ErrorFound     error
 	HuskyCIResults types.HuskyCIResults
+
+	// Lockfile-not-found tracking for coalescing into a single HIGH vuln
+	// when no JS package manager lockfile exists in the repo.
+	NpmLockNotFound  bool
+	YarnLockNotFound bool
+	PnpmLockNotFound bool
 }
 
 const bandit = "bandit"
@@ -159,6 +165,16 @@ func (results *RunAllInfo) runLanguageScans(ctx context.Context, enryScan SecTes
 			results.mu.Lock()
 			results.Containers = append(results.Containers, scan.Container)
 			results.setVulns(*scan)
+			// Propagate lockfile-not-found flags for coalescing
+			if scan.PackageNotFound {
+				results.NpmLockNotFound = true
+			}
+			if scan.YarnLockNotFound {
+				results.YarnLockNotFound = true
+			}
+			if scan.PnpmLockNotFound {
+				results.PnpmLockNotFound = true
+			}
 			results.mu.Unlock()
 			return nil
 		})
@@ -232,6 +248,10 @@ func (results *RunAllInfo) setToAnalysis() {
 		return
 	}
 
+	// Coalesce: when all three JS package manager lockfiles are missing,
+	// replace the three individual LOW vulns with a single HIGH vuln.
+	results.coalesceJsLockfileErrors()
+
 	jsWarningFlag := false
 
 	for _, container := range results.Containers {
@@ -267,6 +287,35 @@ func getAllDefaultSecurityTests(typeOf, language string) ([]types.SecurityTest, 
 		return securityTests, err
 	}
 	return securityTests, nil
+}
+
+// coalesceJsLockfileErrors checks if all three JS package manager lockfiles
+// are missing from the repo. When all three scanners report lockfile-not-found,
+// the three individual LOW vulns are replaced with a single HIGH vuln on the
+// PnpmAudit output. This prevents noise and surfaces the real problem: no
+// lockfile means HuskyCI cannot audit the repo's dependencies at all.
+func (results *RunAllInfo) coalesceJsLockfileErrors() {
+	if !results.NpmLockNotFound || !results.YarnLockNotFound || !results.PnpmLockNotFound {
+		return
+	}
+
+	// Clear the individual LOW vulns from all three outputs.
+	results.HuskyCIResults.JavaScriptResults.HuskyCINpmAuditOutput.LowVulns = nil
+	results.HuskyCIResults.JavaScriptResults.HuskyCIYarnAuditOutput.LowVulns = nil
+	results.HuskyCIResults.JavaScriptResults.HuskyCIPnpmAuditOutput.LowVulns = nil
+
+	// Emit a single HIGH vuln on the PnpmAudit output.
+	highVuln := types.HuskyCIVulnerability{
+		Language:     "JavaScript",
+		SecurityTool: "PnpmAudit",
+		Severity:     "high",
+		Title:        "No lockfile found in the repository.",
+		Details:      "It looks like your project doesn't have a package-lock.json, yarn.lock, or pnpm-lock.yaml file. huskyCI needs a lockfile to audit your dependencies for vulnerabilities. Please commit the lockfile of the package manager you use (npm, yarn, or pnpm).",
+	}
+	results.HuskyCIResults.JavaScriptResults.HuskyCIPnpmAuditOutput.HighVulns = append(
+		results.HuskyCIResults.JavaScriptResults.HuskyCIPnpmAuditOutput.HighVulns,
+		highVuln,
+	)
 }
 
 func (results *RunAllInfo) setFinalResult() {

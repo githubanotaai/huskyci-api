@@ -225,7 +225,7 @@ npmaudit:
           cat /tmp/errorNpmaudit
         fi
       else
-        if [ ! -f yarn.lock ]; then
+        if [ ! -f yarn.lock ] && [ ! -f pnpm-lock.yaml ]; then
           echo 'ERROR_PACKAGE_LOCK_NOT_FOUND'
         fi
       fi
@@ -261,7 +261,7 @@ yarnaudit:
                 cat /tmp/errorYarnAudit
             fi
         else
-            if [ ! -f package-lock.json ]; then
+            if [ ! -f package-lock.json ] && [ ! -f pnpm-lock.yaml ]; then
                 echo 'ERROR_YARN_LOCK_NOT_FOUND'
             fi
         fi
@@ -298,6 +298,10 @@ pnpmaudit:
         else
           echo 'ERROR_RUNNING_PNPM_AUDIT'
           cat /tmp/errorPnpmaudit
+        fi
+      else
+        if [ ! -f package-lock.json ] && [ ! -f yarn.lock ]; then
+          echo 'ERROR_PNPM_LOCK_NOT_FOUND'
         fi
       fi
     else

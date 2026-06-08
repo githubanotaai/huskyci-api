@@ -1,6 +1,7 @@
 package securitytest
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/githubanotaai/huskyci-api/api/types"
@@ -41,7 +42,7 @@ func TestAnalyzePnpmaudit(t *testing.T) {
 }
 
 func TestAnalyzePnpmauditEmpty(t *testing.T) {
-	// Empty COutput (pnpm-lock.yaml not found → silent skip)
+	// Empty COutput (another lockfile present, silent skip — e.g. npm repo)
 	scan := &SecTestScanInfo{
 		Container: types.Container{
 			COutput: "",
@@ -109,5 +110,35 @@ func TestAnalyzePnpmauditMultipleAdvisories(t *testing.T) {
 	}
 	if len(scan.Vulnerabilities.MediumVulns) != 1 {
 		t.Errorf("expected 1 medium vuln, got %d", len(scan.Vulnerabilities.MediumVulns))
+	}
+}
+
+func TestAnalyzePnpmauditLockfileNotFound(t *testing.T) {
+	// ERROR_PNPM_LOCK_NOT_FOUND — no lockfile at all in the repo
+	scan := &SecTestScanInfo{
+		Container: types.Container{
+			COutput: "ERROR_PNPM_LOCK_NOT_FOUND",
+		},
+	}
+
+	err := analyzePnpmaudit(scan)
+	if err != nil {
+		t.Fatalf("analyzePnpmaudit returned error: %v", err)
+	}
+
+	if !scan.PnpmLockNotFound {
+		t.Error("expected PnpmLockNotFound to be true")
+	}
+
+	if len(scan.Vulnerabilities.LowVulns) != 1 {
+		t.Errorf("expected 1 low vuln for lockfile not found, got %d", len(scan.Vulnerabilities.LowVulns))
+	}
+
+	vuln := scan.Vulnerabilities.LowVulns[0]
+	if vuln.Severity != "low" {
+		t.Errorf("expected severity low, got %s", vuln.Severity)
+	}
+	if !strings.Contains(vuln.Title, "pnpm-lock.yaml") {
+		t.Errorf("expected title to mention pnpm-lock.yaml, got: %s", vuln.Title)
 	}
 }
