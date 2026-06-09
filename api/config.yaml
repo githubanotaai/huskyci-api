@@ -276,8 +276,8 @@ yarnaudit:
 
 pnpmaudit:
   name: pnpmaudit
-  image: huskyci/pnpmaudit
-  imageTag: "11.5.2"
+  image: 939030204144.dkr.ecr.us-east-1.amazonaws.com/huskyci-pnpmaudit
+  imageTag: "e640140-amd64"
   cmd: |+
     mkdir -p ~/.ssh &&
     echo '%GIT_PRIVATE_SSH_KEY%' > ~/.ssh/huskyci_id_rsa &&
