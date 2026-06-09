@@ -33,13 +33,15 @@ const logActionReceiveRequest = "ReceiveRequest"
 
 // HandleCmd will extract %GIT_REPO%, %GIT_BRANCH% from cmd and replace it with the proper repository URL.
 // Also replaces %WIZ_CLIENT_ID% and %WIZ_CLIENT_SECRET% with values from environment variables.
-func HandleCmd(repositoryURL, repositoryBranch, cmd string) string {
+// The changedFiles parameter replaces %CHANGED_FILES% (use empty string when delta scanning is not active).
+func HandleCmd(repositoryURL, repositoryBranch, cmd, changedFiles string) string {
 	if repositoryURL != "" && repositoryBranch != "" && cmd != "" {
 		replace1 := strings.ReplaceAll(cmd, "%GIT_REPO%", repositoryURL)
 		replace2 := strings.ReplaceAll(replace1, "%GIT_BRANCH%", repositoryBranch)
 		replace3 := strings.ReplaceAll(replace2, "%WIZ_CLIENT_ID%", os.Getenv("HUSKYCI_API_WIZ_CLIENT_ID"))
 		replace4 := strings.ReplaceAll(replace3, "%WIZ_CLIENT_SECRET%", os.Getenv("HUSKYCI_API_WIZ_CLIENT_SECRET"))
-		return replace4
+		replace5 := strings.ReplaceAll(replace4, "%CHANGED_FILES%", changedFiles)
+		return replace5
 	}
 	return ""
 }

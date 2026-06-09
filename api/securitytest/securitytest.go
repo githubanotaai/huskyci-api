@@ -119,7 +119,7 @@ func (scanInfo *SecTestScanInfo) Start() error {
 func (scanInfo *SecTestScanInfo) dockerRun(timeOutInSeconds int) error {
 	image := scanInfo.Container.SecurityTest.Image
 	imageTag := scanInfo.Container.SecurityTest.ImageTag
-	cmd := util.HandleCmd(scanInfo.URL, scanInfo.Branch, scanInfo.Container.SecurityTest.Cmd)
+	cmd := util.HandleCmd(scanInfo.URL, scanInfo.Branch, scanInfo.Container.SecurityTest.Cmd, "")
 	cmd = util.HandleGitURLSubstitution(cmd)
 	finalCMD := util.HandlePrivateSSHKey(cmd)
 	CID, cOutput, err := huskydocker.DockerRun(image, imageTag, finalCMD, scanInfo.DockerHost, timeOutInSeconds)
@@ -134,7 +134,7 @@ func (scanInfo *SecTestScanInfo) dockerRun(timeOutInSeconds int) error {
 func (scanInfo *SecTestScanInfo) kubeRun(timeOutInSeconds int) error {
 	image := scanInfo.Container.SecurityTest.Image
 	imageTag := scanInfo.Container.SecurityTest.ImageTag
-	cmd := util.HandleCmd(scanInfo.URL, scanInfo.Branch, scanInfo.Container.SecurityTest.Cmd)
+	cmd := util.HandleCmd(scanInfo.URL, scanInfo.Branch, scanInfo.Container.SecurityTest.Cmd, "")
 	cmd = util.HandleGitURLSubstitution(cmd)
 	finalCMD := util.HandlePrivateSSHKey(cmd)
 	podSchedulingTimeoutInSeconds := apiContext.APIConfiguration.KubernetesConfig.PodSchedulingTimeout

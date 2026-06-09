@@ -29,29 +29,29 @@ var _ = Describe("Util", func() {
 
 		Context("When inputRepositoryURL, inputRepositoryBranch and inputCMD are not empty", func() {
 			It("Should return a string based on these params", func() {
-				Expect(util.HandleCmd(inputRepositoryURL, inputRepositoryBranch, inputCMD)).To(Equal(expected))
+				Expect(util.HandleCmd(inputRepositoryURL, inputRepositoryBranch, inputCMD, "")).To(Equal(expected))
 			})
 		})
 		Context("When inputRepositoryURL is empty", func() {
 			It("Should return an empty string.", func() {
-				Expect(util.HandleCmd("", inputRepositoryBranch, inputCMD)).To(Equal(""))
+				Expect(util.HandleCmd("", inputRepositoryBranch, inputCMD, "")).To(Equal(""))
 			})
 		})
 		Context("When inputRepositoryBranch is empty", func() {
 			It("Should return an empty string.", func() {
-				Expect(util.HandleCmd(inputRepositoryURL, "", inputCMD)).To(Equal(""))
+				Expect(util.HandleCmd(inputRepositoryURL, "", inputCMD, "")).To(Equal(""))
 			})
 		})
 		Context("When inputCMD is empty", func() {
 			It("Should return an empty string.", func() {
-				Expect(util.HandleCmd(inputRepositoryURL, inputRepositoryBranch, "")).To(Equal(""))
+				Expect(util.HandleCmd(inputRepositoryURL, inputRepositoryBranch, "", "")).To(Equal(""))
 			})
 		})
 		Context("When branch name contains shell metacharacters like parentheses", func() {
 			It("Should substitute correctly when values are quoted in the template", func() {
 				quotedCmd := `git clone -b "%GIT_BRANCH%" --single-branch --depth 1 "%GIT_REPO%" code`
 				branchWithParens := "feat(ideia-intelligence)--add-service"
-				result := util.HandleCmd("git@github.com:org/repo.git", branchWithParens, quotedCmd)
+				result := util.HandleCmd("git@github.com:org/repo.git", branchWithParens, quotedCmd, "")
 				expected := `git clone -b "feat(ideia-intelligence)--add-service" --single-branch --depth 1 "git@github.com:org/repo.git" code`
 				Expect(result).To(Equal(expected))
 			})

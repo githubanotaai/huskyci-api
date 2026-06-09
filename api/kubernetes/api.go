@@ -83,6 +83,24 @@ func (k Kubernetes) CreatePod(image, cmd, podName, securityTestName string) (str
 
 	ctx := goContext.Background()
 
+	envVars := []core.EnvVar{
+		{
+			Name:  "http_proxy",
+			Value: k.ProxyAddress,
+		},
+		{
+			Name:  "https_proxy",
+			Value: k.ProxyAddress,
+		},
+		{
+			Name:  "no_proxy",
+			Value: k.NoProxyAddresses,
+		},
+	}
+	if isDeltaScanEnabled(securityTestName) {
+		envVars = append(envVars, core.EnvVar{Name: "HUSKYCI_DELTA_SCAN", Value: "true"})
+	}
+
 	podToCreate := &core.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: podName,
@@ -102,20 +120,7 @@ func (k Kubernetes) CreatePod(image, cmd, podName, securityTestName string) (str
 						"-c",
 						cmd,
 					},
-					Env: []core.EnvVar{
-						{
-							Name:  "http_proxy",
-							Value: k.ProxyAddress,
-						},
-						{
-							Name:  "https_proxy",
-							Value: k.ProxyAddress,
-						},
-						{
-							Name:  "no_proxy",
-							Value: k.NoProxyAddresses,
-						},
-					},
+					Env: envVars,
 				},
 			},
 			NodeSelector: k.NodeSelector,
