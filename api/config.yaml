@@ -236,7 +236,7 @@ npmaudit:
   type: Language
   language: JavaScript
   default: true
-  timeOutInSeconds: 360
+  timeOutInSeconds: 600
 
 yarnaudit:
   name: yarnaudit
