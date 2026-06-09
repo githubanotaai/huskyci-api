@@ -60,51 +60,51 @@ Scanner pod
 
 ### 1. `api/config.yaml`
 
-New optional field `deltaScan` (defaults to `false` if absent):
+No changes needed. The `deltaScan` field is NOT added to config.yaml. Instead, delta scanning is controlled via environment variables on the API pod, following the existing `HUSKYCI_DISABLE_<TESTNAME>` pattern.
+
+### 2. Delta scan env vars (API pod)
+
+New env vars set on the API pod via Helm `values.yaml`:
+
+```
+HUSKYCI_DELTA_SCAN_WIZCLI_SECRETS=true
+HUSKYCI_DELTA_SCAN_WIZCLI_IAC=true
+HUSKYCI_DELTA_SCAN_WIZCLI_SAST=true
+HUSKYCI_DELTA_SCAN_GITLEAKS=true
+HUSKYCI_DELTA_SCAN_BANDIT=true
+HUSKYCI_DELTA_SCAN_GOSEC=true
+HUSKYCI_DELTA_SCAN_BRAKEMAN=true
+```
+
+Set in `k8s-infrastructure-live/components/huskyci/unreleased/values.yaml`:
 
 ```yaml
-wizcli_secrets:
-  name: wizcli_secrets
-  deltaScan: true
-  cmd: |+
-    mkdir -p ~/.ssh &&
-    ...
-    if [ "$HUSKYCI_DELTA_SCAN" = "true" ] && [ -n "%CHANGED_FILES%" ]; then
-      # Delta mode
-      GIT_TERMINAL_PROMPT=0 git clone --no-checkout -b "%GIT_BRANCH%" --single-branch --depth 1 "%GIT_REPO%" code --quiet 2>/tmp/errorGitClone
-      if [ $? -eq 0 ]; then
-        cd code
-        git sparse-checkout init --cone
-        echo "%CHANGED_FILES%" | xargs git sparse-checkout set
-        git checkout 2>/tmp/errorSparseCheckout
-        if [ $? -ne 0 ]; then
-          echo "ERROR_SPARSE_CHECKOUT"
-          cat /tmp/errorSparseCheckout
-        fi
-      fi
-    else
-      # Full clone
-      GIT_TERMINAL_PROMPT=0 git clone -b "%GIT_BRANCH%" --single-branch --depth 1 "%GIT_REPO%" code --quiet 2>/tmp/errorGitClone
-    fi
-    if [ $? -eq 0 ]; then
-      # ... existing scanner logic ...
+env:
+  HUSKYCI_DELTA_SCAN_WIZCLI_SECRETS: "true"
+  HUSKYCI_DELTA_SCAN_WIZCLI_IAC: "true"
+  HUSKYCI_DELTA_SCAN_WIZCLI_SAST: "true"
+  HUSKYCI_DELTA_SCAN_GITLEAKS: "true"
+  HUSKYCI_DELTA_SCAN_BANDIT: "true"
+  HUSKYCI_DELTA_SCAN_GOSEC: "true"
+  HUSKYCI_DELTA_SCAN_BRAKEMAN: "true"
 ```
 
-### 2. `api/types/types.go`
+The API reads these env vars when creating scanner pods. If the env var is set to `"true"`, the API adds `HUSKYCI_DELTA_SCAN=true` to the scanner pod's environment. This matches how `HUSKYCI_DISABLE_<TESTNAME>` already works in `isTestDisabled()`.
+
+**Scanner cmd scripts** check `HUSKYCI_DELTA_SCAN` as before. No config.yaml changes needed.
+
+### 3. `api/types/types.go`
 
 ```go
-type SecurityTest struct {
-    // ... existing fields ...
-    DeltaScan bool `json:"deltaScan" bson:"deltaScan"`
-}
-
 type Repository struct {
     // ... existing fields ...
-    ChangedFiles string `json:"changedFiles"`
+    ChangedFiles string `json:"changedFiles"`  // NEW — newline-separated
 }
 ```
 
-### 3. `api/util/util.go`
+No changes to `SecurityTest` — delta scanning is controlled by env vars, not config fields.
+
+### 4. `api/util/util.go`
 
 ```go
 func HandleCmd(repositoryURL, repositoryBranch, cmd, changedFiles string) string {
@@ -114,25 +114,71 @@ func HandleCmd(repositoryURL, repositoryBranch, cmd, changedFiles string) string
 }
 ```
 
-All callers of `HandleCmd` must pass the new `changedFiles` argument.
+All callers of `HandleCmd` must pass the new `changedFiles` argument (empty string when no delta).
 
-### 4. `api/kubernetes/huskykube.go`
+### 5. `api/kubernetes/huskykube.go`
 
 ```go
+func isDeltaScanEnabled(securityTestName string) bool {
+    envVarName := "HUSKYCI_DELTA_SCAN_" + strings.ToUpper(securityTestName)
+    return strings.ToLower(os.Getenv(envVarName)) == "true"
+}
+
 func KubeRun(image, imageTag, cmd, securityTestName, id string,
-    podSchedulingTimeoutInSeconds, timeOutInSeconds int,
-    deltaScan bool) (string, string, error) {
+    podSchedulingTimeoutInSeconds, timeOutInSeconds int) (string, string, error) {
 
     // In pod spec creation:
     envVars := []core.EnvVar{}
-    if deltaScan {
+    if isDeltaScanEnabled(securityTestName) {
         envVars = append(envVars, core.EnvVar{Name: "HUSKYCI_DELTA_SCAN", Value: "true"})
     }
     // ... set pod.Spec.Containers[0].Env = envVars ...
 }
 ```
 
-### 5. Client
+Matches the existing `isTestDisabled()` pattern — reads `HUSKYCI_DELTA_SCAN_<UPPERCASE_NAME>` from the API pod's environment.
+
+### 6. Scanner cmd scripts (`api/config.yaml`)
+
+Each delta-capable scanner's cmd block adds conditional sparse-checkout BEFORE the existing scanner logic:
+
+```sh
+# ... SSH setup ...
+
+if [ "$HUSKYCI_DELTA_SCAN" = "true" ] && [ -n "%CHANGED_FILES%" ]; then
+  # Delta mode: sparse checkout of changed files only
+  GIT_TERMINAL_PROMPT=0 git clone --no-checkout -b "%GIT_BRANCH%" --single-branch --depth 1 "%GIT_REPO%" code --quiet 2>/tmp/errorGitClone
+  if [ $? -eq 0 ]; then
+    cd code
+    git sparse-checkout init --cone
+    echo "%CHANGED_FILES%" | xargs git sparse-checkout set
+    git checkout 2>/tmp/errorSparseCheckout
+    if [ $? -ne 0 ]; then
+      echo "ERROR_SPARSE_CHECKOUT"
+      cat /tmp/errorSparseCheckout
+      exit 1
+    fi
+  else
+    echo "ERROR_CLONING"
+    cat /tmp/errorGitClone
+    exit 1
+  fi
+else
+  # Full clone (as today)
+  GIT_TERMINAL_PROMPT=0 git clone -b "%GIT_BRANCH%" --single-branch --depth 1 "%GIT_REPO%" code --quiet 2>/tmp/errorGitClone
+  if [ $? -ne 0 ]; then
+    echo "ERROR_CLONING"
+    cat /tmp/errorGitClone
+    exit 1
+  fi
+fi
+
+# ... existing scanner logic continues (cd code, run tool) ...
+```
+
+Scanners that DON'T support delta keep their existing cmd blocks unchanged — no conditional branch, just the full clone path.
+
+### 7. Client
 
 **`client/config/config.go`:**
 ```go
@@ -210,4 +256,4 @@ Wall clock: 180s → **12s** (vulns not triggered since no lockfiles to scan —
 - Shared clone volume (init container pattern) — separate project
 - Repo-level clone cache — separate project
 - Delta scanning for npm/yarn/pnpm audit — these need full lockfile, but could be explored later with lockfile diffing
-- Automatic delta-capability detection — scanners are explicitly opted in via config
+- Automatic delta-capability detection — scanners are explicitly opted in via Helm env vars
