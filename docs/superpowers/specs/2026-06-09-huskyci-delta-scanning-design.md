@@ -62,36 +62,78 @@ Scanner pod
 
 No changes needed. The `deltaScan` field is NOT added to config.yaml. Instead, delta scanning is controlled via environment variables on the API pod, following the existing `HUSKYCI_DISABLE_<TESTNAME>` pattern.
 
-### 2. Delta scan env vars (API pod)
+### 2. Scanner configuration via Helm values (NEW)
 
-New env vars set on the API pod via Helm `values.yaml`:
+All scanner configuration moves from `api/config.yaml` (baked into API image) to Helm `values.yaml` (hot-reloadable). The API reads per-scanner env vars set by the Helm chart, falling back to config.yaml defaults when not overridden.
 
-```
-HUSKYCI_DELTA_SCAN_WIZCLI_SECRETS=true
-HUSKYCI_DELTA_SCAN_WIZCLI_IAC=true
-HUSKYCI_DELTA_SCAN_WIZCLI_SAST=true
-HUSKYCI_DELTA_SCAN_GITLEAKS=true
-HUSKYCI_DELTA_SCAN_BANDIT=true
-HUSKYCI_DELTA_SCAN_GOSEC=true
-HUSKYCI_DELTA_SCAN_BRAKEMAN=true
-```
-
-Set in `k8s-infrastructure-live/components/huskyci/unreleased/values.yaml`:
+**Helm values structure** in `k8s-infrastructure-live/components/huskyci/unreleased/values.yaml`:
 
 ```yaml
-env:
-  HUSKYCI_DELTA_SCAN_WIZCLI_SECRETS: "true"
-  HUSKYCI_DELTA_SCAN_WIZCLI_IAC: "true"
-  HUSKYCI_DELTA_SCAN_WIZCLI_SAST: "true"
-  HUSKYCI_DELTA_SCAN_GITLEAKS: "true"
-  HUSKYCI_DELTA_SCAN_BANDIT: "true"
-  HUSKYCI_DELTA_SCAN_GOSEC: "true"
-  HUSKYCI_DELTA_SCAN_BRAKEMAN: "true"
+scanners:
+  wizcli_secrets:
+    enabled: true
+    deltaScan: true
+    timeout: 600
+    image: "939030204144.dkr.ecr.us-east-1.amazonaws.com/huskyci-wiz"
+    imageTag: "f793155-amd64"
+    schedulingTimeout: 60
+    imagePullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "512Mi"
+      limits:
+        cpu: "2"
+        memory: "2Gi"
+    nodeSelector:
+      karpenter.sh/nodepool: actions-runner
+
+  wizcli_iac:
+    enabled: true
+    deltaScan: true
+    timeout: 600
+    image: "939030204144.dkr.ecr.us-east-1.amazonaws.com/huskyci-wiz"
+    imageTag: "f793155-amd64"
+
+  gitleaks:
+    enabled: true
+    deltaScan: true
+    timeout: 360
+    image: "939030204144.dkr.ecr.us-east-1.amazonaws.com/huskyci-gitleaks"
+    imageTag: "8.30.1"
+
+  # ... other scanners ...
 ```
 
-The API reads these env vars when creating scanner pods. If the env var is set to `"true"`, the API adds `HUSKYCI_DELTA_SCAN=true` to the scanner pod's environment. This matches how `HUSKYCI_DISABLE_<TESTNAME>` already works in `isTestDisabled()`.
+**Helm chart template** converts the structured YAML into flat env vars on the API pod:
 
-**Scanner cmd scripts** check `HUSKYCI_DELTA_SCAN` as before. No config.yaml changes needed.
+```
+HUSKYCI_SCANNER_WIZCLI_SECRETS_ENABLED=true
+HUSKYCI_SCANNER_WIZCLI_SECRETS_DELTA_SCAN=true
+HUSKYCI_SCANNER_WIZCLI_SECRETS_TIMEOUT=600
+HUSKYCI_SCANNER_WIZCLI_SECRETS_IMAGE=939030204144.dkr.ecr.us-east-1.amazonaws.com/huskyci-wiz
+HUSKYCI_SCANNER_WIZCLI_SECRETS_IMAGETAG=f793155-amd64
+HUSKYCI_SCANNER_WIZCLI_SECRETS_SCHEDULING_TIMEOUT=60
+HUSKYCI_SCANNER_WIZCLI_SECRETS_IMAGE_PULL_POLICY=IfNotPresent
+HUSKYCI_SCANNER_WIZCLI_SECRETS_RESOURCES_REQUESTS_CPU=500m
+...
+```
+
+The API reads these with a generic helper:
+
+```go
+func getScannerConfig(securityTestName, key string) string {
+    envVar := "HUSKYCI_SCANNER_" + strings.ToUpper(securityTestName) + "_" + key
+    return os.Getenv(envVar)
+}
+```
+
+**Fallback behavior**: If a Helm env var is not set, the API falls back to the value in `config.yaml`. This means scanners NOT listed in Helm values still work with their config.yaml defaults. Helm overrides are additive, not mandatory.
+
+**Migration path**: 
+1. Add `scanners:` block to values.yaml with `deltaScan` and `enabled` fields only
+2. Later migrations can add `timeout`, `image`, `resources` as needed
+3. Config.yaml keeps all current values as defaults
 
 ### 3. `api/types/types.go`
 
@@ -120,8 +162,7 @@ All callers of `HandleCmd` must pass the new `changedFiles` argument (empty stri
 
 ```go
 func isDeltaScanEnabled(securityTestName string) bool {
-    envVarName := "HUSKYCI_DELTA_SCAN_" + strings.ToUpper(securityTestName)
-    return strings.ToLower(os.Getenv(envVarName)) == "true"
+    return strings.ToLower(getScannerConfig(securityTestName, "DELTA_SCAN")) == "true"
 }
 
 func KubeRun(image, imageTag, cmd, securityTestName, id string,
@@ -135,6 +176,8 @@ func KubeRun(image, imageTag, cmd, securityTestName, id string,
     // ... set pod.Spec.Containers[0].Env = envVars ...
 }
 ```
+
+The `getScannerConfig()` helper reads `HUSKYCI_SCANNER_<NAME>_<KEY>` env vars set by the Helm chart. Falls back to config.yaml defaults when not set.
 
 Matches the existing `isTestDisabled()` pattern — reads `HUSKYCI_DELTA_SCAN_<UPPERCASE_NAME>` from the API pod's environment.
 
