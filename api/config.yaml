@@ -492,7 +492,7 @@ wizcli_secrets:
     fi
   type: Generic
   default: true
-  timeOutInSeconds: 360
+  timeOutInSeconds: 600
 
 wizcli_iac:
   name: wizcli_iac
@@ -529,7 +529,7 @@ wizcli_iac:
     fi
   type: Generic
   default: true
-  timeOutInSeconds: 360
+  timeOutInSeconds: 600
 
 wizcli_sast:
   name: wizcli_sast
