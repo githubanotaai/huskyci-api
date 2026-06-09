@@ -1,7 +1,7 @@
 enry:
   name: enry
-  image: huskyci/enry
-  imageTag: v1.2.0
+  image: 939030204144.dkr.ecr.us-east-1.amazonaws.com/huskyci-enry
+  imageTag: "1dd950e-amd64"
   cmd: |+
     mkdir -p ~/.ssh &&
     echo '%GIT_PRIVATE_SSH_KEY%' > ~/.ssh/huskyci_id_rsa &&

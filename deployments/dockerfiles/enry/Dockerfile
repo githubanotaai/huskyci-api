@@ -1,15 +1,13 @@
-# Dockerfile used to create "husyci/enry" image
-# https://hub.docker.com/r/huskyci/enry/
+# Dockerfile used to create "huskyci/enry" image
+# https://github.com/go-enry/go-enry
 FROM golang:alpine as builder
 
 RUN apk update && apk upgrade \
-	&& apk add --update --no-cache git openssh-client
+	&& apk add --update --no-cache git
 
-RUN git clone https://github.com/go-enry/enry.git && \
-    cd enry && \
-	go mod tidy && \
-	CGO_ENABLED=0 go build && \
-	cp enry /usr/bin
+RUN git clone --depth 1 --branch v2.9.6 https://github.com/go-enry/go-enry.git && \
+    cd go-enry && \
+	CGO_ENABLED=0 go build -o /usr/bin/enry ./cmd/enry
 
 FROM alpine:latest
 
