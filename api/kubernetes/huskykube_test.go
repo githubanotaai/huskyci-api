@@ -21,7 +21,7 @@ func TestGetScannerConfig(t *testing.T) {
 }
 
 func TestGetScannerConfig_Missing(t *testing.T) {
-	os.Unsetenv("HUSKYCI_SCANNER_NONEXISTENT_DELTA_SCAN")
+	_ = os.Unsetenv("HUSKYCI_SCANNER_NONEXISTENT_DELTA_SCAN")
 
 	result := getScannerConfig("nonexistent", "DELTA_SCAN")
 	if result != "" {
@@ -62,7 +62,7 @@ func TestIsDeltaScanEnabled_False(t *testing.T) {
 }
 
 func TestIsDeltaScanEnabled_Unset(t *testing.T) {
-	os.Unsetenv("HUSKYCI_SCANNER_GITLEAKS_DELTA_SCAN")
+	_ = os.Unsetenv("HUSKYCI_SCANNER_GITLEAKS_DELTA_SCAN")
 
 	if isDeltaScanEnabled("gitleaks") {
 		t.Error("expected isDeltaScanEnabled to return false when env var is unset")
