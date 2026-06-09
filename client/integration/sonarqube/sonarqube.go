@@ -54,6 +54,11 @@ func GenerateOutputFile(analysis types.Analysis, outputPath, outputFileName stri
 	allVulns = append(allVulns, analysis.HuskyCIResults.JavaScriptResults.HuskyCIYarnAuditOutput.MediumVulns...)
 	allVulns = append(allVulns, analysis.HuskyCIResults.JavaScriptResults.HuskyCIYarnAuditOutput.HighVulns...)
 
+	// pnpmaudit
+	allVulns = append(allVulns, analysis.HuskyCIResults.JavaScriptResults.HuskyCIPnpmAuditOutput.LowVulns...)
+	allVulns = append(allVulns, analysis.HuskyCIResults.JavaScriptResults.HuskyCIPnpmAuditOutput.MediumVulns...)
+	allVulns = append(allVulns, analysis.HuskyCIResults.JavaScriptResults.HuskyCIPnpmAuditOutput.HighVulns...)
+
 	// gitleaks
 	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIGitleaksOutput.LowVulns...)
 	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIGitleaksOutput.MediumVulns...)

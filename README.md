@@ -18,7 +18,7 @@ It performs static security analysis across multiple languages and frameworks:
 |----------|-------|
 | Python | [Bandit][Bandit], [Safety][Safety] |
 | Ruby | [Brakeman][Brakeman] |
-| JavaScript | [Npm Audit][NpmAudit], [Yarn Audit][YarnAudit] |
+| JavaScript | [Npm Audit][NpmAudit], [Yarn Audit][YarnAudit], [Pnpm Audit][PnpmAudit] |
 | Go | [Gosec][Gosec] |
 | Java | [SpotBugs][SpotBugs] + [Find Sec Bugs][FindSec] |
 | HCL | [TFSec][TFSec] |
@@ -38,7 +38,7 @@ huskyci-client (runs inside code-analysis runner pod)
 huskyci-api (Kubernetes deployment, creates scanner pods)
   |
   v
-Scanner pods (enry, bandit, gosec, gitleaks, npmaudit, etc.)
+Scanner pods (enry, bandit, gosec, gitleaks, npmaudit, yarnaudit, pnpmaudit, etc.)
   |
   v
 Results collected, returned to client, reported to SonarQube
@@ -135,6 +135,7 @@ Each security test can be disabled at runtime by setting its corresponding envir
 | `HUSKYCI_DISABLE_GOSEC` | Disable Go Gosec |
 | `HUSKYCI_DISABLE_NPMAUDIT` | Disable JavaScript Npm Audit |
 | `HUSKYCI_DISABLE_YARNAUDIT` | Disable JavaScript Yarn Audit |
+| `HUSKYCI_DISABLE_PNPMAUDIT` | Disable JavaScript Pnpm Audit |
 | `HUSKYCI_DISABLE_BRAKEMAN` | Disable Ruby Brakeman |
 | `HUSKYCI_DISABLE_SPOTBUGS` | Disable Java SpotBugs |
 | `HUSKYCI_DISABLE_TFSEC` | Disable HCL TFSec |
@@ -196,6 +197,7 @@ huskyCI is licensed under the [BSD 3-Clause License](LICENSE.md).
 [Gosec]: https://github.com/securego/gosec
 [NpmAudit]: https://docs.npmjs.com/cli/audit
 [YarnAudit]: https://yarnpkg.com/lang/en/docs/cli/audit/
+[PnpmAudit]: https://pnpm.io/cli/audit
 [Gitleaks]: https://github.com/gitleaks/gitleaks
 [SpotBugs]: https://spotbugs.github.io
 [FindSec]: https://find-sec-bugs.github.io

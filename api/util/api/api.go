@@ -159,7 +159,7 @@ func (cH *CheckUtils) checkDB(configAPI *apiContext.APIConfig) error {
 func (cH *CheckUtils) checkEachSecurityTest(configAPI *apiContext.APIConfig) error {
 	securityTests := []string{
 		"enry", "gitauthors", "gosec", "brakeman", "bandit",
-		"npmaudit", "yarnaudit", "spotbugs", "gitleaks", "safety",
+		"npmaudit", "yarnaudit", "pnpmaudit", "spotbugs", "gitleaks", "safety",
 		"tfsec", "securitycodescan", "wizcli_secrets", "wizcli_iac_sast", "wizcli_vulns",
 	}
 	for _, securityTest := range securityTests {
@@ -218,6 +218,8 @@ func checkSecurityTest(securityTestName string, configAPI *apiContext.APIConfig)
 		securityTestConfig = *configAPI.NpmAuditSecurityTest
 	case "yarnaudit":
 		securityTestConfig = *configAPI.YarnAuditSecurityTest
+	case "pnpmaudit":
+		securityTestConfig = *configAPI.PnpmAuditSecurityTest
 	case "spotbugs":
 		securityTestConfig = *configAPI.SpotBugsSecurityTest
 	case "gitleaks":

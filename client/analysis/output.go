@@ -48,6 +48,9 @@ func printSTDOUTOutput(analysis types.Analysis) {
 	// yarnaudit
 	printToolGroup("JavaScript - YarnAudit", outputJSON.JavaScriptResults.HuskyCIYarnAuditOutput, printSTDOUTOutputYarnAudit)
 
+	// pnpmaudit
+	printToolGroup("JavaScript - PnpmAudit", outputJSON.JavaScriptResults.HuskyCIPnpmAuditOutput, printSTDOUTOutputPnpmAudit)
+
 	// gitleaks
 	printToolGroup("Generic - Gitleaks", outputJSON.GenericResults.HuskyCIGitleaksOutput, printSTDOUTOutputGitleaks)
 
@@ -160,6 +163,17 @@ func prepareAllSummary(analysis types.Analysis) {
 	}
 	if len(outputJSON.JavaScriptResults.HuskyCIYarnAuditOutput.MediumVulns) > 0 || len(outputJSON.JavaScriptResults.HuskyCIYarnAuditOutput.HighVulns) > 0 {
 		outputJSON.Summary.YarnAuditSummary.FoundVuln = true
+	}
+
+	// PnpmAudit summary
+	outputJSON.Summary.PnpmAuditSummary.LowVuln = len(outputJSON.JavaScriptResults.HuskyCIPnpmAuditOutput.LowVulns)
+	outputJSON.Summary.PnpmAuditSummary.MediumVuln = len(outputJSON.JavaScriptResults.HuskyCIPnpmAuditOutput.MediumVulns)
+	outputJSON.Summary.PnpmAuditSummary.HighVuln = len(outputJSON.JavaScriptResults.HuskyCIPnpmAuditOutput.HighVulns)
+	if len(outputJSON.JavaScriptResults.HuskyCIPnpmAuditOutput.LowVulns) > 0 || len(outputJSON.JavaScriptResults.HuskyCIPnpmAuditOutput.NoSecVulns) > 0 {
+		outputJSON.Summary.PnpmAuditSummary.FoundInfo = true
+	}
+	if len(outputJSON.JavaScriptResults.HuskyCIPnpmAuditOutput.MediumVulns) > 0 || len(outputJSON.JavaScriptResults.HuskyCIPnpmAuditOutput.HighVulns) > 0 {
+		outputJSON.Summary.PnpmAuditSummary.FoundVuln = true
 	}
 
 	// SpotBugs summary
@@ -533,6 +547,20 @@ func printSTDOUTOutputYarnAudit(issues []types.HuskyCIVulnerability) {
 			fmt.Printf("[HUSKYCI][!] Version: %s\n", issue.Version)
 			fmt.Printf("[HUSKYCI][!] Vulnerable Below: %s\n", issue.VunerableBelow)
 		}
+		fmt.Printf("[HUSKYCI][!] Details: %s\n", issue.Details)
+	}
+}
+
+func printSTDOUTOutputPnpmAudit(issues []types.HuskyCIVulnerability) {
+	for _, issue := range issues {
+		fmt.Println()
+		fmt.Printf("[HUSKYCI][!] Title: %s\n", issue.Title)
+		fmt.Printf("[HUSKYCI][!] Language: %s\n", issue.Language)
+		fmt.Printf("[HUSKYCI][!] Tool: %s\n", issue.SecurityTool)
+		fmt.Printf("[HUSKYCI][!] Severity: %s\n", issue.Severity)
+		fmt.Printf("[HUSKYCI][!] Code: %s\n", issue.Code)
+		fmt.Printf("[HUSKYCI][!] Version: %s\n", issue.Version)
+		fmt.Printf("[HUSKYCI][!] Vulnerable Below: %s\n", issue.VunerableBelow)
 		fmt.Printf("[HUSKYCI][!] Details: %s\n", issue.Details)
 	}
 }

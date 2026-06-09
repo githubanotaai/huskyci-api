@@ -249,3 +249,69 @@ func TestStart_ConcurrentWritesDataRace(t *testing.T) {
 		t.Errorf("expected at least 2 containers, got %d", len(results.Containers))
 	}
 }
+
+func TestCoalesceJsLockfileErrors_AllThreeMissing(t *testing.T) {
+	results := &RunAllInfo{
+		NpmLockNotFound:  true,
+		YarnLockNotFound: true,
+		PnpmLockNotFound: true,
+	}
+	// Pre-populate with simulated low vulns from all three scanners
+	results.HuskyCIResults.JavaScriptResults.HuskyCINpmAuditOutput.LowVulns = []types.HuskyCIVulnerability{
+		{Title: "No package-lock.json found.", Severity: "low"},
+	}
+	results.HuskyCIResults.JavaScriptResults.HuskyCIYarnAuditOutput.LowVulns = []types.HuskyCIVulnerability{
+		{Title: "No yarn.lock found.", Severity: "low"},
+	}
+	results.HuskyCIResults.JavaScriptResults.HuskyCIPnpmAuditOutput.LowVulns = []types.HuskyCIVulnerability{
+		{Title: "No pnpm-lock.yaml found.", Severity: "low"},
+	}
+
+	results.coalesceJsLockfileErrors()
+
+	// All low vulns should be cleared
+	if len(results.HuskyCIResults.JavaScriptResults.HuskyCINpmAuditOutput.LowVulns) != 0 {
+		t.Error("expected npm low vulns to be cleared")
+	}
+	if len(results.HuskyCIResults.JavaScriptResults.HuskyCIYarnAuditOutput.LowVulns) != 0 {
+		t.Error("expected yarn low vulns to be cleared")
+	}
+	if len(results.HuskyCIResults.JavaScriptResults.HuskyCIPnpmAuditOutput.LowVulns) != 0 {
+		t.Error("expected pnpm low vulns to be cleared")
+	}
+
+	// A single HIGH vuln should be on the pnpm output
+	highVulns := results.HuskyCIResults.JavaScriptResults.HuskyCIPnpmAuditOutput.HighVulns
+	if len(highVulns) != 1 {
+		t.Fatalf("expected 1 high vuln, got %d", len(highVulns))
+	}
+	if highVulns[0].Severity != "high" {
+		t.Errorf("expected severity high, got %s", highVulns[0].Severity)
+	}
+	if highVulns[0].SecurityTool != "PnpmAudit" {
+		t.Errorf("expected SecurityTool PnpmAudit, got %s", highVulns[0].SecurityTool)
+	}
+}
+
+func TestCoalesceJsLockfileErrors_NotAllMissing(t *testing.T) {
+	// Only npm missing — should NOT coalesce
+	results := &RunAllInfo{
+		NpmLockNotFound:  true,
+		YarnLockNotFound: false,
+		PnpmLockNotFound: false,
+	}
+	results.HuskyCIResults.JavaScriptResults.HuskyCINpmAuditOutput.LowVulns = []types.HuskyCIVulnerability{
+		{Title: "No package-lock.json found.", Severity: "low"},
+	}
+
+	results.coalesceJsLockfileErrors()
+
+	// Low vuln should still be there (no coalescing)
+	if len(results.HuskyCIResults.JavaScriptResults.HuskyCINpmAuditOutput.LowVulns) != 1 {
+		t.Error("expected npm low vuln to remain when not all three missing")
+	}
+	// No high vuln should have been added
+	if len(results.HuskyCIResults.JavaScriptResults.HuskyCIPnpmAuditOutput.HighVulns) != 0 {
+		t.Error("expected no high vuln when not all three missing")
+	}
+}

@@ -22,6 +22,7 @@ var securityTestAnalyze = map[string]func(scanInfo *SecTestScanInfo) error{
 	"gitauthors":       analyzeGitAuthors,
 	"gosec":            analyzeGosec,
 	"npmaudit":         analyzeNpmaudit,
+	"pnpmaudit":        analyzePnpmaudit,
 	"yarnaudit":        analyzeYarnaudit,
 	"spotbugs":         analyzeSpotBugs,
 	"gitleaks":         analyseGitleaks,
@@ -49,6 +50,7 @@ type SecTestScanInfo struct {
 	PackageNotFound              bool
 	YarnLockNotFound             bool
 	YarnErrorRunning             bool
+	PnpmLockNotFound             bool
 	GitleaksErrorRunning         bool
 	GitleaksTimeout              bool
 	SecurityCodeScanErrorRunning bool
