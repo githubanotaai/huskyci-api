@@ -25,7 +25,7 @@ HuskyCI client container
 HuskyCI API
   stores in Repository.ChangedFiles
   HandleCmd() replaces %CHANGED_FILES% with the list
-  creates pods with HUSKYCI_DELTA_SCAN=true env var (if deltaScan: true in config)
+  creates pods with HUSKYCI_DELTA_SCAN=true env var (if HUSKYCI_SCANNER_<NAME>_DELTA_SCAN=true)
        ↓
 Scanner pod
   if HUSKYCI_DELTA_SCAN=true AND %CHANGED_FILES% non-empty:
@@ -244,7 +244,7 @@ requestPayload := types.JSONPayload{
 }
 ```
 
-### 6. `.github/workflows/anotaai-sast.yml`
+### 8. `.github/workflows/anotaai-sast.yml`
 
 Add step BEFORE the huskyci client container, inside the `huskyci` job:
 
@@ -273,7 +273,7 @@ Add step BEFORE the huskyci client container, inside the `huskyci` job:
 | Deleted files | `--diff-filter=AM` excludes them from the list |
 | Spaces in file names | `git diff -z --name-only` + null-separated processing (use `xargs -0`) |
 | Sparse checkout fails | Scanner emits `ERROR_SPARSE_CHECKOUT` → pod fails → API logs error. No fallback to full clone (keeps complexity low). |
-| Scanner not delta-capable | `deltaScan` absent or false → no `HUSKYCI_DELTA_SCAN` env var → full clone always |
+| Scanner not delta-capable | Env var `HUSKYCI_SCANNER_<NAME>_DELTA_SCAN` not set or false → no `HUSKYCI_DELTA_SCAN` env var → full clone always |
 | `%CHANGED_FILES%` literal in cmd | If HandleCmd not called with changed files, placeholder remains → shell sees literal string, treats as non-empty → might fail. Mitigation: HandleCmd always called with empty string default. |
 
 ## Performance Impact
