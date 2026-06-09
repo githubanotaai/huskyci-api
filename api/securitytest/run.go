@@ -45,7 +45,8 @@ const tfsec = "tfsec"
 const securitycodescan = "securitycodescan"
 const (
 	wizcliSecrets = "wizcli_secrets"
-	wizcliIacSast  = "wizcli_iac_sast"
+	wizcliIac      = "wizcli_iac"
+	wizcliSast     = "wizcli_sast"
 	wizcliVulns    = "wizcli_vulns"
 )
 
@@ -115,7 +116,7 @@ func (results *RunAllInfo) runGenericScans(ctx context.Context, enryScan SecTest
 			switch testName {
 			case "gitauthors":
 				results.CommitAuthors = scan.CommitAuthors.Authors
-			case "gitleaks", "wizcli_secrets", "wizcli_iac_sast", "wizcli_vulns":
+			case "gitleaks", "wizcli_secrets", "wizcli_iac", "wizcli_sast", "wizcli_vulns":
 				results.setVulns(*scan)
 			}
 			results.mu.Unlock()
@@ -206,8 +207,10 @@ func (results *RunAllInfo) vulnOutput(securityTestName string) *types.HuskyCISec
 		return &results.HuskyCIResults.GenericResults.HuskyCIGitleaksOutput
 	case wizcliSecrets, "wizcli": // "wizcli" migration safeguard — routes to secrets output
 		return &results.HuskyCIResults.GenericResults.HuskyCIWizCLISecretsOutput
-	case wizcliIacSast:
-		return &results.HuskyCIResults.GenericResults.HuskyCIIacSastOutput
+	case wizcliIac:
+		return &results.HuskyCIResults.GenericResults.HuskyCIIacOutput
+	case wizcliSast:
+		return &results.HuskyCIResults.GenericResults.HuskyCIWizCLISastOutput
 	case wizcliVulns:
 		return &results.HuskyCIResults.GenericResults.HuskyCIWizCLIVulnsOutput
 	case tfsec:

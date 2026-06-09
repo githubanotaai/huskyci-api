@@ -103,7 +103,7 @@ func TestPrintSTDOUTOutput_IncludesWizCLIDetailsGroup(t *testing.T) {
 						{Title: "Secret in env", SecurityTool: "WizCLI", Severity: "MEDIUM", Details: "mock", File: "x.env"},
 					},
 				},
-				HuskyCIIacSastOutput: types.HuskyCISecurityTestOutput{
+				HuskyCIIacOutput: types.HuskyCISecurityTestOutput{
 					HighVulns: []types.HuskyCIVulnerability{
 						{
 							Title:        "S3 bucket without encryption",
@@ -163,8 +163,8 @@ func TestPrintSTDOUTOutput_IncludesWizCLIDetailsGroup(t *testing.T) {
 	if !bytes.Contains([]byte(out), []byte("::group::Generic - Wiz CLI (Secrets)")) {
 		t.Fatalf("expected Wiz CLI Secrets collapsible group in stdout, got excerpt:\n%s", truncate(out, 2000))
 	}
-	if !bytes.Contains([]byte(out), []byte("::group::Generic - Wiz CLI (IaC+SAST)")) {
-		t.Fatalf("expected Wiz CLI IaC+SAST collapsible group in stdout, got excerpt:\n%s", truncate(out, 2000))
+	if !bytes.Contains([]byte(out), []byte("::group::Generic - Wiz CLI (IaC)")) {
+		t.Fatalf("expected Wiz CLI IaC collapsible group in stdout, got excerpt:\n%s", truncate(out, 2000))
 	}
 	if !bytes.Contains([]byte(out), []byte("::group::Generic - Wiz CLI (Vulns)")) {
 		t.Fatalf("expected Wiz CLI Vulns collapsible group in stdout, got excerpt:\n%s", truncate(out, 2000))
@@ -180,10 +180,10 @@ func TestPrintSTDOUTOutput_IncludesWizCLIDetailsGroup(t *testing.T) {
 		t.Fatalf("expected Wiz finding title in stdout")
 	}
 	if !bytes.Contains([]byte(out), []byte("S3 bucket without encryption")) {
-		t.Fatalf("expected IaC+SAST finding title in stdout")
+		t.Fatalf("expected IaC finding title in stdout")
 	}
 	if !bytes.Contains([]byte(out), []byte("Missing tags on resource")) {
-		t.Fatalf("expected IaC+SAST low finding title in stdout")
+		t.Fatalf("expected IaC low finding title in stdout")
 	}
 }
 

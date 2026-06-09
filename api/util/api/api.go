@@ -160,7 +160,7 @@ func (cH *CheckUtils) checkEachSecurityTest(configAPI *apiContext.APIConfig) err
 	securityTests := []string{
 		"enry", "gitauthors", "gosec", "brakeman", "bandit",
 		"npmaudit", "yarnaudit", "pnpmaudit", "spotbugs", "gitleaks", "safety",
-		"tfsec", "securitycodescan", "wizcli_secrets", "wizcli_iac_sast", "wizcli_vulns",
+		"tfsec", "securitycodescan", "wizcli_secrets", "wizcli_iac", "wizcli_sast", "wizcli_vulns",
 	}
 	for _, securityTest := range securityTests {
 		if err := checkSecurityTest(securityTest, configAPI); err != nil {
@@ -232,8 +232,10 @@ func checkSecurityTest(securityTestName string, configAPI *apiContext.APIConfig)
 		securityTestConfig = *configAPI.SecurityCodeScanSecurityTest
 	case "wizcli_secrets":
 		securityTestConfig = *configAPI.WizcliSecretsSecurityTest
-	case "wizcli_iac_sast":
-		securityTestConfig = *configAPI.WizcliIacSastSecurityTest
+	case "wizcli_iac":
+		securityTestConfig = *configAPI.WizcliIacSecurityTest
+	case "wizcli_sast":
+		securityTestConfig = *configAPI.WizcliSastSecurityTest
 	case "wizcli_vulns":
 		securityTestConfig = *configAPI.WizcliVulnsSecurityTest
 	default:

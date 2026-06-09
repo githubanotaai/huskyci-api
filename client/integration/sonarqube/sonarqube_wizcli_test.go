@@ -35,7 +35,7 @@ func makeWizIacSastAnalysis(high, medium, low []types.HuskyCIVulnerability) type
 	return types.Analysis{
 		HuskyCIResults: types.HuskyCIResults{
 			GenericResults: types.GenericResults{
-				HuskyCIIacSastOutput: types.HuskyCISecurityTestOutput{
+				HuskyCIIacOutput: types.HuskyCISecurityTestOutput{
 					HighVulns:   high,
 					MediumVulns: medium,
 					LowVulns:    low,

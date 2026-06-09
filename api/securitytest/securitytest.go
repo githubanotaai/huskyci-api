@@ -30,7 +30,8 @@ var securityTestAnalyze = map[string]func(scanInfo *SecTestScanInfo) error{
 	"tfsec":            analyzeTFSec,
 	"securitycodescan": analyzeSecurityCodeScan,
 	"wizcli_secrets":   analyzeWizCLI,
-	"wizcli_iac_sast":  analyzeWizCLI,
+	"wizcli_iac":       analyzeWizCLI,
+	"wizcli_sast":      analyzeWizCLI,
 	"wizcli_vulns":     analyzeWizCLI,
 	// Migration safeguard: old "wizcli" documents may persist in MongoDB.
 	// Remove this entry after db.securityTest.deleteOne({name:"wizcli"}) is run.

@@ -106,7 +106,8 @@ type APIConfig struct {
 	TFSecSecurityTest            *types.SecurityTest
 	SecurityCodeScanSecurityTest *types.SecurityTest
 	WizcliSecretsSecurityTest    *types.SecurityTest
-	WizcliIacSastSecurityTest    *types.SecurityTest
+	WizcliIacSecurityTest         *types.SecurityTest
+	WizcliSastSecurityTest        *types.SecurityTest
 	WizcliVulnsSecurityTest      *types.SecurityTest
 	DBInstance                   db.Requests
 	Cache                        *cache.Cache
@@ -163,7 +164,8 @@ func (dF DefaultConfig) SetOnceConfig() {
 			TFSecSecurityTest:            dF.getSecurityTestConfig("tfsec"),
 			SecurityCodeScanSecurityTest: dF.getSecurityTestConfig("securitycodescan"),
 			WizcliSecretsSecurityTest:    dF.getSecurityTestConfig("wizcli_secrets"),
-			WizcliIacSastSecurityTest:    dF.getSecurityTestConfig("wizcli_iac_sast"),
+			WizcliIacSecurityTest:         dF.getSecurityTestConfig("wizcli_iac"),
+			WizcliSastSecurityTest:        dF.getSecurityTestConfig("wizcli_sast"),
 			WizcliVulnsSecurityTest:      dF.getSecurityTestConfig("wizcli_vulns"),
 			DBInstance:                   dF.GetDB(),
 			Cache:                        dF.GetCache(),

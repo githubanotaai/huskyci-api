@@ -122,13 +122,16 @@ var _ = Describe("Util API", func() {
 			It("WizCLI split security tests should be non-nil when provided in configAPI", func() {
 				cfg := &apiContext.APIConfig{
 					WizcliSecretsSecurityTest: &types.SecurityTest{Name: "wizcli_secrets"},
-					WizcliIacSastSecurityTest:  &types.SecurityTest{Name: "wizcli_iac_sast"},
+					WizcliIacSecurityTest:     &types.SecurityTest{Name: "wizcli_iac"},
+					WizcliSastSecurityTest:    &types.SecurityTest{Name: "wizcli_sast"},
 					WizcliVulnsSecurityTest:   &types.SecurityTest{Name: "wizcli_vulns"},
 				}
 				Expect(cfg.WizcliSecretsSecurityTest).NotTo(BeNil())
 				Expect(cfg.WizcliSecretsSecurityTest.Name).To(Equal("wizcli_secrets"))
-				Expect(cfg.WizcliIacSastSecurityTest).NotTo(BeNil())
-				Expect(cfg.WizcliIacSastSecurityTest.Name).To(Equal("wizcli_iac_sast"))
+				Expect(cfg.WizcliIacSecurityTest).NotTo(BeNil())
+				Expect(cfg.WizcliIacSecurityTest.Name).To(Equal("wizcli_iac"))
+				Expect(cfg.WizcliSastSecurityTest).NotTo(BeNil())
+				Expect(cfg.WizcliSastSecurityTest.Name).To(Equal("wizcli_sast"))
 				Expect(cfg.WizcliVulnsSecurityTest).NotTo(BeNil())
 				Expect(cfg.WizcliVulnsSecurityTest.Name).To(Equal("wizcli_vulns"))
 			})

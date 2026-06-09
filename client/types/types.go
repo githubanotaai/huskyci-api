@@ -154,7 +154,8 @@ type RubyResults struct {
 type GenericResults struct {
 	HuskyCIGitleaksOutput      HuskyCISecurityTestOutput `bson:"gitleaksoutput,omitempty" json:"gitleaksoutput,omitempty"`
 	HuskyCIWizCLISecretsOutput HuskyCISecurityTestOutput `bson:"wizclisecretsoutput,omitempty" json:"wizclisecretsoutput,omitempty"`
-	HuskyCIIacSastOutput       HuskyCISecurityTestOutput `bson:"iacsastoutput,omitempty" json:"iacsastoutput,omitempty"`
+	HuskyCIIacOutput           HuskyCISecurityTestOutput `bson:"iacoutput,omitempty" json:"iacoutput,omitempty"`
+	HuskyCIWizCLISastOutput    HuskyCISecurityTestOutput `bson:"wizclisastoutput,omitempty" json:"wizclisastoutput,omitempty"`
 	HuskyCIWizCLIVulnsOutput   HuskyCISecurityTestOutput `bson:"wizclivulnsoutput,omitempty" json:"wizclivulnsoutput,omitempty"`
 }
 
@@ -191,7 +192,8 @@ type Summary struct {
 	SpotBugsSummary         HuskyCISummary `json:"spotbugssummary,omitempty"`
 	GitleaksSummary         HuskyCISummary `json:"gitleakssummary,omitempty"`
 	WizCLISecretsSummary   HuskyCISummary `json:"wizclisecretssummary,omitempty"`
-	WizCLIIacSastSummary   HuskyCISummary `json:"wizcliiacsastsummary,omitempty"`
+	WizCLIIacSummary      HuskyCISummary `json:"wizcliiacsummary,omitempty"`
+	WizCLISastSummary     HuskyCISummary `json:"wizclisastsummary,omitempty"`
 	WizCLIVulnsSummary     HuskyCISummary `json:"wizclivulnssummary,omitempty"`
 	TFSecSummary            HuskyCISummary `json:"tfsecsummary,omitempty"`
 	SecurityCodeScanSummary HuskyCISummary `json:"securitycodescansummary,omitempty"`

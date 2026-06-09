@@ -94,9 +94,12 @@ func GenerateOutputFile(analysis types.Analysis, outputPath, outputFileName stri
 		promoted.Severity = "MEDIUM"
 		allVulns = append(allVulns, promoted)
 	}
-	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIIacSastOutput.LowVulns...)
-	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIIacSastOutput.MediumVulns...)
-	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIIacSastOutput.HighVulns...)
+	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIIacOutput.LowVulns...)
+	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIIacOutput.MediumVulns...)
+	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIIacOutput.HighVulns...)
+	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIWizCLISastOutput.LowVulns...)
+	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIWizCLISastOutput.MediumVulns...)
+	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIWizCLISastOutput.HighVulns...)
 	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIWizCLIVulnsOutput.LowVulns...)
 	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIWizCLIVulnsOutput.MediumVulns...)
 	allVulns = append(allVulns, analysis.HuskyCIResults.GenericResults.HuskyCIWizCLIVulnsOutput.HighVulns...)
