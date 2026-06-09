@@ -11,8 +11,8 @@ import (
 
 func TestChangedFilesInPayload(t *testing.T) {
 	// Set the env var
-	os.Setenv("HUSKYCI_CLIENT_CHANGED_FILES", "src/main.go\nsrc/utils.go")
-	defer os.Unsetenv("HUSKYCI_CLIENT_CHANGED_FILES")
+	_ = os.Setenv("HUSKYCI_CLIENT_CHANGED_FILES", "src/main.go\nsrc/utils.go")
+	defer func() { _ = os.Unsetenv("HUSKYCI_CLIENT_CHANGED_FILES") }()
 
 	config.SetConfigs()
 
@@ -46,7 +46,7 @@ func TestChangedFilesInPayload(t *testing.T) {
 
 func TestChangedFilesEmpty(t *testing.T) {
 	// Ensure env var is not set
-	os.Unsetenv("HUSKYCI_CLIENT_CHANGED_FILES")
+	_ = os.Unsetenv("HUSKYCI_CLIENT_CHANGED_FILES")
 
 	config.SetConfigs()
 
