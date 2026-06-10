@@ -197,6 +197,27 @@ func CheckMaliciousRepoBranch(repositoryBranch string, c echo.Context) error {
 	return nil
 }
 
+// CheckMaliciousChangedFiles verifies that changed file paths don't contain
+// shell metacharacters that could be exploited when substituted into scanner
+// commands via %CHANGED_FILES%. Accepts only valid file path characters.
+// Returns an error if invalid; empty string is valid (non-PR or no changed files).
+func CheckMaliciousChangedFiles(changedFiles string) error {
+	if changedFiles == "" {
+		return nil
+	}
+	// Allow: alphanumeric, path separators, dots, hyphens, underscores, newlines
+	// Block: shell metacharacters ($, `, ;, |, &, <, >, (, ), {, }, !)
+	regexpFiles := `^[a-zA-Z0-9_/.\\\n-]*$`
+	valid, err := regexp.MatchString(regexpFiles, changedFiles)
+	if err != nil {
+		return err
+	}
+	if !valid {
+		return errors.New("invalid changed files: contains forbidden characters")
+	}
+	return nil
+}
+
 // CheckMaliciousRID verifies if a given RID is "malicious" or not
 func CheckMaliciousRID(RID string, c echo.Context) error {
 	regexpRID := `^[-a-zA-Z0-9]*$`

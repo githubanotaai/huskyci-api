@@ -106,6 +106,13 @@ func ReceiveRequest(c echo.Context) error {
 	}
 	repository.URL = sanitizedRepoURL
 
+	// step-01b: Validate changed files (no shell metacharacters)
+	if err := util.CheckMaliciousChangedFiles(repository.ChangedFiles); err != nil {
+		log.Error(logActionReceiveRequest, logInfoAnalysis, 1017, repository.ChangedFiles)
+		reply := map[string]interface{}{"success": false, "error": "invalid changed files"}
+		return c.JSON(http.StatusBadRequest, reply)
+	}
+
 	// step-02: is this repository already in MongoDB?
 	repositoryQuery := map[string]interface{}{"repositoryURL": repository.URL}
 	_, err = apiContext.APIConfiguration.DBInstance.FindOneDBRepository(repositoryQuery)
