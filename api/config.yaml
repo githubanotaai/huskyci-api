@@ -81,7 +81,7 @@ gosec:
       if [ $? -eq 0 ]; then
         cd code
         git sparse-checkout init --cone
-        echo "%CHANGED_FILES%" | xargs git sparse-checkout set
+        echo "%CHANGED_FILES%" | while IFS= read -r f; do [ -n "$f" ] && git sparse-checkout add "$f"; done
         git checkout 2>/tmp/errorSparseCheckout
         if [ $? -ne 0 ]; then
           echo "ERROR_SPARSE_CHECKOUT"
@@ -128,7 +128,7 @@ bandit:
        if [ $? -eq 0 ]; then
          cd code
          git sparse-checkout init --cone
-         echo "%CHANGED_FILES%" | xargs git sparse-checkout set
+         echo "%CHANGED_FILES%" | while IFS= read -r f; do [ -n "$f" ] && git sparse-checkout add "$f"; done
          git checkout 2>/tmp/errorSparseCheckout
          if [ $? -ne 0 ]; then
            echo "ERROR_SPARSE_CHECKOUT"
@@ -177,7 +177,7 @@ brakeman:
       if [ $? -eq 0 ]; then
         cd code
         git sparse-checkout init --cone
-        echo "%CHANGED_FILES%" | xargs git sparse-checkout set
+        echo "%CHANGED_FILES%" | while IFS= read -r f; do [ -n "$f" ] && git sparse-checkout add "$f"; done
         git checkout 2>/tmp/errorSparseCheckout
         if [ $? -ne 0 ]; then
           echo "ERROR_SPARSE_CHECKOUT"
@@ -465,7 +465,7 @@ gitleaks:
       if [ $? -eq 0 ]; then
         cd code
         git sparse-checkout init --cone
-        echo "%CHANGED_FILES%" | xargs git sparse-checkout set
+        echo "%CHANGED_FILES%" | while IFS= read -r f; do [ -n "$f" ] && git sparse-checkout add "$f"; done
         git checkout 2>/tmp/errorSparseCheckout
         if [ $? -ne 0 ]; then
           echo "ERROR_SPARSE_CHECKOUT"
@@ -585,7 +585,7 @@ wizcli_secrets:
       if [ $? -eq 0 ]; then
         cd code
         git sparse-checkout init --cone
-        echo "%CHANGED_FILES%" | xargs git sparse-checkout set
+        echo "%CHANGED_FILES%" | while IFS= read -r f; do [ -n "$f" ] && git sparse-checkout add "$f"; done
         git checkout 2>/tmp/errorSparseCheckout
         if [ $? -ne 0 ]; then
           echo "ERROR_SPARSE_CHECKOUT"
@@ -659,7 +659,7 @@ wizcli_iac:
       if [ $? -eq 0 ]; then
         cd code
         git sparse-checkout init --cone
-        echo "%CHANGED_FILES%" | xargs git sparse-checkout set
+        echo "%CHANGED_FILES%" | while IFS= read -r f; do [ -n "$f" ] && git sparse-checkout add "$f"; done
         git checkout 2>/tmp/errorSparseCheckout
         if [ $? -ne 0 ]; then
           echo "ERROR_SPARSE_CHECKOUT"
@@ -733,7 +733,7 @@ wizcli_sast:
       if [ $? -eq 0 ]; then
         cd code
         git sparse-checkout init --cone
-        echo "%CHANGED_FILES%" | xargs git sparse-checkout set
+        echo "%CHANGED_FILES%" | while IFS= read -r f; do [ -n "$f" ] && git sparse-checkout add "$f"; done
         git checkout 2>/tmp/errorSparseCheckout
         if [ $? -ne 0 ]; then
           echo "ERROR_SPARSE_CHECKOUT"

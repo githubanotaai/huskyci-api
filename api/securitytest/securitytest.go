@@ -151,11 +151,14 @@ func (scanInfo *SecTestScanInfo) kubeRun(timeOutInSeconds int) error {
 
 func (scanInfo *SecTestScanInfo) analyze() error {
 	errorCloning := strings.Contains(scanInfo.Container.COutput, "ERROR_CLONING")
-	if errorCloning {
+	errorSparseCheckout := strings.Contains(scanInfo.Container.COutput, "ERROR_SPARSE_CHECKOUT")
+	if errorCloning || errorSparseCheckout {
 		hint := extractGitCloneFailureHint(scanInfo.Container.COutput)
 		var errorMsg error
 		if hint != "" {
 			errorMsg = fmt.Errorf("error cloning: %s", hint)
+		} else if errorSparseCheckout {
+			errorMsg = errors.New("error during sparse checkout")
 		} else {
 			errorMsg = errors.New("error cloning")
 		}
