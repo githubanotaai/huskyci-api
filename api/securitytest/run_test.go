@@ -115,7 +115,7 @@ func TestStart_FirstErrorCancelsRemaining(t *testing.T) {
 
 	runner := &mockRunner{
 		genericTests: mockGenericTests,
-		newScanFunc: func(RID, URL, branch, name string, le map[string]bool, dh string) (*SecTestScanInfo, error) {
+		newScanFunc: func(RID, URL, branch, name string, le map[string]bool, cf, dh string) (*SecTestScanInfo, error) {
 			return &SecTestScanInfo{
 				RID:              RID,
 				SecurityTestName: name,
@@ -151,7 +151,7 @@ func TestStart_ConcurrentErrorsNoPanic(t *testing.T) {
 
 	runner := &mockRunner{
 		genericTests: mockGenericTests,
-		newScanFunc: func(RID, URL, branch, name string, le map[string]bool, dh string) (*SecTestScanInfo, error) {
+		newScanFunc: func(RID, URL, branch, name string, le map[string]bool, cf, dh string) (*SecTestScanInfo, error) {
 			return &SecTestScanInfo{
 				RID: RID, SecurityTestName: name,
 				Container: types.Container{CID: "cid-" + name},
@@ -181,7 +181,7 @@ func TestStart_AllScansPass(t *testing.T) {
 
 	runner := &mockRunner{
 		genericTests: mockGenericTests,
-		newScanFunc: func(RID, URL, branch, name string, le map[string]bool, dh string) (*SecTestScanInfo, error) {
+		newScanFunc: func(RID, URL, branch, name string, le map[string]bool, cf, dh string) (*SecTestScanInfo, error) {
 			return &SecTestScanInfo{
 				RID: RID, SecurityTestName: name,
 				Container: types.Container{CID: "cid-" + name, CResult: "passed", CStatus: "finished"},
@@ -209,7 +209,7 @@ func TestStart_ConcurrentWritesDataRace(t *testing.T) {
 
 	runner := &mockRunner{
 		genericTests: mockGenericTests,
-		newScanFunc: func(RID, URL, branch, name string, le map[string]bool, dh string) (*SecTestScanInfo, error) {
+		newScanFunc: func(RID, URL, branch, name string, le map[string]bool, cf, dh string) (*SecTestScanInfo, error) {
 			scan := &SecTestScanInfo{
 				RID:              RID,
 				SecurityTestName: name,

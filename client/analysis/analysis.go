@@ -28,6 +28,7 @@ func StartAnalysis() (string, error) {
 		RepositoryURL:      config.RepositoryURL,
 		RepositoryBranch:   config.RepositoryBranch,
 		LanguageExclusions: config.LanguageExclusions,
+		ChangedFiles:       config.ChangedFiles,
 	}
 
 	marshalPayload, err := json.Marshal(requestPayload)

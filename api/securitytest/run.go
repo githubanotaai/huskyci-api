@@ -104,7 +104,7 @@ func (results *RunAllInfo) runGenericScans(ctx context.Context, enryScan SecTest
 			default:
 			}
 
-			scan, err := runner.newScan(enryScan.RID, enryScan.URL, enryScan.Branch, testName, nil, enryScan.DockerHost)
+			scan, err := runner.newScan(enryScan.RID, enryScan.URL, enryScan.Branch, testName, nil, enryScan.ChangedFiles, enryScan.DockerHost)
 			if err != nil {
 				return err
 			}
@@ -153,7 +153,7 @@ func (results *RunAllInfo) runLanguageScans(ctx context.Context, enryScan SecTes
 			default:
 			}
 
-			scan, err := runner.newScan(enryScan.RID, enryScan.URL, enryScan.Branch, testName, nil, enryScan.DockerHost)
+			scan, err := runner.newScan(enryScan.RID, enryScan.URL, enryScan.Branch, testName, nil, enryScan.ChangedFiles, enryScan.DockerHost)
 			if err != nil {
 				return err
 			}

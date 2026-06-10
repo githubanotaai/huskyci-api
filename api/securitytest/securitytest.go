@@ -45,6 +45,7 @@ type SecTestScanInfo struct {
 	Branch                       string
 	SecurityTestName             string
 	LanguageExclusions           map[string]bool
+	ChangedFiles                 string
 	ErrorFound                   error
 	ReqNotFound                  bool
 	WarningFound                 bool
@@ -66,11 +67,12 @@ type SecTestScanInfo struct {
 }
 
 // New creates a new huskyCI scan based given RID, URL, Branch and a securityTest name and returns an error.
-func (scanInfo *SecTestScanInfo) New(RID, URL, branch, securityTestName string, languageExclusions map[string]bool, dockerHost string) error {
+func (scanInfo *SecTestScanInfo) New(RID, URL, branch, securityTestName string, languageExclusions map[string]bool, changedFiles, dockerHost string) error {
 	scanInfo.RID = RID
 	scanInfo.URL = URL
 	scanInfo.Branch = branch
 	scanInfo.LanguageExclusions = languageExclusions
+	scanInfo.ChangedFiles = changedFiles
 	scanInfo.SecurityTestName = securityTestName
 	scanInfo.DockerHost = dockerHost
 
@@ -119,7 +121,7 @@ func (scanInfo *SecTestScanInfo) Start() error {
 func (scanInfo *SecTestScanInfo) dockerRun(timeOutInSeconds int) error {
 	image := scanInfo.Container.SecurityTest.Image
 	imageTag := scanInfo.Container.SecurityTest.ImageTag
-	cmd := util.HandleCmd(scanInfo.URL, scanInfo.Branch, scanInfo.Container.SecurityTest.Cmd)
+	cmd := util.HandleCmd(scanInfo.URL, scanInfo.Branch, scanInfo.Container.SecurityTest.Cmd, scanInfo.ChangedFiles)
 	cmd = util.HandleGitURLSubstitution(cmd)
 	finalCMD := util.HandlePrivateSSHKey(cmd)
 	CID, cOutput, err := huskydocker.DockerRun(image, imageTag, finalCMD, scanInfo.DockerHost, timeOutInSeconds)
@@ -134,7 +136,7 @@ func (scanInfo *SecTestScanInfo) dockerRun(timeOutInSeconds int) error {
 func (scanInfo *SecTestScanInfo) kubeRun(timeOutInSeconds int) error {
 	image := scanInfo.Container.SecurityTest.Image
 	imageTag := scanInfo.Container.SecurityTest.ImageTag
-	cmd := util.HandleCmd(scanInfo.URL, scanInfo.Branch, scanInfo.Container.SecurityTest.Cmd)
+	cmd := util.HandleCmd(scanInfo.URL, scanInfo.Branch, scanInfo.Container.SecurityTest.Cmd, scanInfo.ChangedFiles)
 	cmd = util.HandleGitURLSubstitution(cmd)
 	finalCMD := util.HandlePrivateSSHKey(cmd)
 	podSchedulingTimeoutInSeconds := apiContext.APIConfiguration.KubernetesConfig.PodSchedulingTimeout
@@ -149,11 +151,14 @@ func (scanInfo *SecTestScanInfo) kubeRun(timeOutInSeconds int) error {
 
 func (scanInfo *SecTestScanInfo) analyze() error {
 	errorCloning := strings.Contains(scanInfo.Container.COutput, "ERROR_CLONING")
-	if errorCloning {
+	errorSparseCheckout := strings.Contains(scanInfo.Container.COutput, "ERROR_SPARSE_CHECKOUT")
+	if errorCloning || errorSparseCheckout {
 		hint := extractGitCloneFailureHint(scanInfo.Container.COutput)
 		var errorMsg error
 		if hint != "" {
 			errorMsg = fmt.Errorf("error cloning: %s", hint)
+		} else if errorSparseCheckout {
+			errorMsg = errors.New("error during sparse checkout")
 		} else {
 			errorMsg = errors.New("error cloning")
 		}

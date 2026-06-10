@@ -14,6 +14,7 @@ type Repository struct {
 	Branch             string          `json:"repositoryBranch"`
 	LanguageExclusions map[string]bool `json:"languageExclusions"`
 	CreatedAt          time.Time       `bson:"createdAt" json:"createdAt"`
+	ChangedFiles       string          `json:"changedFiles"`
 }
 
 // SecurityTest is the struct that stores all data from the security tests to be executed.

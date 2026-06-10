@@ -76,15 +76,37 @@ gosec:
       done
     fi
     cd src
-    GIT_TERMINAL_PROMPT=0 git clone -b "%GIT_BRANCH%" --single-branch --depth 1 "%GIT_REPO%" code --quiet 2> /tmp/errorGitCloneGosec
-    if [ $? -eq 0 ]; then
-      cd code
-      touch results.json
-      $(which gosec) -quiet -fmt=json -nosec-tag nohusky -log=log.txt -out=results.json ./... 2> /dev/null
-      jq -j -M -c . results.json
+    if [ "$HUSKYCI_DELTA_SCAN" = "true" ] && [ -n "%CHANGED_FILES%" ]; then
+      GIT_TERMINAL_PROMPT=0 git clone --no-checkout -b "%GIT_BRANCH%" --single-branch --depth 1 "%GIT_REPO%" code --quiet 2>/tmp/errorGitClone
+      if [ $? -eq 0 ]; then
+        cd code
+        git sparse-checkout init --cone
+        echo "%CHANGED_FILES%" | while IFS= read -r f; do [ -n "$f" ] && git sparse-checkout add "$f"; done
+        git checkout -- 2>/tmp/errorSparseCheckout
+        if [ $? -ne 0 ]; then
+          echo "ERROR_SPARSE_CHECKOUT"
+          cat /tmp/errorSparseCheckout
+          exit 1
+        fi
+        touch results.json
+        $(which gosec) -quiet -fmt=json -nosec-tag nohusky -log=log.txt -out=results.json ./... 2> /dev/null
+        jq -j -M -c . results.json
+      else
+        echo "ERROR_CLONING"
+        cat /tmp/errorGitClone
+        exit 1
+      fi
     else
-      echo "ERROR_CLONING"
-      cat /tmp/errorGitCloneGosec
+      GIT_TERMINAL_PROMPT=0 git clone -b "%GIT_BRANCH%" --single-branch --depth 1 "%GIT_REPO%" code --quiet 2> /tmp/errorGitCloneGosec
+      if [ $? -eq 0 ]; then
+        cd code
+        touch results.json
+        $(which gosec) -quiet -fmt=json -nosec-tag nohusky -log=log.txt -out=results.json ./... 2> /dev/null
+        jq -j -M -c . results.json
+      else
+        echo "ERROR_CLONING"
+        cat /tmp/errorGitCloneGosec
+      fi
     fi
   type: Language
   language: Go
@@ -101,16 +123,39 @@ bandit:
      chmod 600 ~/.ssh/huskyci_id_rsa &&
      echo "IdentityFile ~/.ssh/huskyci_id_rsa" >> /etc/ssh/ssh_config &&
      echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config &&
-     GIT_TERMINAL_PROMPT=0 git clone -b "%GIT_BRANCH%" --single-branch --depth 1 "%GIT_REPO%" code --quiet 2> /tmp/errorGitCloneBandit
-     if [ $? -eq 0 ]; then
-       cd code
-       chmod +x /usr/local/bin/husky-file-ignore.sh
-       husky-file-ignore.sh 2> /tmp/errorBanditIgnoreScript 1> /dev/null
-       bandit -r . -f json 2> /dev/null > results.json
-       jq -j -M -c . results.json
+     if [ "$HUSKYCI_DELTA_SCAN" = "true" ] && [ -n "%CHANGED_FILES%" ]; then
+       GIT_TERMINAL_PROMPT=0 git clone --no-checkout -b "%GIT_BRANCH%" --single-branch --depth 1 "%GIT_REPO%" code --quiet 2>/tmp/errorGitClone
+       if [ $? -eq 0 ]; then
+         cd code
+         git sparse-checkout init --cone
+         echo "%CHANGED_FILES%" | while IFS= read -r f; do [ -n "$f" ] && git sparse-checkout add "$f"; done
+         git checkout -- 2>/tmp/errorSparseCheckout
+         if [ $? -ne 0 ]; then
+           echo "ERROR_SPARSE_CHECKOUT"
+           cat /tmp/errorSparseCheckout
+           exit 1
+         fi
+         chmod +x /usr/local/bin/husky-file-ignore.sh
+         husky-file-ignore.sh 2> /tmp/errorBanditIgnoreScript 1> /dev/null
+         bandit -r . -f json 2> /dev/null > results.json
+         jq -j -M -c . results.json
+       else
+         echo "ERROR_CLONING"
+         cat /tmp/errorGitClone
+         exit 1
+       fi
      else
-       echo "ERROR_CLONING"
-       cat /tmp/errorGitCloneBandit
+       GIT_TERMINAL_PROMPT=0 git clone -b "%GIT_BRANCH%" --single-branch --depth 1 "%GIT_REPO%" code --quiet 2> /tmp/errorGitCloneBandit
+       if [ $? -eq 0 ]; then
+         cd code
+         chmod +x /usr/local/bin/husky-file-ignore.sh
+         husky-file-ignore.sh 2> /tmp/errorBanditIgnoreScript 1> /dev/null
+         bandit -r . -f json 2> /dev/null > results.json
+         jq -j -M -c . results.json
+       else
+         echo "ERROR_CLONING"
+         cat /tmp/errorGitCloneBandit
+       fi
      fi
   type: Language
   language: Python
@@ -127,27 +172,63 @@ brakeman:
     chmod 600 ~/.ssh/huskyci_id_rsa &&
     echo "IdentityFile ~/.ssh/huskyci_id_rsa" >> /etc/ssh/ssh_config &&
     echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config &&
-    GIT_TERMINAL_PROMPT=0 git clone -b "%GIT_BRANCH%" --single-branch --depth 1 "%GIT_REPO%" code --quiet 2> /tmp/errorGitCloneBrakeman
-    if [ $? -eq 0 ]; then
-      if [ -d /code/app ]; then
-        if [ -f /code/brakeman.ignore ]; then
-          brakeman -q -i /code/brakeman.ignore -o results.json /code
-        else
-          brakeman -q -o results.json /code
+    if [ "$HUSKYCI_DELTA_SCAN" = "true" ] && [ -n "%CHANGED_FILES%" ]; then
+      GIT_TERMINAL_PROMPT=0 git clone --no-checkout -b "%GIT_BRANCH%" --single-branch --depth 1 "%GIT_REPO%" code --quiet 2>/tmp/errorGitClone
+      if [ $? -eq 0 ]; then
+        cd code
+        git sparse-checkout init --cone
+        echo "%CHANGED_FILES%" | while IFS= read -r f; do [ -n "$f" ] && git sparse-checkout add "$f"; done
+        git checkout -- 2>/tmp/errorSparseCheckout
+        if [ $? -ne 0 ]; then
+          echo "ERROR_SPARSE_CHECKOUT"
+          cat /tmp/errorSparseCheckout
+          exit 1
         fi
-        jq -j -M -c . results.json
+        cd ..
+        if [ -d /code/app ]; then
+          if [ -f /code/brakeman.ignore ]; then
+            brakeman -q -i /code/brakeman.ignore -o results.json /code
+          else
+            brakeman -q -o results.json /code
+          fi
+          jq -j -M -c . results.json
+        else
+          mv code app
+          if [ -f /app/brakeman.ignore ]; then
+            brakeman -q -i /app/brakeman.ignore -o results.json .
+          else
+            brakeman -q -o results.json .
+          fi
+          jq -j -M -c . results.json
+        fi
       else
-        mv code app
-        if [ -f /app/brakeman.ignore ]; then
-          brakeman -q -i /app/brakeman.ignore -o results.json .
-        else
-          brakeman -q -o results.json .
-        fi
-        jq -j -M -c . results.json
+        echo "ERROR_CLONING"
+        cat /tmp/errorGitClone
+        exit 1
       fi
     else
-      echo "ERROR_CLONING"
-      cat /tmp/errorGitCloneBrakeman
+      GIT_TERMINAL_PROMPT=0 git clone -b "%GIT_BRANCH%" --single-branch --depth 1 "%GIT_REPO%" code --quiet 2> /tmp/errorGitCloneBrakeman
+      if [ $? -eq 0 ]; then
+        if [ -d /code/app ]; then
+          if [ -f /code/brakeman.ignore ]; then
+            brakeman -q -i /code/brakeman.ignore -o results.json /code
+          else
+            brakeman -q -o results.json /code
+          fi
+          jq -j -M -c . results.json
+        else
+          mv code app
+          if [ -f /app/brakeman.ignore ]; then
+            brakeman -q -i /app/brakeman.ignore -o results.json .
+          else
+            brakeman -q -o results.json .
+          fi
+          jq -j -M -c . results.json
+        fi
+      else
+        echo "ERROR_CLONING"
+        cat /tmp/errorGitCloneBrakeman
+      fi
     fi
   type: Language
   language: Ruby
@@ -379,8 +460,19 @@ gitleaks:
     chmod 600 ~/.ssh/huskyci_id_rsa &&
     echo "IdentityFile ~/.ssh/huskyci_id_rsa" >> /etc/ssh/ssh_config &&
     echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config &&
-    GIT_TERMINAL_PROMPT=0 git clone -b "%GIT_BRANCH%" --single-branch --depth 1 "%GIT_REPO%" code --quiet 2> /tmp/errorGitCloneGitleaks
-    if [ $? -eq 0 ]; then
+    if [ "$HUSKYCI_DELTA_SCAN" = "true" ] && [ -n "%CHANGED_FILES%" ]; then
+      GIT_TERMINAL_PROMPT=0 git clone --no-checkout -b "%GIT_BRANCH%" --single-branch --depth 1 "%GIT_REPO%" code --quiet 2>/tmp/errorGitClone
+      if [ $? -eq 0 ]; then
+        cd code
+        git sparse-checkout init --cone
+        echo "%CHANGED_FILES%" | while IFS= read -r f; do [ -n "$f" ] && git sparse-checkout add "$f"; done
+        git checkout -- 2>/tmp/errorSparseCheckout
+        if [ $? -ne 0 ]; then
+          echo "ERROR_SPARSE_CHECKOUT"
+          cat /tmp/errorSparseCheckout
+          exit 1
+        fi
+        cd ..
         touch /tmp/results.json
         $(which gitleaks) dir ./code -f json -r /tmp/results.json --no-banner -l error 2> /tmp/errorGitleaks
         gl_ex=$?
@@ -393,9 +485,30 @@ gitleaks:
             echo 'ERROR_RUNNING_GITLEAKS'
             cat /tmp/errorGitleaks
         fi
+      else
+        echo "ERROR_CLONING"
+        cat /tmp/errorGitClone
+        exit 1
+      fi
     else
+      GIT_TERMINAL_PROMPT=0 git clone -b "%GIT_BRANCH%" --single-branch --depth 1 "%GIT_REPO%" code --quiet 2> /tmp/errorGitCloneGitleaks
+      if [ $? -eq 0 ]; then
+        touch /tmp/results.json
+        $(which gitleaks) dir ./code -f json -r /tmp/results.json --no-banner -l error 2> /tmp/errorGitleaks
+        gl_ex=$?
+        if [ $gl_ex -eq 124 ] || [ $gl_ex -eq 143 ]; then
+            echo 'ERROR_TIMEOUT_GITLEAKS'
+            cat /tmp/errorGitleaks
+        elif jq -e . /tmp/results.json >/dev/null 2>&1; then
+            jq -j -M -c . /tmp/results.json
+        else
+            echo 'ERROR_RUNNING_GITLEAKS'
+            cat /tmp/errorGitleaks
+        fi
+      else
         echo "ERROR_CLONING"
         cat /tmp/errorGitCloneGitleaks
+      fi
     fi
   type: Generic
   default: true
@@ -467,8 +580,19 @@ wizcli_secrets:
     chmod 600 ~/.ssh/huskyci_id_rsa &&
     echo "IdentityFile ~/.ssh/huskyci_id_rsa" >> /etc/ssh/ssh_config &&
     echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config &&
-    GIT_TERMINAL_PROMPT=0 git clone -b "%GIT_BRANCH%" --single-branch --depth 1 "%GIT_REPO%" code --quiet 2>/tmp/errorGitCloneWiz
-    if [ $? -eq 0 ]; then
+    if [ "$HUSKYCI_DELTA_SCAN" = "true" ] && [ -n "%CHANGED_FILES%" ]; then
+      GIT_TERMINAL_PROMPT=0 git clone --no-checkout -b "%GIT_BRANCH%" --single-branch --depth 1 "%GIT_REPO%" code --quiet 2>/tmp/errorGitClone
+      if [ $? -eq 0 ]; then
+        cd code
+        git sparse-checkout init --cone
+        echo "%CHANGED_FILES%" | while IFS= read -r f; do [ -n "$f" ] && git sparse-checkout add "$f"; done
+        git checkout -- 2>/tmp/errorSparseCheckout
+        if [ $? -ne 0 ]; then
+          echo "ERROR_SPARSE_CHECKOUT"
+          cat /tmp/errorSparseCheckout
+          exit 1
+        fi
+        cd ..
         wizcli auth --id '%WIZ_CLIENT_ID%' --secret '%WIZ_CLIENT_SECRET%' > /tmp/errorWizAuth 2>&1
         if [ $? -ne 0 ]; then
             echo 'ERROR_AUTH_WIZCLI'
@@ -486,9 +610,35 @@ wizcli_secrets:
               cat /tmp/wizResult.json
             fi
         fi
+      else
+        echo "ERROR_CLONING"
+        cat /tmp/errorGitClone
+        exit 1
+      fi
     else
+      GIT_TERMINAL_PROMPT=0 git clone -b "%GIT_BRANCH%" --single-branch --depth 1 "%GIT_REPO%" code --quiet 2>/tmp/errorGitCloneWiz
+      if [ $? -eq 0 ]; then
+        wizcli auth --id '%WIZ_CLIENT_ID%' --secret '%WIZ_CLIENT_SECRET%' > /tmp/errorWizAuth 2>&1
+        if [ $? -ne 0 ]; then
+            echo 'ERROR_AUTH_WIZCLI'
+            cat /tmp/errorWizAuth
+        else
+            wizcli scan dir ./code \
+              --disabled-scanners Vulnerability,Misconfiguration,SAST,Malware,AIModels,SoftwareSupplyChain \
+              --by-policy-hits=DISABLED \
+              --json-output-file=/tmp/wizResult.json > /dev/null 2> /tmp/errorWizScan
+            SCAN_RC=$?
+            if [ $SCAN_RC -ge 2 ]; then
+              echo "ERROR_RUNNING_WIZCLI_SCAN"
+              cat /tmp/errorWizScan
+            else
+              cat /tmp/wizResult.json
+            fi
+        fi
+      else
         echo "ERROR_CLONING"
         cat /tmp/errorGitCloneWiz
+      fi
     fi
   type: Generic
   default: true
@@ -504,8 +654,19 @@ wizcli_iac:
     chmod 600 ~/.ssh/huskyci_id_rsa &&
     echo "IdentityFile ~/.ssh/huskyci_id_rsa" >> /etc/ssh/ssh_config &&
     echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config &&
-    GIT_TERMINAL_PROMPT=0 git clone -b "%GIT_BRANCH%" --single-branch --depth 1 "%GIT_REPO%" code --quiet 2>/tmp/errorGitCloneWiz
-    if [ $? -eq 0 ]; then
+    if [ "$HUSKYCI_DELTA_SCAN" = "true" ] && [ -n "%CHANGED_FILES%" ]; then
+      GIT_TERMINAL_PROMPT=0 git clone --no-checkout -b "%GIT_BRANCH%" --single-branch --depth 1 "%GIT_REPO%" code --quiet 2>/tmp/errorGitClone
+      if [ $? -eq 0 ]; then
+        cd code
+        git sparse-checkout init --cone
+        echo "%CHANGED_FILES%" | while IFS= read -r f; do [ -n "$f" ] && git sparse-checkout add "$f"; done
+        git checkout -- 2>/tmp/errorSparseCheckout
+        if [ $? -ne 0 ]; then
+          echo "ERROR_SPARSE_CHECKOUT"
+          cat /tmp/errorSparseCheckout
+          exit 1
+        fi
+        cd ..
         wizcli auth --id '%WIZ_CLIENT_ID%' --secret '%WIZ_CLIENT_SECRET%' > /tmp/errorWizAuth 2>&1
         if [ $? -ne 0 ]; then
             echo 'ERROR_AUTH_WIZCLI'
@@ -523,9 +684,35 @@ wizcli_iac:
               cat /tmp/wizResult.json
             fi
         fi
+      else
+        echo "ERROR_CLONING"
+        cat /tmp/errorGitClone
+        exit 1
+      fi
     else
+      GIT_TERMINAL_PROMPT=0 git clone -b "%GIT_BRANCH%" --single-branch --depth 1 "%GIT_REPO%" code --quiet 2>/tmp/errorGitCloneWiz
+      if [ $? -eq 0 ]; then
+        wizcli auth --id '%WIZ_CLIENT_ID%' --secret '%WIZ_CLIENT_SECRET%' > /tmp/errorWizAuth 2>&1
+        if [ $? -ne 0 ]; then
+            echo 'ERROR_AUTH_WIZCLI'
+            cat /tmp/errorWizAuth
+        else
+            wizcli scan dir ./code \
+              --disabled-scanners Vulnerability,Secret,SensitiveData,SAST,Malware,AIModels,SoftwareSupplyChain \
+              --by-policy-hits=DISABLED \
+              --json-output-file=/tmp/wizResult.json > /dev/null 2> /tmp/errorWizScan
+            SCAN_RC=$?
+            if [ $SCAN_RC -ge 2 ]; then
+              echo "ERROR_RUNNING_WIZCLI_SCAN"
+              cat /tmp/errorWizScan
+            else
+              cat /tmp/wizResult.json
+            fi
+        fi
+      else
         echo "ERROR_CLONING"
         cat /tmp/errorGitCloneWiz
+      fi
     fi
   type: Generic
   default: true
@@ -541,8 +728,19 @@ wizcli_sast:
     chmod 600 ~/.ssh/huskyci_id_rsa &&
     echo "IdentityFile ~/.ssh/huskyci_id_rsa" >> /etc/ssh/ssh_config &&
     echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config &&
-    GIT_TERMINAL_PROMPT=0 git clone -b "%GIT_BRANCH%" --single-branch --depth 1 "%GIT_REPO%" code --quiet 2>/tmp/errorGitCloneWiz
-    if [ $? -eq 0 ]; then
+    if [ "$HUSKYCI_DELTA_SCAN" = "true" ] && [ -n "%CHANGED_FILES%" ]; then
+      GIT_TERMINAL_PROMPT=0 git clone --no-checkout -b "%GIT_BRANCH%" --single-branch --depth 1 "%GIT_REPO%" code --quiet 2>/tmp/errorGitClone
+      if [ $? -eq 0 ]; then
+        cd code
+        git sparse-checkout init --cone
+        echo "%CHANGED_FILES%" | while IFS= read -r f; do [ -n "$f" ] && git sparse-checkout add "$f"; done
+        git checkout -- 2>/tmp/errorSparseCheckout
+        if [ $? -ne 0 ]; then
+          echo "ERROR_SPARSE_CHECKOUT"
+          cat /tmp/errorSparseCheckout
+          exit 1
+        fi
+        cd ..
         wizcli auth --id '%WIZ_CLIENT_ID%' --secret '%WIZ_CLIENT_SECRET%' > /tmp/errorWizAuth 2>&1
         if [ $? -ne 0 ]; then
             echo 'ERROR_AUTH_WIZCLI'
@@ -560,9 +758,35 @@ wizcli_sast:
               cat /tmp/wizResult.json
             fi
         fi
+      else
+        echo "ERROR_CLONING"
+        cat /tmp/errorGitClone
+        exit 1
+      fi
     else
+      GIT_TERMINAL_PROMPT=0 git clone -b "%GIT_BRANCH%" --single-branch --depth 1 "%GIT_REPO%" code --quiet 2>/tmp/errorGitCloneWiz
+      if [ $? -eq 0 ]; then
+        wizcli auth --id '%WIZ_CLIENT_ID%' --secret '%WIZ_CLIENT_SECRET%' > /tmp/errorWizAuth 2>&1
+        if [ $? -ne 0 ]; then
+            echo 'ERROR_AUTH_WIZCLI'
+            cat /tmp/errorWizAuth
+        else
+            wizcli scan dir ./code \
+              --disabled-scanners Vulnerability,Secret,SensitiveData,Misconfiguration,Malware,AIModels,SoftwareSupplyChain \
+              --by-policy-hits=DISABLED \
+              --json-output-file=/tmp/wizResult.json > /dev/null 2> /tmp/errorWizScan
+            SCAN_RC=$?
+            if [ $SCAN_RC -ge 2 ]; then
+              echo "ERROR_RUNNING_WIZCLI_SCAN"
+              cat /tmp/errorWizScan
+            else
+              cat /tmp/wizResult.json
+            fi
+        fi
+      else
         echo "ERROR_CLONING"
         cat /tmp/errorGitCloneWiz
+      fi
     fi
   type: Generic
   default: true

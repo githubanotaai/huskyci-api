@@ -6,6 +6,7 @@ package kubernetes
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 
@@ -29,6 +30,19 @@ func configureImagePath(image, tag string) (string, string) {
 	}
 
 	return canonicalURL, fullContainerImage
+}
+
+// getScannerConfig reads a scanner-specific configuration from environment variables.
+// It looks for HUSKYCI_SCANNER_<UPPERNAME>_<KEY> (e.g. HUSKYCI_SCANNER_GITLEAKS_DELTA_SCAN).
+func getScannerConfig(securityTestName, key string) string {
+	envVar := "HUSKYCI_SCANNER_" + strings.ToUpper(securityTestName) + "_" + key
+	return os.Getenv(envVar)
+}
+
+// isDeltaScanEnabled returns true if delta scanning is enabled for the given security test
+// via the HUSKYCI_SCANNER_<NAME>_DELTA_SCAN environment variable.
+func isDeltaScanEnabled(securityTestName string) bool {
+	return strings.ToLower(getScannerConfig(securityTestName, "DELTA_SCAN")) == "true"
 }
 
 // KubeRun starts a new pod and returns its output and an error.

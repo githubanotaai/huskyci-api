@@ -77,7 +77,7 @@ func StartAnalysis(RID string, repository types.Repository) {
 
 	log.Info("StartAnalysisTest", apiHost, 2012, RID)
 
-	if err := enryScan.New(RID, repository.URL, repository.Branch, enryScan.SecurityTestName, repository.LanguageExclusions, apiHost); err != nil {
+	if err := enryScan.New(RID, repository.URL, repository.Branch, enryScan.SecurityTestName, repository.LanguageExclusions, repository.ChangedFiles, apiHost); err != nil {
 		log.Error(logActionStart, logInfoAnalysis, 2011, err)
 		return
 	}

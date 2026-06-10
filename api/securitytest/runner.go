@@ -7,7 +7,7 @@ import "github.com/githubanotaai/huskyci-api/api/types"
 type scanRunner interface {
 	listGenericTests() ([]types.SecurityTest, error)
 	listLanguageTests(language string) ([]types.SecurityTest, error)
-	newScan(RID, URL, branch, securityTestName string, languageExclusions map[string]bool, dockerHost string) (*SecTestScanInfo, error)
+	newScan(RID, URL, branch, securityTestName string, languageExclusions map[string]bool, changedFiles, dockerHost string) (*SecTestScanInfo, error)
 	startScan(scan *SecTestScanInfo) error
 }
 
@@ -22,9 +22,9 @@ func (realRunner) listLanguageTests(language string) ([]types.SecurityTest, erro
 	return getAllDefaultSecurityTests("Language", language)
 }
 
-func (realRunner) newScan(RID, URL, branch, securityTestName string, languageExclusions map[string]bool, dockerHost string) (*SecTestScanInfo, error) {
+func (realRunner) newScan(RID, URL, branch, securityTestName string, languageExclusions map[string]bool, changedFiles, dockerHost string) (*SecTestScanInfo, error) {
 	scan := &SecTestScanInfo{}
-	return scan, scan.New(RID, URL, branch, securityTestName, languageExclusions, dockerHost)
+	return scan, scan.New(RID, URL, branch, securityTestName, languageExclusions, changedFiles, dockerHost)
 }
 
 func (realRunner) startScan(scan *SecTestScanInfo) error {
@@ -35,7 +35,7 @@ func (realRunner) startScan(scan *SecTestScanInfo) error {
 type mockRunner struct {
 	genericTests  []types.SecurityTest
 	languageTests []types.SecurityTest
-	newScanFunc   func(RID, URL, branch, securityTestName string, languageExclusions map[string]bool, dockerHost string) (*SecTestScanInfo, error)
+	newScanFunc   func(RID, URL, branch, securityTestName string, languageExclusions map[string]bool, changedFiles, dockerHost string) (*SecTestScanInfo, error)
 	startScanFunc func(scan *SecTestScanInfo) error
 }
 
@@ -47,9 +47,9 @@ func (m *mockRunner) listLanguageTests(language string) ([]types.SecurityTest, e
 	return m.languageTests, nil
 }
 
-func (m *mockRunner) newScan(RID, URL, branch, securityTestName string, languageExclusions map[string]bool, dockerHost string) (*SecTestScanInfo, error) {
+func (m *mockRunner) newScan(RID, URL, branch, securityTestName string, languageExclusions map[string]bool, changedFiles, dockerHost string) (*SecTestScanInfo, error) {
 	if m.newScanFunc != nil {
-		return m.newScanFunc(RID, URL, branch, securityTestName, languageExclusions, dockerHost)
+		return m.newScanFunc(RID, URL, branch, securityTestName, languageExclusions, changedFiles, dockerHost)
 	}
 	return &SecTestScanInfo{}, nil
 }

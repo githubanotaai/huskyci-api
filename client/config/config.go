@@ -26,6 +26,9 @@ var LanguageExclusions map[string]bool
 // HuskyUseTLS stores if huskyCI is to use an HTTPS connection.
 var HuskyUseTLS bool
 
+// ChangedFiles stores the list of changed files for delta scanning.
+var ChangedFiles string
+
 // SetConfigs sets all configuration needed to start the client.
 func SetConfigs() {
 	RepositoryURL = os.Getenv(`HUSKYCI_CLIENT_REPO_URL`)
@@ -41,6 +44,7 @@ func SetConfigs() {
 	}
 	HuskyToken = os.Getenv(`HUSKYCI_CLIENT_TOKEN`)
 	HuskyUseTLS = getUseTLS()
+	ChangedFiles = os.Getenv(`HUSKYCI_CLIENT_CHANGED_FILES`)
 }
 
 // CheckEnvVars checks if all environment vars are set.
