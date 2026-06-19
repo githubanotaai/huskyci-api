@@ -75,7 +75,7 @@ When the client passes `changedFiles` (newline-separated paths) and the API sets
 
 ## Database
 
-MongoDB is the production store (`api/db/mongo/mongo.go`). A Postgres backend exists in `api/db/postgres/` but is not wired up — the `docker-compose.yml` Postgres service is commented out. `db.Requests` (`api/db/huskydb.go`) is the interface both implementations satisfy.
+MongoDB is the supported production store (`api/db/mongo/mongo.go`). `db.Requests` (`api/db/huskydb.go`) is the interface for database operations, preserved for abstraction and testability.
 
 ## Local dev environment
 
