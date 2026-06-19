@@ -66,6 +66,59 @@ func TestStartAnalysis_HappyPath_MultiScanner(t *testing.T) {
 	}
 }
 
+// TestStartAnalysis_MixedResults verifies that when scanners return a mix of
+// results (one failed, one warning, one passed), FinalResult resolves to
+// "failed" because failed takes unconditional precedence over both warning
+// and passed. Start() must return nil (all scanners completed without error),
+// Status must be "finished". Per scope decision: test directly without #25
+// skip — current main's setToAnalysis already handles this.
+func TestStartAnalysis_MixedResults(t *testing.T) {
+	t.Parallel()
+
+	tests := []types.SecurityTest{
+		{Name: "gitleaks"},
+		{Name: "gitauthors"},
+		{Name: "wizcli_secrets"},
+	}
+
+	results := map[string]string{
+		"gitleaks":       "failed",
+		"gitauthors":     "warning",
+		"wizcli_secrets": "passed",
+	}
+
+	runner := &mockRunner{
+		genericTests: tests,
+		newScanFunc: func(RID, URL, branch, name string, le map[string]bool, cf, dh string) (*SecTestScanInfo, error) {
+			return &SecTestScanInfo{
+				RID:              RID,
+				SecurityTestName: name,
+				Container: types.Container{
+					CID:     "cid-" + name,
+					CResult: results[name],
+					CStatus: "finished",
+				},
+			}, nil
+		},
+		startScanFunc: func(scan *SecTestScanInfo) error { return nil },
+	}
+
+	run := &RunAllInfo{runner: runner}
+	enryScan := SecTestScanInfo{
+		RID: "mixed-rid", URL: "https://example.com/repo", Branch: "main",
+	}
+
+	if err := run.Start(enryScan); err != nil {
+		t.Fatalf("Start returned unexpected error: %v", err)
+	}
+	if run.FinalResult != "failed" {
+		t.Errorf("expected FinalResult=%q with mix of failed/warning/passed, got %q", "failed", run.FinalResult)
+	}
+	if run.Status != "finished" {
+		t.Errorf("expected Status=%q, got %q", "finished", run.Status)
+	}
+}
+
 // TestStart_PassedWhenAllScannersPass is the baseline. Multiple scanners all
 // report CResult="passed" — Start() must return nil and FinalResult must be
 // "passed". This test must remain green on the current code; if it ever fails
