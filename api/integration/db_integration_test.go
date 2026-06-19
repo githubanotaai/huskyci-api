@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	apiContext "github.com/githubanotaai/huskyci-api/api/context"
 	"github.com/githubanotaai/huskyci-api/api/db"
 	mongoHuskyCI "github.com/githubanotaai/huskyci-api/api/db/mongo"
 	"github.com/githubanotaai/huskyci-api/api/integration/testhelper"
@@ -52,6 +53,30 @@ func TestMain(m *testing.M) {
 	}
 
 	mongoRequests = &db.MongoRequests{}
+
+	// Set up global API configuration for route integration tests.
+	apiContext.APIConfiguration = &apiContext.APIConfig{
+		DBInstance: mongoRequests,
+	}
+
+	// Seed a dummy SecurityTest record for "enry" so the analysis
+	// goroutine does not crash on security test lookup when
+	// HUSKYCI_INFRASTRUCTURE_USE is configured.
+	enryST := types.SecurityTest{
+		Name:             "enry",
+		Image:            "huskyci/enry",
+		ImageTag:         "latest",
+		Cmd:              "",
+		Type:             "Generic",
+		Language:         "generic",
+		Default:          true,
+		TimeOutInSeconds: 300,
+	}
+	if err := mongoRequests.InsertDBSecurityTest(enryST); err != nil {
+		fmt.Println("Failed to seed enry SecurityTest:", err)
+		mc.Terminate(ctx)
+		os.Exit(1)
+	}
 
 	code := m.Run()
 

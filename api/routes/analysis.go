@@ -35,6 +35,12 @@ func init() {
 	}
 }
 
+// SetTokenValidator overrides the package-level tokenValidator.
+// This is intended for use in tests only.
+func SetTokenValidator(tv token.TValidator) {
+	tokenValidator = tv
+}
+
 const logActionReceiveRequest = "ReceiveRequest"
 const logActionGetAnalysis = "GetAnalysis"
 const logInfoAnalysis = "ANALYSIS"
