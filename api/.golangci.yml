@@ -6,3 +6,6 @@ linters:
       checks:
         - "all"
         - "-ST*" # stylecheck rules -- legacy codebase naming conventions, too invasive to fix safely
+    govet:
+      disable:
+        - "inline" # noisy: sha3 constructors flagged as not inlined; pre-existing in production code
