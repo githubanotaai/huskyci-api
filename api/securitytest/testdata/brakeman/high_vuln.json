@@ -1,0 +1,23 @@
+{
+  "warnings": [
+    {
+      "warning_type": "Cross-Site Scripting",
+      "code": "Line 42",
+      "message": "Unescaped parameter value rendered inline",
+      "file": "app/views/users/show.html.erb",
+      "line": 42,
+      "link": "https://brakemanscanner.org/docs/warning_types/xss/",
+      "confidence": "High"
+    },
+    {
+      "warning_type": "SQL Injection",
+      "code": "Line 87",
+      "message": "Possible SQL injection",
+      "file": "app/models/user.rb",
+      "line": 87,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "confidence": "Medium"
+    }
+  ],
+  "ignored_warnings": []
+}
