@@ -1,0 +1,157 @@
+# Progress Log
+Run: 4ac8b8d6-fce3-4a35-9ae6-5a7d5c7f8a3f
+Task: Implement GitHub issues #94 and #93 - Fix archiver vulns in cli/
+Started: 2026-06-19T20:15:00
+
+## Codebase Patterns
+
+- **cli/ is a standalone Go module** with its own go.mod, separate from api/ and client/
+- **Compression utilities** live in `cli/util/util.go` — CompressFiles, GetAllAllowedFilesAndDirsFromPath, GetZipFriendlySize, DeleteHuskyFile
+- **Extension filtering** uses an explicit allowlist approach: image/video extensions are blocked, everything else is allowed
+- **ZIP destination** is always `~/.huskyci/compressed-code.zip` via `config.GetHuskyZipFilePath()`
+- **Error types** are defined in `cli/errorcli/` package (e.g., `ErrInvalidExtension`)
+- **Tests in cli/util/** use standard `testing` with `t.Run` subtests and `t.Parallel()` (not Ginkgo/Gomega). `t.TempDir()` provides automatic cleanup.
+- **CompressFiles depends on `config.GetHuskyZipFilePath()`** which calls `os.UserHomeDir()` — test isolation requires overriding `$HOME` env var.
+- **CompressFiles resolves archive-internal paths relative to CWD** — the new archive/zip implementation uses `filepath.Abs(name)` + `filepath.Rel(cwd, absName)` to compute relative paths safely. Tests `os.Chdir` to the directory containing source files so archive paths are correct.
+- **filepath.Rel requires both paths to be absolute or both relative** — always use `filepath.Abs` to resolve relative inputs before calling `filepath.Rel` with an absolute base.
+- **filepath.Walk with absolute root produces absolute path arguments** — safe for `filepath.Rel(cwd, path)`.
+
+## Story Plan
+
+### US-001: Assess archiver vulnerability exposure in CLI
+
+**Description:** As a developer, I need to confirm that GO-2024-2698 and GO-2025-3605 (path traversal) are not exploitable in the CLI's archiver usage so that the correct remediation approach is chosen.
+
+Implementation notes:
+- Verify archiver is only used for archiver.Archive (compression), never for extraction, across the entire cli/ module
+- Research both CVEs to confirm they are extraction-only path traversal (zip-slip pattern)
+- Document that the CLI compresses only local trusted files sourced from a user-provided path — no untrusted archive extraction occurs
+- Conclude: either document non-exploitability with a govulncheck exception, or replace the dependency with stdlib to eliminate findings entirely
+- Write findings into a short assessment document (e.g., docs/archiver-vulnerability-assessment.md) or as a commit message body
+
+**Acceptance Criteria:**
+- All archiver references in cli/ confirmed to be archiver.Archive (compression) only
+- CVE descriptions for GO-2024-2698 and GO-2025-3605 confirm they require archive extraction to exploit
+- Assessment document or commit message clearly states exploitability conclusion
+- Typecheck passes
+
+### US-002: Add unit tests for compression utilities in cli/util
+
+**Description:** As a developer, I need comprehensive unit tests for the current CompressFiles, GetAllAllowedFilesAndDirsFromPath, GetZipFriendlySize, and DeleteHuskyFile functions so that the archiver replacement in US-003 has a regression safety net.
+
+Implementation notes:
+- Create cli/util/util_test.go following existing test conventions (standard testing with t.Run subtests)
+- Use os.MkdirTemp for test isolation with defer cleanup
+- Test GetAllAllowedFilesAndDirsFromPath: happy path with mixed files, files with image/video extensions (should be excluded), files with allowed extensions, empty directory
+- Test CompressFiles: creates valid zip from list of file/dir names, preserves directory structure, handles empty input
+- Test GetZipFriendlySize: returns human-readable size string
+- Test DeleteHuskyFile: removes file successfully, returns error for nonexistent file
+- Go testing conventions: t.Helper(), t.Parallel(), no os.Exit in tests
+
+**Acceptance Criteria:**
+- cli/util/util_test.go exists with test functions for GetAllAllowedFilesAndDirsFromPath, CompressFiles, GetZipFriendlySize, DeleteHuskyFile
+- Extension filtering excludes image/video files (.jpg, .png, .mp4, etc.)
+- CompressFiles creates a valid zip with correct file entries
+- All tests use temp directories and clean up after themselves
+- Tests for compression utilities pass
+- Typecheck passes
+
+### US-003: Replace archiver dependency with Go stdlib archive/zip
+
+**Description:** As a developer, I need to replace the vulnerable github.com/mholt/archiver dependency with Go's standard library archive/zip so that both govulncheck findings (GO-2024-2698, GO-2025-3605) are eliminated.
+
+Implementation notes:
+- In cli/util/util.go, replace the CompressFiles implementation to use archive/zip instead of archiver.Archive
+- Preserve exact behavior: create zip at the same destination path, walk directories recursively, use relative paths within the archive
+- For each file in allFilesAndDirNames: if it's a directory, walk it and add all files; if it's a file, add it directly
+- Use filepath.Rel to compute archive-internal paths relative to the working directory (matching archiver's behavior)
+- Set appropriate file permissions in zip headers (use fs.FileInfo from os.Stat)
+- Remove github.com/mholt/archiver import from util.go
+- Run go mod tidy to remove archiver and its transitive dependencies (dsnet/compress, nwaples/rardecode, pierrec/lz4, ulikunitz/xz, xi2/xz) from go.mod
+
+**Acceptance Criteria:**
+- archiver.Archive call replaced with archive/zip-based implementation in util.go
+- github.com/mholt/archiver no longer appears in cli/go.mod after go mod tidy
+- Zip output is structurally valid (can be unzipped with standard tools)
+- All tests from US-002 pass with the new implementation
+- Nested directory structures are preserved correctly in the zip
+- Tests for replacement pass
+- Typecheck passes
+
+### US-004: Run final verification (govulncheck, go test -race, lint)
+
+**Description:** As a developer, I need to run the full verification suite to confirm the archiver vulnerabilities are resolved and no regressions were introduced.
+
+Implementation notes:
+- Run go test -race -count=1 ./... in cli/ and confirm all tests pass
+- Run govulncheck ./... in cli/ and confirm GO-2024-2698 and GO-2025-3605 are no longer reported
+- Run go vet ./... in cli/ and confirm no issues
+- Run golangci-lint run ./... in cli/ if available, or at minimum go vet
+- Confirm go test -race passes (required by behavioral contracts)
+- Confirm no behavioral contract regression: exit code 190, token rejection, input validation allowlist, shell injection prevention are all unaffected (only compression internals changed)
+
+**Acceptance Criteria:**
+- go test -race -count=1 ./... in cli/ passes with zero failures
+- govulncheck ./... in cli/ shows no findings for GO-2024-2698 or GO-2025-3605
+- go vet ./... in cli/ passes with no issues
+- All existing tests outside cli/util/ still pass
+- No behavioral contracts broken (exit codes, token handling, input validation)
+- Typecheck passes
+
+---
+## 2026-06-19T20:15 - US-001: Assess archiver vulnerability exposure in CLI
+- Verified all archiver references in cli/ are `archiver.Archive` (compression) only — zero extraction usage
+- Confirmed GO-2024-2698 and GO-2025-3605 are extraction-only path traversal (zip-slip pattern)
+- Documented that CLI compresses only local trusted files; no untrusted archive extraction occurs
+- Created assessment document at `docs/assessments/archiver-vulnerability-assessment.md`
+- Concluded both CVEs are NOT exploitable; recommended Option B (replace with stdlib) to eliminate findings permanently
+- Files changed: `docs/assessments/archiver-vulnerability-assessment.md` (new)
+- **Learnings:** archiver is only used via `archiver.Archive` on line 44 of `cli/util/util.go`; no Unarchive/Extract/Walk anywhere in cli/. Extension filtering is an explicit allowlist blocking image/video. ZIP destination is `~/.huskyci/compressed-code.zip`.
+---
+## 2026-06-19 - US-002: Add unit tests for compression utilities in cli/util
+- Created `cli/util/util_test.go` with 16 test cases across 4 top-level test functions
+- **TestGetAllAllowedFilesAndDirsFromPath (6 subtests):** happy path with mixed files, excludes image extensions (.jpg/.png/.gif/.bmp/.svg/.pdf), excludes video extensions (.mp4/.mov/.avi/.webm/.flv), excludes additional image extensions (.jpeg/.webp), empty directory, non-existent directory, includes directories and files without extensions (Makefile, Dockerfile)
+- **TestCompressFiles (3 subtests):** creates valid zip with file entries (verifies archive/zip reading), preserves nested directory structure (subpkg/helper.go), handles empty input gracefully
+- **TestGetZipFriendlySize (4 subtests):** bytes ("2 B"), kilobytes ("1.5 kB"), megabytes ("2.0 MB"), error for non-existent file
+- **TestDeleteHuskyFile (2 subtests):** removes file and confirms deletion via os.Stat, returns error for non-existent path
+- All tests use `t.TempDir()` for isolation, `t.Helper()` on helpers, `t.Parallel()` where safe
+- CompressFiles tests override `$HOME` and `os.Chdir` for isolation (non-parallel, restored in defer)
+- `go test -race -count=1 ./...` passes with zero failures; `go vet ./...` passes
+- Files changed: `cli/util/util_test.go` (new, 368 lines)
+- **Learnings:** CompressFiles is coupled to cwd (archiver resolves relative names) and to HOME (config.GetHuskyZipFilePath calls os.UserHomeDir). Test isolation requires both env var and directory manipulation. The existing config tests use `os.Setenv`/`os.Unsetenv` pattern (not t.Setenv) due to pre-Go 1.17 compatibility concerns, but util tests used it successfully.
+---
+## 2026-06-19T20:35 - US-003: Replace archiver dependency with Go stdlib archive/zip
+- Replaced `archiver.Archive` with `archive/zip`-based implementation in `cli/util/util.go`
+- New `CompressFiles`: creates zip file, walks directories with `filepath.Walk`, computes relative paths in archive via `filepath.Rel(cwd, absName)`
+- Added `addFileToZip` helper: uses `zip.FileInfoHeader` for permission preservation, `zip.Deflate` compression, `filepath.ToSlash` for zip-compatible paths
+- Removed `github.com/mholt/archiver` import; added `archive/zip` import
+- `go mod tidy` removed archiver + 5 transitive deps (dsnet/compress, nwaples/rardecode, pierrec/lz4, ulikunitz/xz, xi2/xz) from go.mod and go.sum
+- Files changed: `cli/util/util.go` (rewrote CompressFiles + added addFileToZip), `cli/go.mod` (archiver removed), `cli/go.sum` (cleaned)
+- Commit: `a968825` - `feat: US-003 - Replace archiver dependency with Go stdlib archive/zip`
+- **Learnings:** `filepath.Rel` requires both arguments to have the same absoluteness — use `filepath.Abs` to resolve relative inputs before calling `filepath.Rel` with an absolute base. `filepath.Walk` with an absolute root produces absolute path arguments. The `zip.Writer` must be explicitly closed before the underlying file is closed.
+---
+## 2026-06-19T20:50 - US-004: Run final verification (govulncheck, go test -race, lint)
+
+### Verification Results
+
+- **go test -race -count=1 ./...:** PASS (all 3 test packages: config, pkg/github, util)
+- **govulncheck ./...:** PASS — 0 vulnerabilities found. GO-2024-2698 and GO-2025-3605 fully eliminated.
+- **govulncheck -show verbose:** Only finding is GO-2026-5024 in golang.org/x/sys/windows (NewNTUnicodeString), which our code does not call.
+- **go vet ./...:** PASS (no issues)
+- **go build ./...:** PASS (compiles clean)
+- **golangci-lint:** Not available in environment; `go vet` used as minimum substitute.
+- **archiver in go.mod/go.sum:** Fully removed (0 occurrences)
+
+### Behavioral Contract Verification
+- Exit code 190: Unchanged (only compression internals replaced, not cmd logic)
+- Token rejection: Unchanged (config/auth not modified)
+- Input validation allowlist: Unchanged (extension filtering in util unchanged except compression backend)
+- Shell injection prevention: Unchanged (no shell calls in changed code)
+- go test -race: Passes
+
+### Summary
+All acceptance criteria met. The archiver dependency is fully replaced with Go stdlib `archive/zip`. Both govulncheck findings (GO-2024-2698, GO-2025-3605) are eliminated. No regressions detected.
+
+Files changed: None (verification-only). Progress file updated.
+
+---
