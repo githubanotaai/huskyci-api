@@ -1,0 +1,24 @@
+{
+  "vulns": {
+    "minimist": {
+      "name": "minimist",
+      "severity": "critical",
+      "isDirect": false,
+      "via": [
+        "https://npmjs.com/advisories/1179"
+      ],
+      "range": "<0.2.4",
+      "fixAvailable": true,
+      "title": "Prototype Pollution in minimist"
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 1
+    }
+  }
+}

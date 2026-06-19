@@ -1,0 +1,18 @@
+{
+  "issues": [
+    {
+      "dependency": "django",
+      "vulnerable_below": "3.2.25",
+      "installed_version": "3.2.24",
+      "description": "Django before 3.2.25 contains a potential denial-of-service vulnerability in the intcomma template filter.",
+      "id": "71234"
+    },
+    {
+      "dependency": "requests",
+      "vulnerable_below": "2.32.0",
+      "installed_version": "2.31.0",
+      "description": "Requests before 2.32.0 leaks Proxy-Authorization headers to destination servers.",
+      "id": "71235"
+    }
+  ]
+}

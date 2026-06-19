@@ -1,0 +1,37 @@
+{
+  "results": [
+    {
+      "code": "B301",
+      "filename": "src/auth/views.py",
+      "issue_confidence": "HIGH",
+      "issue_severity": "HIGH",
+      "issue_text": "Use of blacklisted module pickle — pickle is known to execute arbitrary code when deserializing untrusted data.",
+      "line_number": 42,
+      "line_range": [42],
+      "test_id": "B301",
+      "test_name": "blacklist_calls"
+    },
+    {
+      "code": "B108",
+      "filename": "src/utils/tempfile.py",
+      "issue_confidence": "HIGH",
+      "issue_severity": "HIGH",
+      "issue_text": "Probable insecure usage of temp file/directory.",
+      "line_number": 158,
+      "line_range": [156, 157, 158],
+      "test_id": "B108",
+      "test_name": "hardcoded_tmp_directory"
+    },
+    {
+      "code": "B201",
+      "filename": "src/tasks/worker.py",
+      "issue_confidence": "MEDIUM",
+      "issue_severity": "MEDIUM",
+      "issue_text": "Possible SQL injection vector through string-based query construction.",
+      "line_number": 94,
+      "line_range": [94],
+      "test_id": "B608",
+      "test_name": "hardcoded_sql_expressions"
+    }
+  ]
+}

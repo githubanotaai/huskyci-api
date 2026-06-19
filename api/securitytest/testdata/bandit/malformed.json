@@ -1,0 +1,15 @@
+{
+  "findings": [
+    {
+      "code": "B301",
+      "filename": "src/x.py",
+      "issue_confidence": "HIGH",
+      "issue_severity": "HIGH",
+      "issue_text": "Some issue",
+      "line_number": 10,
+      "line_range": [10],
+      "test_id": "B301",
+      "test_name": "some_test"
+    }
+  ]
+}

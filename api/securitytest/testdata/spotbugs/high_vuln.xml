@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<BugCollection>
+  <Project projectName="test-java-app">
+    <Jar>/path/to/app.jar</Jar>
+    <Plugin>com.h3xstream.findsecbugs:findsecbugs-plugin:1.12.0</Plugin>
+  </Project>
+  <BugInstance type="SQL_INJECTION_HIBERNATE" priority="1" rank="5" abbrev="SQL" category="SECURITY">
+    <SourceLine classname="com.example.WebController" start="42" end="45" startBytecode="0" endBytecode="120" sourcefile="WebController.java" sourcepath="/src/main/java/com/example/WebController.java"/>
+    <ShortMessage>Potential SQL injection in WebController.java at line 42</ShortMessage>
+  </BugInstance>
+  <BugInstance type="COMMAND_INJECTION" priority="2" rank="12" abbrev="COMMANDI" category="SECURITY">
+    <SourceLine classname="com.example.CLIHandler" start="88" end="91" startBytecode="0" endBytecode="80" sourcefile="CLIHandler.java" sourcepath="/src/main/java/com/example/CLIHandler.java"/>
+    <ShortMessage>Potential command injection in CLIHandler.java at line 88</ShortMessage>
+  </BugInstance>
+  <Errors errors="0" missingClasses="0"/>
+</BugCollection>

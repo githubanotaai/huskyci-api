@@ -1,0 +1,26 @@
+{
+  "Advisories2": [
+    {
+      "findings": [
+        {
+          "version": "2.2.0"
+        }
+      ],
+      "id": 1213,
+      "module_name": "handlebars",
+      "vulnerable_versions": "<4.0.13 || >=4.1.0, <4.1.2",
+      "severity": "critical",
+      "overview": "Versions of `handlebars` prior to 4.0.13 or 4.1.2 are vulnerable to Prototype Pollution.",
+      "title": "Prototype Pollution"
+    }
+  ],
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 1
+    }
+  }
+}

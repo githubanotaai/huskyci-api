@@ -1,0 +1,14 @@
+{
+  "alerts": [
+    {
+      "warning_type": "XSS",
+      "code": "Line 1",
+      "message": "Some issue",
+      "file": "test.rb",
+      "line": 1,
+      "link": "https://example.com",
+      "confidence": "High"
+    }
+  ],
+  "ignored_warnings": []
+}

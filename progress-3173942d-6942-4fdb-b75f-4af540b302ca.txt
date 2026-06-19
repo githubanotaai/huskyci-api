@@ -1,0 +1,234 @@
+# Progress Log
+Run: 3173942d-6942-4fdb-b75f-4af540b302ca
+Task: Implement parser regression tests for 7 scanners (Gap #7, issue #28)
+Started: 2026-06-19
+
+## Codebase Patterns
+- All parser analyzers follow the same pattern: `analyze<Tool>(scan *SecTestScanInfo) error`, unmarshal `scan.Container.COutput`, populate `scan.Vulnerabilities.{High,Medium,Low,NoSec}Vulns`
+- Test template: `api/securitytest/gosec_test.go` — copyright header, Tier-4 comment, `load<Tool>Fixture(t, name)`, 3 tests (HighVulnerabilityFound, CleanOutputProducesEmptyResults, MalformedOutputDoesNotPanic)
+- Fixtures live in `api/securitytest/testdata/<tool>/` — three files: `high_vuln.{json,xml}`, `no_vuln.{json,xml}`, `malformed.{json,xml}`
+- Module is `api/` only. Tests run with `go test -race -count=1 ./securitytest/`
+- Security test name in SecTestScanInfo must match the tool's registered name (lowercase): "bandit", "gosec", etc.
+- Parser bucketing varies: bandit uses `issue_severity` (uppercase HIGH/MEDIUM/LOW), brakeman uses `confidence` (title-case), spotbugs uses numeric `rank`, etc.
+- Brakeman parser does NOT populate the `Severity` field — it populates `Confidence` only. Tests must assert `Confidence` non-empty, not `Severity`.
+- Npmaudit parser only populates `Details` when `FixAvailable` is an object or non-boolean string — use object-form `fixAvailable` in high_vuln fixtures to ensure `Details` is non-empty.
+- Npmaudit `Vulnerability.Via` has custom unmarshaler accepting string or object — use plain strings in fixtures for simplicity.
+- Yarnaudit parser: same severity mapping as npmaudit (info|low→low, moderate→medium, high|critical→high). Has YarnIssue with findings sub-array. File is hardcoded to "yarn.lock".
+- For malformed JSON fixtures, rename the top-level key that holds the vulnerability data to a completely different name (not case-change — Go's encoding/json case-insensitively matches json struct tags).
+- Spotbugs XML parser: `log.Warning` is called on non-numeric rank parse failure in `prepareSpotBugsVulns`. In unit tests, `log.Logger` is nil (not initialized), causing nil-pointer-dereference panic. Tests that reach the processing loop must either avoid log calls (by making the parser return early) or provide a noopGelfLogger via `init()`.
+- The nil-logger panic is unique to spotbugs among the 7 parsers because its malformed path (non-numeric rank) still enters the vulnerability processing loop. JSON parsers avoid it by renaming keys to produce zero vulns without reaching log calls.
+- TFSec parser normalizes severity from uppercase ("HIGH"/"MEDIUM"/"LOW") to title-case ("High"/"Medium"/"Low"). Tests should assert Severity non-empty rather than exact case. Parser checks `Results == nil` for early return — renaming `results` → `findings` produces nil slice and zero vulns.
+
+## Story Plan
+
+### US-001: Add bandit parser regression tests
+
+**Description:** Add 3 regression tests for the bandit parser (api/securitytest/bandit.go) following the gosec_test.go template pattern.
+
+**Acceptance Criteria:**
+- File api/securitytest/bandit_test.go exists with loadBanditFixture helper and exactly 3 tests (TestParseBandit_HighVulnerabilityFound, TestParseBandit_CleanOutputProducesEmptyResults, TestParseBandit_MalformedOutputDoesNotPanic)
+- Files api/securitytest/testdata/bandit/high_vuln.json, no_vuln.json, malformed.json exist with correct fixture content
+- TestParseBandit_HighVulnerabilityFound asserts len(HighVulns) >= 1
+- TestParseBandit_CleanOutputProducesEmptyResults asserts 0 High / 0 Medium / 0 Low
+- TestParseBandit_MalformedOutputDoesNotPanic does not panic and either err!=nil or total==0
+- go test -race -count=1 -run TestParseBandit ./securitytest/ passes
+- gofmt -l api/securitytest/bandit_test.go is empty (file is formatted)
+- Typecheck passes (go vet ./securitytest/)
+
+### US-002: Add brakeman parser regression tests
+
+**Description:** Add 3 regression tests for the brakeman parser (api/securitytest/brakeman.go) following the gosec_test.go template pattern.
+
+**Acceptance Criteria:**
+- File api/securitytest/brakeman_test.go exists with loadBrakemanFixture helper and exactly 3 tests
+- Files api/securitytest/testdata/brakeman/high_vuln.json, no_vuln.json, malformed.json exist with correct fixture content
+- TestParseBrakeman_HighVulnerabilityFound asserts len(HighVulns) >= 1
+- TestParseBrakeman_CleanOutputProducesEmptyResults asserts 0 High / 0 Medium / 0 Low
+- TestParseBrakeman_MalformedOutputDoesNotPanic does not panic and either err!=nil or total==0
+- go test -race -count=1 -run TestParseBrakeman ./securitytest/ passes
+- gofmt -l api/securitytest/brakeman_test.go is empty
+- Typecheck passes (go vet ./securitytest/)
+
+### US-003: Add npmaudit parser regression tests
+
+**Description:** Add 3 regression tests for the npmaudit parser (api/securitytest/npmaudit.go) following the gosec_test.go template pattern.
+
+**Acceptance Criteria:**
+- File api/securitytest/npmaudit_test.go exists with loadNpmauditFixture helper and exactly 3 tests
+- Files api/securitytest/testdata/npmaudit/high_vuln.json, no_vuln.json, malformed.json exist with correct fixture content
+- TestParseNpmaudit_HighVulnerabilityFound does NOT exercise the ERROR_PACKAGE_LOCK_NOT_FOUND sentinel
+- TestParseNpmaudit_HighVulnerabilityFound asserts len(HighVulns) >= 1
+- TestParseNpmaudit_CleanOutputProducesEmptyResults asserts 0 High / 0 Medium / 0 Low
+- TestParseNpmaudit_MalformedOutputDoesNotPanic does not panic
+- go test -race -count=1 -run TestParseNpmaudit ./securitytest/ passes
+- gofmt -l api/securitytest/npmaudit_test.go is empty
+- Typecheck passes (go vet ./securitytest/)
+
+### US-004: Add yarnaudit parser regression tests
+
+**Description:** Add 3 regression tests for the yarnaudit parser (api/securitytest/yarnaudit.go) following the gosec_test.go template pattern.
+
+**Acceptance Criteria:**
+- File api/securitytest/yarnaudit_test.go exists with loadYarnauditFixture helper and exactly 3 tests
+- Files api/securitytest/testdata/yarnaudit/high_vuln.json, no_vuln.json, malformed.json exist
+- TestParseYarnaudit_HighVulnerabilityFound does NOT exercise sentinel paths
+- TestParseYarnaudit_HighVulnerabilityFound asserts len(HighVulns) >= 1
+- TestParseYarnaudit_CleanOutputProducesEmptyResults asserts 0 High / 0 Medium / 0 Low
+- TestParseYarnaudit_MalformedOutputDoesNotPanic does not panic
+- go test -race -count=1 -run TestParseYarnaudit ./securitytest/ passes
+- gofmt -l api/securitytest/yarnaudit_test.go is empty
+- Typecheck passes (go vet ./securitytest/)
+
+### US-005: Add spotbugs parser regression tests (XML)
+
+**Description:** Add 3 regression tests for the spotbugs parser (api/securitytest/spotbugs.go) following the gosec_test.go template pattern. This is the only XML parser.
+
+**Acceptance Criteria:**
+- File api/securitytest/spotbugs_test.go exists with loadSpotbugsFixture helper and exactly 3 tests
+- Files api/securitytest/testdata/spotbugs/high_vuln.xml, no_vuln.xml, malformed.xml exist with correct XML fixture content
+- Spotbugs no_vuln.xml has errors="0" missingClasses="0" to avoid parseXMLtoJSON error
+- TestParseSpotbugs_HighVulnerabilityFound asserts len(HighVulns) >= 1
+- TestParseSpotbugs_CleanOutputProducesEmptyResults asserts 0 High / 0 Medium / 0 Low and nil error
+- TestParseSpotbugs_MalformedOutputDoesNotPanic does not panic (rank="HIGH" triggers continue, not panic)
+- go test -race -count=1 -run TestParseSpotbugs ./securitytest/ passes
+- gofmt -l api/securitytest/spotbugs_test.go is empty
+- Typecheck passes (go vet ./securitytest/)
+
+### US-006: Add tfsec parser regression tests
+
+**Description:** Add 3 regression tests for the tfsec parser (api/securitytest/tfsec.go) following the gosec_test.go template pattern.
+
+**Acceptance Criteria:**
+- File api/securitytest/tfsec_test.go exists with loadTfsecFixture helper and exactly 3 tests
+- Files api/securitytest/testdata/tfsec/high_vuln.json, no_vuln.json, malformed.json exist
+- TestParseTfsec_HighVulnerabilityFound asserts len(HighVulns) >= 1 with Severity/Details/File non-empty
+- TestParseTfsec_CleanOutputProducesEmptyResults asserts 0 High / 0 Medium / 0 Low
+- TestParseTfsec_MalformedOutputDoesNotPanic does not panic
+- go test -race -count=1 -run TestParseTfsec ./securitytest/ passes
+- gofmt -l api/securitytest/tfsec_test.go is empty
+- Typecheck passes (go vet ./securitytest/)
+
+### US-007: Add safety parser regression tests
+
+**Description:** Add 3 regression tests for the safety parser (api/securitytest/safety.go) following the gosec_test.go template pattern.
+
+**Acceptance Criteria:**
+- File api/securitytest/safety_test.go exists with loadSafetyFixture helper and exactly 3 tests
+- Files api/securitytest/testdata/safety/high_vuln.json, no_vuln.json, malformed.json exist
+- TestParseSafety_HighVulnerabilityFound does NOT exercise any sentinel path
+- TestParseSafety_HighVulnerabilityFound asserts len(HighVulns) >= 1
+- TestParseSafety_CleanOutputProducesEmptyResults asserts 0 High / 0 Medium / 0 Low
+- TestParseSafety_MalformedOutputDoesNotPanic does not panic
+- go test -race -count=1 -run TestParseSafety ./securitytest/ passes
+- gofmt -l api/securitytest/safety_test.go is empty
+- Typecheck passes (go vet ./securitytest/)
+
+---
+## 2026-06-19 - US-001: Add bandit parser regression tests
+- Created api/securitytest/bandit_test.go with loadBanditFixture helper and 3 tests:
+  * TestParseBandit_HighVulnerabilityFound — asserts >=1 HighVuln with Severity/Details/File non-empty, >=1 MediumVuln
+  * TestParseBandit_CleanOutputProducesEmptyResults — asserts 0 High/0 Medium/0 Low
+  * TestParseBandit_MalformedOutputDoesNotPanic — asserts no panic with misnamed "findings" field
+- Created 3 fixture files:
+  * api/securitytest/testdata/bandit/high_vuln.json — 3 results: 2 HIGH, 1 MEDIUM
+  * api/securitytest/testdata/bandit/no_vuln.json — empty results array
+  * api/securitytest/testdata/bandit/malformed.json — "findings" instead of "results"
+- All 3 tests pass with go test -race -count=1
+- gofmt -l is clean, go vet passes
+- Commit: f396337
+- **Learnings:** Bandit parser uses `issue_severity` field (snake_case, uppercase values). Malformed test: rename top-level `"results"` → `"findings"` — JSON unmarshal silently ignores it, produces 0 vulns.
+---
+
+## 2026-06-19 - US-002: Add brakeman parser regression tests
+- Created api/securitytest/brakeman_test.go with loadBrakemanFixture helper and 3 tests:
+  * TestParseBrakeman_HighVulnerabilityFound — asserts >=1 HighVuln with Confidence/Details/File non-empty, >=1 MediumVuln
+  * TestParseBrakeman_CleanOutputProducesEmptyResults — asserts 0 High/0 Medium/0 Low
+  * TestParseBrakeman_MalformedOutputDoesNotPanic — asserts no panic with misnamed "alerts" field
+- Created 3 fixture files:
+  * api/securitytest/testdata/brakeman/high_vuln.json — warnings with High and Medium confidence
+  * api/securitytest/testdata/brakeman/no_vuln.json — empty warnings/ignored_warnings
+  * api/securitytest/testdata/brakeman/malformed.json — "alerts" instead of "warnings" (non-matching key)
+- All 3 tests pass with go test -race -count=1
+- gofmt -l is clean, go vet passes
+- Commit: 3ce078d
+- **Learnings:** Brakeman parser bucks by `Confidence` field (title-case: "High"/"Medium"/"Low"), NOT `Severity` which is never set. Tests must assert `Confidence` not `Severity`. Malformed fixture uses "alerts" instead of "warnings" because Go's encoding/json case-insensitive matching against the json tag value means a simple case change ("Warnings" → matches `json:"warnings"`) doesn't work; a completely different field name is needed.
+---
+
+## 2026-06-19 - US-003: Add npmaudit parser regression tests
+- Created api/securitytest/npmaudit_test.go with loadNpmauditFixture helper and 3 tests:
+  * TestParseNpmaudit_HighVulnerabilityFound — asserts >=1 HighVuln with Severity/Details/File non-empty, >=1 MediumVuln
+  * TestParseNpmaudit_CleanOutputProducesEmptyResults — asserts 0 High/0 Medium/0 Low
+  * TestParseNpmaudit_MalformedOutputDoesNotPanic — asserts no panic with misnamed "vulns" field
+- Created 3 fixture files:
+  * api/securitytest/testdata/npmaudit/high_vuln.json — vulnerabilities map with high-severity (minimist) and moderate-severity (lodash) entries; both use object-form fixAvailable
+  * api/securitytest/testdata/npmaudit/no_vuln.json — empty vulnerabilities map
+  * api/securitytest/testdata/npmaudit/malformed.json — "vulns" instead of "vulnerabilities"
+- All 3 tests pass with go test -race -count=1
+- gofmt -l is clean, go vet passes
+- Commit: c4369d0
+- **Learnings:** Npmaudit parser only sets `Details` when `FixAvailable.Text` is not "true"/"false" — use object-form `fixAvailable` (e.g. `{"name":"pkg","version":"1.2.3","isSemVerMajor":false}`) in high_vuln fixtures. Via field uses custom unmarshaler — plain strings work fine. The `Vulnerabilities` field is a map (dependency name → Vulnerability), not a slice — iterate over map values in the parser.
+---
+
+## 2026-06-19 - US-004: Add yarnaudit parser regression tests
+- Created api/securitytest/yarnaudit_test.go with loadYarnauditFixture helper and 3 tests:
+  * TestParseYarnaudit_HighVulnerabilityFound — asserts >=1 HighVuln with Severity/Details/File non-empty, >=1 MediumVuln
+  * TestParseYarnaudit_CleanOutputProducesEmptyResults — asserts 0 High/0 Medium/0 Low
+  * TestParseYarnaudit_MalformedOutputDoesNotPanic — asserts no panic with misnamed "Advisories2" field
+- Created 3 fixture files:
+  * api/securitytest/testdata/yarnaudit/high_vuln.json — 2 advisories: one high (handlebars Prototype Pollution), one moderate (underscore Arbitrary Code Execution)
+  * api/securitytest/testdata/yarnaudit/no_vuln.json — empty advisories array
+  * api/securitytest/testdata/yarnaudit/malformed.json — "Advisories2" instead of "advisories"
+- All 3 tests pass with go test -race -count=1
+- gofmt -l is clean, go vet passes
+- Full securitytest suite passes with go test -race -count=1
+- Commit: de13801
+- **Learnings:** Yarnaudit parser has same severity mapping as npmaudit (info|low→low, moderate→medium, high|critical→high). File is hardcoded to "yarn.lock". Each YarnIssue has a `findings` sub-array of YarnFinding objects with version strings. Code field is set from issue.ModuleName. Severity/Details/File assertions use the same pattern as npmaudit.
+---
+
+## 2026-06-19 - US-005: Add spotbugs parser regression tests (XML)
+- Created api/securitytest/spotbugs_test.go with loadSpotbugsFixture helper and 3 tests:
+  * TestParseSpotbugs_HighVulnerabilityFound — asserts >=1 HighVuln (rank=5) with Severity/Details/File non-empty, >=1 MediumVuln (rank=12)
+  * TestParseSpotbugs_CleanOutputProducesEmptyResults — asserts 0 High/0 Medium/0 Low with errors="0" missingClasses="0"
+  * TestParseSpotbugs_MalformedOutputDoesNotPanic — rank="HIGH" triggers rank parse failure, parser continues, zero vulns produced (requires noopGelfLogger init to avoid nil log.Logger panic)
+- Created 3 fixture files (XML format):
+  * api/securitytest/testdata/spotbugs/high_vuln.xml — BugCollection with SQL_INJECTION_HIBERNATE (rank=5) and COMMAND_INJECTION (rank=12)
+  * api/securitytest/testdata/spotbugs/no_vuln.xml — BugCollection with errors="0" missingClasses="0", no BugInstance elements
+  * api/securitytest/testdata/spotbugs/malformed.xml — BugCollection with rank="HIGH" (non-numeric)
+- All 3 tests pass with go test -race -count=1
+- gofmt -l is clean, go vet passes
+- Full securitytest suite passes (go test -race -count=1 ./securitytest/)
+- Commit: 3a93fa8
+- **Learnings:** Spotbugs is the only XML parser. Severity bucketing by numeric rank (rank < 10 → HIGH, < 15 → MEDIUM, else LOW). Critical gotcha: `log.Warning` call on non-numeric rank causes nil-pointer-dereference panic in unit tests because `log.Logger` is not initialized by tests. Solution: added `init()` with noopGelfLogger to spotbugs_test.go (new file, no existing source file modified). For malformed JSON fixtures (bandit, brakeman, etc.), rename the data-carrying top-level key to avoid entering the processing loop entirely — this avoids the nil logger issue for those parsers.
+---
+
+## 2026-06-19 - US-006: Add tfsec parser regression tests
+- Created api/securitytest/tfsec_test.go with loadTfsecFixture helper and 3 tests:
+  * TestParseTfsec_HighVulnerabilityFound — asserts >=1 HighVuln with Severity/Details/File non-empty, >=1 MediumVuln
+  * TestParseTfsec_CleanOutputProducesEmptyResults — asserts 0 High/0 Medium/0 Low
+  * TestParseTfsec_MalformedOutputDoesNotPanic — asserts no panic with misnamed "findings" field (nil Results triggers early return)
+- Created 3 fixture files:
+  * api/securitytest/testdata/tfsec/high_vuln.json — 2 results: one HIGH (aws-s3-enable-bucket-logging), one MEDIUM (aws-s3-encryption-customer-key)
+  * api/securitytest/testdata/tfsec/no_vuln.json — empty results array
+  * api/securitytest/testdata/tfsec/malformed.json — "findings" instead of "results" (nil Results → early return)
+- All 3 tests pass with go test -race -count=1
+- gofmt -l is clean, go vet passes
+- Full securitytest suite passes (go test -race -count=1 ./securitytest/)
+- Commit: c1cfefb
+- **Learnings:** TFSec parser normalizes severity from uppercase to title-case ("HIGH" → "High") in `prepareTFSecVulns`. Tests assert Severity non-empty. Parser checks `Results == nil` for early return; renaming `results` → `findings` in malformed JSON produces nil Results slice and returns nil with zero vulns. Parser also sets `scan.FinalOutput` before processing vulns. Details field constructed as `ruleID @ [description]`.
+---
+
+## 2026-06-19 - US-007: Add safety parser regression tests
+- Created api/securitytest/safety_test.go with loadSafetyFixture helper and 3 tests:
+  * TestParseSafety_HighVulnerabilityFound — asserts >=1 HighVuln with Severity/Details/File non-empty (all issues hardcoded as "high")
+  * TestParseSafety_CleanOutputProducesEmptyResults — asserts 0 High/0 Medium/0 Low
+  * TestParseSafety_MalformedOutputDoesNotPanic — asserts no panic with misnamed "findings" field (nil SafetyIssues → zero vulns)
+- Created 3 fixture files:
+  * api/securitytest/testdata/safety/high_vuln.json — 2 issues (django, requests) with realistic dependency/vulnerable_below/installed_version/description/id
+  * api/securitytest/testdata/safety/no_vuln.json — empty issues array
+  * api/securitytest/testdata/safety/malformed.json — "findings" instead of "issues" (nil SafetyIssues → early return produces zero vulns)
+- All 3 tests pass with go test -race -count=1
+- gofmt -l is clean, go vet passes
+- Full securitytest suite passes (go test -race -count=1 ./securitytest/)
+- Commit: 79897d2
+- **Learnings:** Safety parser has ALL issues hardcoded as "high" severity regardless of fixture content. Parser first checks sentinel strings (ERROR_RUNNING_SAFETY, ERROR_REQ_NOT_FOUND, "Warning: unpinned requirement") before JSON unmarshal — fixtures must not contain these. Output passes through util.SanitizeSafetyJSON (backslash/quote escaping) before unmarshal — clean JSON fixtures are unaffected. File is hardcoded to "requirements.txt". Parser sets FinalOutput before processing vulns. ReqNotFound/WarningFound paths have special handling outside the normal issue loop.
+---
