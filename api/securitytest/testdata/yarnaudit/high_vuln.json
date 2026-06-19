@@ -1,0 +1,42 @@
+{
+  "advisories": [
+    {
+      "findings": [
+        {
+          "version": "2.2.0"
+        },
+        {
+          "version": "3.1.0"
+        }
+      ],
+      "id": 1213,
+      "module_name": "handlebars",
+      "vulnerable_versions": "<4.0.13 || >=4.1.0, <4.1.2",
+      "severity": "high",
+      "overview": "Versions of `handlebars` prior to 4.0.13 or 4.1.2 are vulnerable to Prototype Pollution.",
+      "title": "Prototype Pollution"
+    },
+    {
+      "findings": [
+        {
+          "version": "0.19.0"
+        }
+      ],
+      "id": 1572,
+      "module_name": "underscore",
+      "vulnerable_versions": "<1.12.1",
+      "severity": "moderate",
+      "overview": "Versions of `underscore` prior to 1.12.1 are vulnerable to Arbitrary Code Execution.",
+      "title": "Arbitrary Code Execution"
+    }
+  ],
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 133,
+      "high": 118,
+      "critical": 31
+    }
+  }
+}
