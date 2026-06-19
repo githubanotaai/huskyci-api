@@ -23,37 +23,39 @@ func (g *gitleaksMapCaller) GetStringFromConfigFile(value string) string {
 	}
 	return g.config[value]
 }
-func (g *gitleaksMapCaller) GetBoolFromConfigFile(value string) bool   { return false }
-func (g *gitleaksMapCaller) GetIntFromConfigFile(value string) int     { return 0 }
+func (g *gitleaksMapCaller) GetBoolFromConfigFile(value string) bool { return false }
+func (g *gitleaksMapCaller) GetIntFromConfigFile(value string) int   { return 0 }
 func (g *gitleaksMapCaller) GetEnvironmentVariable(envName string) string {
 	if g.env == nil {
 		return ""
 	}
 	return g.env[envName]
 }
-func (g *gitleaksMapCaller) ConvertStrToInt(str string) (int, error) { return 0, errors.New("not used") }
+func (g *gitleaksMapCaller) ConvertStrToInt(str string) (int, error) {
+	return 0, errors.New("not used")
+}
 func (g *gitleaksMapCaller) GetTimeDurationInSeconds(duration int) time.Duration {
 	return time.Duration(duration) * time.Second
 }
 
 func TestGetSecurityTestConfig_gitleaksEnvOverride(t *testing.T) {
 	base := map[string]string{
-		"gitleaks.name":     "gitleaks",
-		"gitleaks.image":    "huskyci/gitleaks",
-		"gitleaks.imageTag": "8.30.1",
-		"gitleaks.cmd":      "true",
-		"gitleaks.type":     "Generic",
-		"gitleaks.language": "",
-		"gitleaks.default":  "true",
+		"gitleaks.name":             "gitleaks",
+		"gitleaks.image":            "huskyci/gitleaks",
+		"gitleaks.imageTag":         "8.30.1",
+		"gitleaks.cmd":              "true",
+		"gitleaks.type":             "Generic",
+		"gitleaks.language":         "",
+		"gitleaks.default":          "true",
 		"gitleaks.timeOutInSeconds": "360",
-		"enry.name":     "enry",
-		"enry.image":    "huskyci/enry",
-		"enry.imageTag": "1.0.0",
-		"enry.cmd":      "x",
-		"enry.type":     "Generic",
-		"enry.language": "",
-		"enry.default":  "true",
-		"enry.timeOutInSeconds": "60",
+		"enry.name":                 "enry",
+		"enry.image":                "huskyci/enry",
+		"enry.imageTag":             "1.0.0",
+		"enry.cmd":                  "x",
+		"enry.type":                 "Generic",
+		"enry.language":             "",
+		"enry.default":              "true",
+		"enry.timeOutInSeconds":     "60",
 	}
 
 	df := DefaultConfig{Caller: &gitleaksMapCaller{config: base, env: map[string]string{
