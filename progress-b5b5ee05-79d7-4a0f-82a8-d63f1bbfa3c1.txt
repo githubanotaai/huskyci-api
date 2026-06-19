@@ -1,0 +1,64 @@
+# Progress Log
+Run: b5b5ee05-79d7-4a0f-82a8-d63f1bbfa3c1
+Task: Implement GitHub issue #37 - CI security and supply-chain scanning
+Started: 2026-06-19
+
+## Codebase Patterns
+
+- Three independent Go modules: api/, client/, cli/ — each has own go.mod, go.sum, .golangci.yml
+- CI uses matrix strategy with module: [api, client, cli] for build-and-test
+- All CI jobs use actions/setup-go@v5 with go-version: "1.23"
+- working-directory: ${{ matrix.module }} is scoped per module
+- lint job uses golangci/golangci-lint-action@v7 with version v2.11.4
+- Dockerfiles are in deployments/dockerfiles/
+
+## Story Plan
+
+### US-001: Add govulncheck vulnerability scan to CI
+
+**Description:** As a platform maintainer, I need CI to scan Go dependencies for known vulnerabilities so that supply-chain risks are caught before merge.
+
+**Acceptance Criteria:**
+- ci.yaml contains a govulncheck job with matrix over [api, client, cli]
+- govulncheck job uses Go 1.23 via actions/setup-go@v5
+- govulncheck job runs go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+- YAML is syntactically valid (actionlint or yamllint passes)
+- Existing build-and-test, lint, docker-build, gitleaks-contract, and deployment-shell jobs are unchanged
+- Typecheck passes
+
+### US-002: Add gosec security scan to CI
+
+**Description:** As a platform maintainer, I need CI to run Go security static analysis so that HIGH-severity code issues are caught before merge.
+
+**Acceptance Criteria:**
+- ci.yaml contains a gosec job with matrix over [api, client, cli]
+- gosec job uses Go 1.23 via actions/setup-go@v5
+- gosec job runs gosec -severity high -quiet ./...
+- YAML is syntactically valid
+- Existing jobs are unchanged
+- Typecheck passes
+
+### US-003: Add trivy container image vulnerability scan to CI
+
+**Description:** As a platform maintainer, I need CI to scan container images for OS and Go module CVEs so that deployed images have no known HIGH/CRITICAL vulnerabilities.
+
+**Acceptance Criteria:**
+- ci.yaml contains a trivy-scan job
+- Trivy scans api.Dockerfile and client.Dockerfile
+- Trivy is configured to fail on HIGH or CRITICAL CVEs
+- YAML is syntactically valid
+- Existing jobs are unchanged
+- Typecheck passes
+
+### US-004: CI integration validation and PR preparation
+
+**Description:** As a platform maintainer, I need to verify the complete ci.yaml is valid, existing jobs remain intact, and local tests still pass before opening the PR.
+
+**Acceptance Criteria:**
+- actionlint reports no errors on ci.yaml
+- git diff main -- .github/workflows/ci.yaml shows only additions
+- All module test suites pass
+- No changes to go.mod files
+- progress.txt documents all new CI jobs with issue #37 reference
+
+---
