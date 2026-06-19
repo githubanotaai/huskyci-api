@@ -3,7 +3,7 @@ module github.com/githubanotaai/huskyci-api/api
 go 1.25.0
 
 require (
-	github.com/docker/docker v23.0.6+incompatible
+	github.com/docker/docker v23.0.18+incompatible
 	github.com/globocom/glbgelf v0.0.0-20190310030100-36e52796d86a
 	github.com/google/uuid v1.3.0
 	github.com/labstack/echo v3.3.10+incompatible
@@ -14,7 +14,6 @@ require (
 	github.com/spf13/viper v1.15.0
 	go.mongodb.org/mongo-driver v1.17.2
 	golang.org/x/crypto v0.51.0
-	golang.org/x/net v0.54.0
 	golang.org/x/sync v0.20.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22
 	k8s.io/api v0.27.1
@@ -75,6 +74,7 @@ require (
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
 	golang.org/x/mod v0.35.0 // indirect
+	golang.org/x/net v0.54.0 // indirect
 	golang.org/x/oauth2 v0.8.0 // indirect
 	golang.org/x/sys v0.44.0 // indirect
 	golang.org/x/term v0.43.0 // indirect
