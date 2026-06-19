@@ -24,9 +24,7 @@ func init() {
 }
 
 // Tier-3 input-validation safety net. Pins the contract of the three malicious
-// input validators so SSRF/path-traversal hardening (gap #10) can land safely.
-// Table rows that test desired-but-not-yet-implemented blocks are nested under
-// t.Skip subtests so the parent test stays green on current code.
+// input validators so SSRF/path-traversal hardening (gap #10) stays covered.
 
 // TestCheckMaliciousRepoURL asserts the URL validator's contract for both
 // (a) inputs that must remain accepted regardless of future hardening, and
@@ -57,8 +55,6 @@ func TestCheckMaliciousRepoURL(t *testing.T) {
 	}
 
 	t.Run("gap_10_ssrf_targets_not_yet_blocked", func(t *testing.T) {
-		t.Skip("Gap #10 — remove this Skip after CheckMaliciousRepoURL blocks RFC1918, link-local, loopback, file://, and credentials-in-URL")
-
 		ssrfCases := []struct {
 			name        string
 			input       string
@@ -132,8 +128,6 @@ func TestCheckMaliciousBranch(t *testing.T) {
 	}
 
 	t.Run("gap_path_traversal_not_yet_blocked", func(t *testing.T) {
-		t.Skip("Branch path-traversal gap — remove this Skip after CheckMaliciousRepoBranch (util.go:184) rejects '..' segments")
-
 		traversal := []struct {
 			name        string
 			input       string
@@ -186,8 +180,6 @@ func TestCheckMaliciousChangedFiles(t *testing.T) {
 	}
 
 	t.Run("gap_path_and_absolute_not_yet_blocked", func(t *testing.T) {
-		t.Skip("Changed-files path/absolute gap — remove this Skip after CheckMaliciousChangedFiles (util.go:204) rejects '..' and leading '/'")
-
 		extra := []struct {
 			name        string
 			input       string

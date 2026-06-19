@@ -69,8 +69,6 @@ func TestStart_PassedWhenAllScannersPass(t *testing.T) {
 // fails, the failure-propagation contract is broken and you should debug
 // setToAnalysis (run.go:243) and setFinalResult (run.go:324) before merging.
 func TestStart_FailedWhenAnyScannerFails(t *testing.T) {
-	t.Skip("Bug #8 — remove this Skip after setToAnalysis/setFinalResult order is fixed in run.go:65-81")
-
 	tests := []types.SecurityTest{
 		{Name: "gitleaks"},
 		{Name: "gitauthors"},
@@ -118,8 +116,6 @@ func TestStart_FailedWhenAnyScannerFails(t *testing.T) {
 //
 // Remove the Skip after the run.go:65-81 ordering issue is fixed.
 func TestStart_WarningWhenAllScannersWarn(t *testing.T) {
-	t.Skip("Bug #8 — remove this Skip after setToAnalysis/setFinalResult order is fixed in run.go:65-81")
-
 	tests := []types.SecurityTest{
 		{Name: "gitleaks"},
 		{Name: "gitauthors"},
@@ -165,8 +161,6 @@ func TestStart_WarningWhenAllScannersWarn(t *testing.T) {
 // run.go:100-124 and run.go:149-181. Until then, executing this test body
 // would crash the test binary itself — hence the Skip guards the harness.
 func TestStart_PanicInScannerDoesNotCrashAPI(t *testing.T) {
-	t.Skip("Gap #7 — remove this Skip after defer recover() is added to g.Go bodies in run.go:100-124 and run.go:149-181")
-
 	defer func() {
 		if r := recover(); r != nil {
 			t.Errorf("panic escaped Start(): %v — expected error return, not panic", r)
@@ -215,8 +209,6 @@ func TestStart_PanicInScannerDoesNotCrashAPI(t *testing.T) {
 // in run.go. Test asserts a max of 5 concurrent scanners; tune the limit to
 // match whatever value the fix configures.
 func TestStart_ConcurrencyIsLimited(t *testing.T) {
-	t.Skip("Gap #3 — remove this Skip after errgroup.SetLimit is added in run.go")
-
 	const totalScanners = 20
 	const maxAllowed = int32(5)
 

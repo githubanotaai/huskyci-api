@@ -1,6 +1,7 @@
 package securitytest
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -43,6 +44,13 @@ func TestParseWizCLIJSON_InvalidJSON(t *testing.T) {
 	_, err := parseWizCLIJSON("not json")
 	if err == nil {
 		t.Error("expected error parsing invalid JSON, got nil")
+	}
+}
+
+func TestParseWizCLIJSON_OversizedOutput(t *testing.T) {
+	_, err := parseWizCLIJSON(strings.Repeat("x", maxWizCLIJSONBytes+1))
+	if !errors.Is(err, errWizCLIOutputTooLarge) {
+		t.Fatalf("expected errWizCLIOutputTooLarge, got %v", err)
 	}
 }
 
@@ -804,7 +812,7 @@ func TestGenerateSonarQubeExternalIssue(t *testing.T) {
 				Severity:     "HIGH",
 				File:         "requirements.txt:pytest:7.4.3",
 				Line:         "5",
-				Details:       "CVE-2023-XXXX (fixed: 7.4.4)",
+				Details:      "CVE-2023-XXXX (fixed: 7.4.4)",
 				SecurityTool: "WizCLI",
 			},
 		},
@@ -815,7 +823,7 @@ func TestGenerateSonarQubeExternalIssue(t *testing.T) {
 				Severity:     "CRITICAL",
 				File:         "app/db/queries.py",
 				Line:         "42",
-				Details:       "Potential SQL injection in user input",
+				Details:      "Potential SQL injection in user input",
 				SecurityTool: "WizCLI",
 			},
 		},

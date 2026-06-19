@@ -12,6 +12,10 @@ import (
 	"github.com/githubanotaai/huskyci-api/api/util"
 )
 
+const maxWizCLIJSONBytes = 1000000
+
+var errWizCLIOutputTooLarge = errors.New("wizcli json output exceeds size limit")
+
 // wizCLIReport models the subset of `wizcli scan dir --stdout=json` output that
 // huskyCI surfaces as findings. Unrelated metadata (analytics, sbomOutput,
 // hostConfiguration, ...) is intentionally ignored.
@@ -21,16 +25,16 @@ type wizCLIReport struct {
 		Verdict string `json:"verdict"`
 	} `json:"status"`
 	Result struct {
-		Libraries             []wizPackageWithVulns  `json:"libraries"`
-		OSPackages            []wizPackageWithVulns  `json:"osPackages"`
-		Secrets               []wizSecretFinding     `json:"secrets"`
-		DataFindings          []wizDataFinding       `json:"dataFindings"`
-		EndOfLifeTechnologies []wizEndOfLifeFinding     `json:"endOfLifeTechnologies"`
-		Iac                 *wizIacSastResult      `json:"iac"`
-		Sast                *wizIacSastResult      `json:"sast"`
-		Malwares            []wizMalwareFinding       `json:"malwares"`
-		AIModels            []wizAIModelFinding       `json:"aiModels"`
-		SoftwareSupplyChain []wizSupplyChainFinding   `json:"softwareSupplyChain"`
+		Libraries             []wizPackageWithVulns   `json:"libraries"`
+		OSPackages            []wizPackageWithVulns   `json:"osPackages"`
+		Secrets               []wizSecretFinding      `json:"secrets"`
+		DataFindings          []wizDataFinding        `json:"dataFindings"`
+		EndOfLifeTechnologies []wizEndOfLifeFinding   `json:"endOfLifeTechnologies"`
+		Iac                   *wizIacSastResult       `json:"iac"`
+		Sast                  *wizIacSastResult       `json:"sast"`
+		Malwares              []wizMalwareFinding     `json:"malwares"`
+		AIModels              []wizAIModelFinding     `json:"aiModels"`
+		SoftwareSupplyChain   []wizSupplyChainFinding `json:"softwareSupplyChain"`
 	} `json:"result"`
 }
 
@@ -78,10 +82,10 @@ type wizIacSastResult struct {
 }
 
 type wizRuleMatch struct {
-	Rule               wizRuleRef      `json:"rule"`
-	Severity           string          `json:"severity"`
-	FailedResourceCount int            `json:"failedResourceCount"`
-	Matches            []wizMatchEntry `json:"matches"`
+	Rule                wizRuleRef      `json:"rule"`
+	Severity            string          `json:"severity"`
+	FailedResourceCount int             `json:"failedResourceCount"`
+	Matches             []wizMatchEntry `json:"matches"`
 }
 
 type wizRuleRef struct {
@@ -90,13 +94,13 @@ type wizRuleRef struct {
 }
 
 type wizMatchEntry struct {
-	ResourceName           string `json:"resourceName"`
-	FileName               string `json:"fileName"`
-	LineNumber             int    `json:"lineNumber"`
-	MatchContent           string `json:"matchContent"`
-	Expected               string `json:"expected"`
-	Found                  string `json:"found"`
-	FileType               string `json:"fileType"`
+	ResourceName            string `json:"resourceName"`
+	FileName                string `json:"fileName"`
+	LineNumber              int    `json:"lineNumber"`
+	MatchContent            string `json:"matchContent"`
+	Expected                string `json:"expected"`
+	Found                   string `json:"found"`
+	FileType                string `json:"fileType"`
 	RemediationInstructions string `json:"remediationInstructions"`
 }
 
@@ -165,25 +169,25 @@ func analyzeWizCLI(scanInfo *SecTestScanInfo) error {
 // manifestFileTypes maps manifest file names/basenames to their language ecosystem.
 var manifestFileTypes = map[string]string{
 	// Python
-	"requirements.txt":    "python",
-	"requirements":        "python", // prefix match for requirements-*.txt
-	"pyproject.toml":      "python",
-	"setup.py":            "python",
-	"Pipfile":             "python",
-	"Pipfile.lock":        "python",
+	"requirements.txt": "python",
+	"requirements":     "python", // prefix match for requirements-*.txt
+	"pyproject.toml":   "python",
+	"setup.py":         "python",
+	"Pipfile":          "python",
+	"Pipfile.lock":     "python",
 	// Node.js
-	"package-lock.json": "node",
-	"package.json":       "node",
-	"yarn.lock":          "node",
+	"package-lock.json":   "node",
+	"package.json":        "node",
+	"yarn.lock":           "node",
 	"npm-shrinkwrap.json": "node",
-	"pnpm-lock.yaml":    "node",
+	"pnpm-lock.yaml":      "node",
 	// Go
 	"go.mod": "go",
 	"go.sum": "go",
 	// Java
-	"pom.xml":           "java",
-	"build.gradle":      "java",
-	"build.gradle.kts":  "java",
+	"pom.xml":          "java",
+	"build.gradle":     "java",
+	"build.gradle.kts": "java",
 	// Ruby
 	"Gemfile":      "ruby",
 	"Gemfile.lock": "ruby",
@@ -191,8 +195,8 @@ var manifestFileTypes = map[string]string{
 	"composer.json": "php",
 	"composer.lock": "php",
 	// .NET
-	"packages.config":  "dotnet",
-	"project.json":     "dotnet",
+	"packages.config":   "dotnet",
+	"project.json":      "dotnet",
 	"project.lock.json": "dotnet",
 	// Rust
 	"Cargo.toml": "rust",
@@ -314,10 +318,10 @@ func validateSonarQubeFilePath(filePath string) error {
 
 // sonarQubeExternalIssue represents a single external issue for SonarQube import.
 type sonarQubeExternalIssue struct {
-	EngineID       string `json:"engineId"`
-	RuleID         string `json:"ruleId"`
-	Severity       string `json:"severity,omitempty"`
-	Type           string `json:"type,omitempty"`
+	EngineID        string `json:"engineId"`
+	RuleID          string `json:"ruleId"`
+	Severity        string `json:"severity,omitempty"`
+	Type            string `json:"type,omitempty"`
 	PrimaryLocation struct {
 		Message  string `json:"message"`
 		FilePath string `json:"filePath"`
@@ -377,6 +381,10 @@ func generateSonarQubeExternalIssue(vuln types.HuskyCIVulnerability) sonarQubeEx
 // into HuskyCIVulnerability entries, covering CVEs (libraries, OS packages),
 // secrets, data findings, and end-of-life technologies.
 func parseWizCLIJSON(output string) ([]types.HuskyCIVulnerability, error) {
+	if len(output) > maxWizCLIJSONBytes {
+		return nil, fmt.Errorf("%w: got %d bytes, limit %d bytes", errWizCLIOutputTooLarge, len(output), maxWizCLIJSONBytes)
+	}
+
 	var report wizCLIReport
 	if err := json.Unmarshal([]byte(output), &report); err != nil {
 		return nil, err

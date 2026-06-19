@@ -7,11 +7,11 @@ package kubernetes
 import (
 	"errors"
 	"fmt"
-	"io"
 
+	goContext "context"
 	apiContext "github.com/githubanotaai/huskyci-api/api/context"
 	"github.com/githubanotaai/huskyci-api/api/log"
-	goContext "context"
+	"github.com/githubanotaai/huskyci-api/api/util"
 
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -244,7 +244,7 @@ func (k Kubernetes) ReadOutput(name string) (string, error) {
 	}
 	defer func() { _ = podLogs.Close() }()
 
-	result, err := io.ReadAll(podLogs)
+	result, err := util.ReadBoundedScannerOutput(podLogs)
 	if err != nil {
 		errRemovePod := k.RemovePod(name)
 		if errRemovePod != nil {
@@ -253,7 +253,7 @@ func (k Kubernetes) ReadOutput(name string) (string, error) {
 		return "", err
 	}
 
-	return string(result), nil
+	return result, nil
 }
 
 func (k Kubernetes) RemovePod(name string) error {

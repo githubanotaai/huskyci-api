@@ -2,7 +2,9 @@ package securitytest
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -14,8 +16,8 @@ import (
 
 // RunAllInfo store all scans results of an Analysis
 type RunAllInfo struct {
-	runner         scanRunner        `json:"-" bson:"-"`
-	mu             sync.Mutex        `json:"-" bson:"-"`
+	runner         scanRunner `json:"-" bson:"-"`
+	mu             sync.Mutex `json:"-" bson:"-"`
 	RID            string
 	Status         string
 	Containers     []types.Container
@@ -45,9 +47,9 @@ const tfsec = "tfsec"
 const securitycodescan = "securitycodescan"
 const (
 	wizcliSecrets = "wizcli_secrets"
-	wizcliIac      = "wizcli_iac"
-	wizcliSast     = "wizcli_sast"
-	wizcliVulns    = "wizcli_vulns"
+	wizcliIac     = "wizcli_iac"
+	wizcliSast    = "wizcli_sast"
+	wizcliVulns   = "wizcli_vulns"
 )
 
 // isTestDisabled checks if a security test is disabled via environment variable.
@@ -78,12 +80,12 @@ func (results *RunAllInfo) Start(enryScan SecTestScanInfo) error {
 		return err
 	}
 
-	results.setFinalResult()
 	return nil
 }
 
 func (results *RunAllInfo) runGenericScans(ctx context.Context, enryScan SecTestScanInfo) error {
 	g, ctx := errgroup.WithContext(ctx)
+	g.SetLimit(maxConcurrentScanners())
 	runner := results.getRunner()
 
 	genericTests, err := runner.listGenericTests()
@@ -97,7 +99,12 @@ func (results *RunAllInfo) runGenericScans(ctx context.Context, enryScan SecTest
 			log.Info("runGenericScans", "SECURITYTEST", 0, "Skipping disabled test: "+testName)
 			continue
 		}
-		g.Go(func() error {
+		g.Go(func() (err error) {
+			defer func() {
+				if r := recover(); r != nil {
+					err = scannerPanicError{testName: testName, value: r}
+				}
+			}()
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
@@ -129,6 +136,7 @@ func (results *RunAllInfo) runGenericScans(ctx context.Context, enryScan SecTest
 
 func (results *RunAllInfo) runLanguageScans(ctx context.Context, enryScan SecTestScanInfo) error {
 	g, ctx := errgroup.WithContext(ctx)
+	g.SetLimit(maxConcurrentScanners())
 	runner := results.getRunner()
 
 	languageTests := []types.SecurityTest{}
@@ -146,7 +154,12 @@ func (results *RunAllInfo) runLanguageScans(ctx context.Context, enryScan SecTes
 			log.Info("runLanguageScans", "SECURITYTEST", 0, "Skipping disabled test: "+testName)
 			continue
 		}
-		g.Go(func() error {
+		g.Go(func() (err error) {
+			defer func() {
+				if r := recover(); r != nil {
+					err = scannerPanicError{testName: testName, value: r}
+				}
+			}()
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
@@ -182,6 +195,29 @@ func (results *RunAllInfo) runLanguageScans(ctx context.Context, enryScan SecTes
 	}
 
 	return g.Wait()
+}
+
+const defaultMaxConcurrentScanners = 5
+
+type scannerPanicError struct {
+	testName string
+	value    interface{}
+}
+
+func (e scannerPanicError) Error() string {
+	return fmt.Sprintf("scanner %s panicked: %v", e.testName, e.value)
+}
+
+func maxConcurrentScanners() int {
+	value := strings.TrimSpace(os.Getenv("HUSKYCI_MAX_CONCURRENT_SCANNERS"))
+	if value == "" {
+		return defaultMaxConcurrentScanners
+	}
+	limit, err := strconv.Atoi(value)
+	if err != nil || limit <= 0 {
+		return defaultMaxConcurrentScanners
+	}
+	return limit
 }
 
 // vulnOutput maps a security test name to its corresponding HuskyCISecurityTestOutput pointer.

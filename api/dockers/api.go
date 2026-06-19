@@ -6,17 +6,18 @@ package dockers
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"strconv"
+	"time"
 
+	goContext "context"
 	dockerTypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	apiContext "github.com/githubanotaai/huskyci-api/api/context"
 	"github.com/githubanotaai/huskyci-api/api/log"
-	goContext "context"
+	"github.com/githubanotaai/huskyci-api/api/util"
 )
 
 // Docker is the docker struct
@@ -99,6 +100,11 @@ func (d Docker) StartContainer() error {
 // WaitContainer returns when container finishes executing cmd.
 func (d Docker) WaitContainer(timeOutInSeconds int) error {
 	ctx := goContext.Background()
+	if timeOutInSeconds > 0 {
+		var cancel goContext.CancelFunc
+		ctx, cancel = goContext.WithTimeout(ctx, time.Duration(timeOutInSeconds)*time.Second)
+		defer cancel()
+	}
 	containerWaitC, errC := d.client.ContainerWait(ctx, d.CID, container.WaitConditionNotRunning)
 
 	select {
@@ -110,6 +116,8 @@ func (d Docker) WaitContainer(timeOutInSeconds int) error {
 		if containerWait.StatusCode != 0 {
 			return fmt.Errorf("Error in POST to wait the container with statusCode %d", containerWait.StatusCode)
 		}
+	case <-ctx.Done():
+		return ctx.Err()
 	}
 
 	return nil
@@ -194,12 +202,12 @@ func (d Docker) ReadOutput() (string, error) {
 		return "", nil
 	}
 
-	body, err := io.ReadAll(out)
+	body, err := util.ReadBoundedScannerOutput(out)
 	if err != nil {
 		log.Error("ReadOutput", logInfoAPI, 3007, err)
 		return "", err
 	}
-	return string(body), err
+	return body, err
 }
 
 // ReadOutputStderr returns STDERR of a given containerID.
@@ -211,12 +219,12 @@ func (d Docker) ReadOutputStderr() (string, error) {
 		return "", nil
 	}
 
-	body, err := io.ReadAll(out)
+	body, err := util.ReadBoundedScannerOutput(out)
 	if err != nil {
 		log.Error("ReadOutputStderr", logInfoAPI, 3008, err)
 		return "", err
 	}
-	return string(body), err
+	return body, err
 }
 
 // PullImage pulls an image, like docker pull.
