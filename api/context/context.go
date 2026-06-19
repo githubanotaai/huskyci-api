@@ -13,7 +13,6 @@ import (
 	cache "github.com/patrickmn/go-cache"
 
 	"github.com/githubanotaai/huskyci-api/api/db"
-	postgres "github.com/githubanotaai/huskyci-api/api/db/postgres"
 	"github.com/githubanotaai/huskyci-api/api/types"
 )
 
@@ -106,8 +105,8 @@ type APIConfig struct {
 	TFSecSecurityTest            *types.SecurityTest
 	SecurityCodeScanSecurityTest *types.SecurityTest
 	WizcliSecretsSecurityTest    *types.SecurityTest
-	WizcliIacSecurityTest         *types.SecurityTest
-	WizcliSastSecurityTest        *types.SecurityTest
+	WizcliIacSecurityTest        *types.SecurityTest
+	WizcliSastSecurityTest       *types.SecurityTest
 	WizcliVulnsSecurityTest      *types.SecurityTest
 	DBInstance                   db.Requests
 	Cache                        *cache.Cache
@@ -157,15 +156,15 @@ func (dF DefaultConfig) SetOnceConfig() {
 			BrakemanSecurityTest:         dF.getSecurityTestConfig("brakeman"),
 			NpmAuditSecurityTest:         dF.getSecurityTestConfig("npmaudit"),
 			YarnAuditSecurityTest:        dF.getSecurityTestConfig("yarnaudit"),
-			PnpmAuditSecurityTest:       dF.getSecurityTestConfig("pnpmaudit"),
+			PnpmAuditSecurityTest:        dF.getSecurityTestConfig("pnpmaudit"),
 			SpotBugsSecurityTest:         dF.getSecurityTestConfig("spotbugs"),
 			GitleaksSecurityTest:         dF.getSecurityTestConfig("gitleaks"),
 			SafetySecurityTest:           dF.getSecurityTestConfig("safety"),
 			TFSecSecurityTest:            dF.getSecurityTestConfig("tfsec"),
 			SecurityCodeScanSecurityTest: dF.getSecurityTestConfig("securitycodescan"),
 			WizcliSecretsSecurityTest:    dF.getSecurityTestConfig("wizcli_secrets"),
-			WizcliIacSecurityTest:         dF.getSecurityTestConfig("wizcli_iac"),
-			WizcliSastSecurityTest:        dF.getSecurityTestConfig("wizcli_sast"),
+			WizcliIacSecurityTest:        dF.getSecurityTestConfig("wizcli_iac"),
+			WizcliSastSecurityTest:       dF.getSecurityTestConfig("wizcli_sast"),
 			WizcliVulnsSecurityTest:      dF.getSecurityTestConfig("wizcli_vulns"),
 			DBInstance:                   dF.GetDB(),
 			Cache:                        dF.GetCache(),
@@ -451,28 +450,8 @@ func (dF DefaultConfig) getSecurityTestConfig(securityTestName string) *types.Se
 	return st
 }
 
-// GetDB returns a Requests implementation based on the
-// on the type configured on HUSKYCI_DATABASE_TYPE env var.
-// The default returns a MongoRequests that implements mongo
-// queries.
+// GetDB returns a Requests implementation backed by MongoDB.
 func (dF DefaultConfig) GetDB() db.Requests {
-	dB := dF.Caller.GetEnvironmentVariable("HUSKYCI_DATABASE_TYPE")
-	if strings.EqualFold(dB, "postgres") {
-		postgresOperations := postgres.PostgresHandler{}
-		sqlConfig := postgres.SQLConfig{
-			Postgres: &postgresOperations,
-		}
-		jsonHandler := db.JSONCaller{}
-		sqlJSONRetriever := db.SQLJSONRetrieve{
-			Psql:        &sqlConfig,
-			JSONHandler: &jsonHandler,
-		}
-		postgres := db.PostgresRequests{
-			DataRetriever: &sqlJSONRetriever,
-			JSONHandler:   &jsonHandler,
-		}
-		return &postgres
-	}
 	return &db.MongoRequests{}
 }
 
