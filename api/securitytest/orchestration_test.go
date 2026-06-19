@@ -20,6 +20,52 @@ import (
 // Tests use the existing mockRunner from runner.go so no real DB or container
 // runtime is involved.
 
+// TestStartAnalysis_HappyPath_MultiScanner verifies that when 3+ generic
+// scanners all report CResult="passed" and CStatus="finished", Start() returns
+// nil, FinalResult is "passed", and Status is "finished". This pins the
+// happy-path contract including the Status field which existing baseline tests
+// do not check.
+func TestStartAnalysis_HappyPath_MultiScanner(t *testing.T) {
+	t.Parallel()
+
+	tests := []types.SecurityTest{
+		{Name: "gitleaks"},
+		{Name: "gitauthors"},
+		{Name: "wizcli_secrets"},
+	}
+
+	runner := &mockRunner{
+		genericTests: tests,
+		newScanFunc: func(RID, URL, branch, name string, le map[string]bool, cf, dh string) (*SecTestScanInfo, error) {
+			return &SecTestScanInfo{
+				RID:              RID,
+				SecurityTestName: name,
+				Container: types.Container{
+					CID:     "cid-" + name,
+					CResult: "passed",
+					CStatus: "finished",
+				},
+			}, nil
+		},
+		startScanFunc: func(scan *SecTestScanInfo) error { return nil },
+	}
+
+	results := &RunAllInfo{runner: runner}
+	enryScan := SecTestScanInfo{
+		RID: "happy-multi-rid", URL: "https://example.com/repo", Branch: "main",
+	}
+
+	if err := results.Start(enryScan); err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	if results.FinalResult != "passed" {
+		t.Errorf("expected FinalResult=%q, got %q", "passed", results.FinalResult)
+	}
+	if results.Status != "finished" {
+		t.Errorf("expected Status=%q, got %q", "finished", results.Status)
+	}
+}
+
 // TestStart_PassedWhenAllScannersPass is the baseline. Multiple scanners all
 // report CResult="passed" — Start() must return nil and FinalResult must be
 // "passed". This test must remain green on the current code; if it ever fails
