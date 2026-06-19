@@ -6,7 +6,10 @@ package util
 
 import (
 	"bufio"
+	"io"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"regexp"
 	"strconv"
@@ -30,6 +33,23 @@ const (
 
 const logInfoAnalysis = "ANALYSIS"
 const logActionReceiveRequest = "ReceiveRequest"
+
+var validRepoURL = regexp.MustCompile(`((git|ssh|http(s)?)|((git@|gitlab@)[\w\.]+))(:(//)?)([\w\.@\:/\-~]+)(\.git)(/)?`)
+
+const MaxScannerOutputBytes = 100 * 1024 * 1024
+
+var ErrScannerOutputTooLarge = errors.New("scanner output exceeds size limit")
+
+func ReadBoundedScannerOutput(reader io.Reader) (string, error) {
+	body, err := io.ReadAll(io.LimitReader(reader, MaxScannerOutputBytes+1))
+	if err != nil {
+		return "", err
+	}
+	if len(body) > MaxScannerOutputBytes {
+		return "", fmt.Errorf("%w: limit %d bytes", ErrScannerOutputTooLarge, MaxScannerOutputBytes)
+	}
+	return string(body), nil
+}
 
 // HandleCmd will extract %GIT_REPO%, %GIT_BRANCH% from cmd and replace it with the proper repository URL.
 // Also replaces %WIZ_CLIENT_ID% and %WIZ_CLIENT_SECRET% with values from environment variables.
@@ -140,7 +160,33 @@ func RemoveDuplicates(s []string) []string {
 
 // HandleScanError show the right error when json is not expected as output of scan
 func HandleScanError(containerOutput string, otherErr error) error {
-	return fmt.Errorf("%s\nError from top: %v", containerOutput, otherErr)
+	return fmt.Errorf("%s\nError from top: %v", boundedScannerOutput(containerOutput), otherErr)
+}
+
+func boundedScannerOutput(output string) string {
+	const edgeSize = 512
+	if len(output) <= edgeSize*2 {
+		return output
+	}
+	prefix := output[:edgeSize]
+	suffix := output[len(output)-edgeSize:]
+	return fmt.Sprintf("%s\n... scanner output truncated, total bytes: %d ...\n%s", prefix, len(output), suffix)
+}
+
+// RedactURL removes URL userinfo before values are written to logs.
+func RedactURL(raw string) string {
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		if strings.HasPrefix(raw, "git@") || strings.HasPrefix(raw, "gitlab@") {
+			return raw
+		}
+		if at := strings.LastIndex(raw, "@"); at > 0 {
+			return "[redacted]" + raw[at:]
+		}
+		return "[unparseable]"
+	}
+	parsed.User = nil
+	return parsed.String()
 }
 
 // CheckValidInput checks if an user's input is "malicious" or not
@@ -149,7 +195,7 @@ func CheckValidInput(repository types.Repository, c echo.Context) (string, error
 	sanitiziedURL, err := CheckMaliciousRepoURL(repository.URL)
 	if err != nil {
 		if sanitiziedURL == "" {
-			log.Error(logActionReceiveRequest, logInfoAnalysis, 1016, repository.URL)
+			log.Error(logActionReceiveRequest, logInfoAnalysis, 1016, RedactURL(repository.URL))
 			reply := map[string]interface{}{"success": false, "error": "invalid repository URL"}
 			return "", c.JSON(http.StatusBadRequest, reply)
 		}
@@ -167,17 +213,43 @@ func CheckValidInput(repository types.Repository, c echo.Context) (string, error
 
 // CheckMaliciousRepoURL verifies if a given URL is a git repository and returns the sanitizied string and its error
 func CheckMaliciousRepoURL(repositoryURL string) (string, error) {
-	regexpGit := `((git|ssh|http(s)?)|((git@|gitlab@)[\w\.]+))(:(//)?)([\w\.@\:/\-~]+)(\.git)(/)?`
-	r := regexp.MustCompile(regexpGit)
-	valid, err := regexp.MatchString(regexpGit, repositoryURL)
-	if err != nil {
-		return "matchStringError", err
-	}
-	if !valid {
+	if !validRepoURL.MatchString(repositoryURL) {
 		errorMsg := fmt.Sprintf("Invalid URL format: %s", repositoryURL)
 		return "", errors.New(errorMsg)
 	}
-	return r.FindString(repositoryURL), nil
+	sanitized := validRepoURL.FindString(repositoryURL)
+	if strings.HasPrefix(sanitized, "git@") || strings.HasPrefix(sanitized, "gitlab@") {
+		return sanitized, nil
+	}
+
+	parsed, err := url.Parse(sanitized)
+	if err != nil {
+		return "", err
+	}
+	switch parsed.Scheme {
+	case "git", "http", "https", "ssh":
+	default:
+		return "", fmt.Errorf("invalid repository URL scheme: %s", parsed.Scheme)
+	}
+	if parsed.User != nil {
+		return "", errors.New("repository URL must not contain credentials")
+	}
+	if isUnsafeRepoHost(parsed.Hostname()) {
+		return "", errors.New("repository URL points to a blocked host")
+	}
+	return sanitized, nil
+}
+
+func isUnsafeRepoHost(host string) bool {
+	host = strings.ToLower(strings.TrimSpace(host))
+	if host == "" || host == "localhost" || strings.HasSuffix(host, ".localhost") {
+		return true
+	}
+	ip := net.ParseIP(host)
+	if ip == nil {
+		return false
+	}
+	return ip.IsPrivate() || ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() || ip.IsUnspecified()
 }
 
 // CheckMaliciousRepoBranch verifies if a given branch is "malicious" or not
@@ -189,7 +261,7 @@ func CheckMaliciousRepoBranch(repositoryBranch string, c echo.Context) error {
 		reply := map[string]interface{}{"success": false, "error": "internal error"}
 		return c.JSON(http.StatusInternalServerError, reply)
 	}
-	if !valid {
+	if !valid || hasUnsafePathSegment(repositoryBranch) {
 		log.Error(logActionReceiveRequest, logInfoAnalysis, 1017, repositoryBranch)
 		reply := map[string]interface{}{"success": false, "error": "invalid repository branch"}
 		return c.JSON(http.StatusBadRequest, reply)
@@ -212,10 +284,35 @@ func CheckMaliciousChangedFiles(changedFiles string) error {
 	if err != nil {
 		return err
 	}
-	if !valid {
+	if !valid || hasUnsafeChangedFilePath(changedFiles) {
 		return errors.New("invalid changed files: contains forbidden characters")
 	}
 	return nil
+}
+
+func hasUnsafeChangedFilePath(changedFiles string) bool {
+	for _, file := range strings.Split(changedFiles, "\n") {
+		file = strings.TrimSpace(file)
+		if file == "" {
+			continue
+		}
+		if strings.HasPrefix(file, "/") || strings.HasPrefix(file, "\\") || hasUnsafePathSegment(file) {
+			return true
+		}
+	}
+	return false
+}
+
+func hasUnsafePathSegment(value string) bool {
+	parts := strings.FieldsFunc(value, func(r rune) bool {
+		return r == '/' || r == '\\'
+	})
+	for _, part := range parts {
+		if part == ".." {
+			return true
+		}
+	}
+	return false
 }
 
 // CheckMaliciousRID verifies if a given RID is "malicious" or not

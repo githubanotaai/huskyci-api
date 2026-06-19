@@ -5,10 +5,12 @@
 package util_test
 
 import (
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 
 	"github.com/githubanotaai/huskyci-api/api/log"
 	"github.com/githubanotaai/huskyci-api/api/types"
@@ -191,6 +193,43 @@ Line4`
 		Context("When rawSliceString is empty", func() {
 			It("Should return an empty slice of string.", func() {
 				Expect(util.GetAllLinesButLast("")).To(Equal([]string{}))
+			})
+		})
+	})
+
+	Describe("HandleScanError", func() {
+		Context("When scanner output is large", func() {
+			It("Should include bounded output and total byte count", func() {
+				err := util.HandleScanError(strings.Repeat("a", 2000), errors.New("invalid json"))
+				Expect(err.Error()).To(ContainSubstring("scanner output truncated"))
+				Expect(err.Error()).To(ContainSubstring("total bytes: 2000"))
+				Expect(len(err.Error())).To(BeNumerically("<", 1300))
+			})
+		})
+	})
+
+	Describe("ReadBoundedScannerOutput", func() {
+		Context("When scanner output is below the limit", func() {
+			It("Should return the full output", func() {
+				out, err := util.ReadBoundedScannerOutput(strings.NewReader("scanner-json"))
+				Expect(err).To(BeNil())
+				Expect(out).To(Equal("scanner-json"))
+			})
+		})
+	})
+
+	Describe("RedactURL", func() {
+		Context("When URL contains userinfo", func() {
+			It("Should remove credentials", func() {
+				raw := "https://user:token@github.com/org/repo.git"
+				Expect(util.RedactURL(raw)).To(Equal("https://github.com/org/repo.git"))
+			})
+		})
+
+		Context("When URL has no userinfo", func() {
+			It("Should leave it unchanged", func() {
+				raw := "git@github.com:org/repo.git"
+				Expect(util.RedactURL(raw)).To(Equal(raw))
 			})
 		})
 	})

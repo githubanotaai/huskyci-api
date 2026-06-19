@@ -75,7 +75,7 @@ func GetAnalysis(c echo.Context) error {
 	log.Info(logActionGetAnalysis, logInfoAnalysis, 113, "Analysis data retrieved successfully for RID:", RID)
 
 	// Add logging to capture the analysis result being returned
-	log.Info(logActionGetAnalysis, logInfoAnalysis, 113, "Analysis result:", analysisResult)
+	log.Info(logActionGetAnalysis, logInfoAnalysis, 113, "Analysis result:", analysisResult.RID, analysisResult.Status, analysisResult.Result)
 
 	return c.JSON(http.StatusOK, analysisResult)
 }
@@ -148,7 +148,7 @@ func ReceiveRequest(c echo.Context) error {
 		} else { // err == nil
 			// step 03-a: Ops, this analysis is already running!
 			if analysisResult.Status == "running" {
-				log.Warning(logActionReceiveRequest, logInfoAnalysis, 104, analysisResult.URL)
+				log.Warning(logActionReceiveRequest, logInfoAnalysis, 104, util.RedactURL(analysisResult.URL))
 				reply := map[string]interface{}{"success": false, "error": "an analysis is already in place for this URL and branch"}
 				return c.JSON(http.StatusConflict, reply)
 			}
@@ -156,7 +156,7 @@ func ReceiveRequest(c echo.Context) error {
 	}
 
 	// step 04: lets start this analysis!
-	log.Info(logActionReceiveRequest, logInfoAnalysis, 16, repository.Branch, repository.URL)
+	log.Info(logActionReceiveRequest, logInfoAnalysis, 16, repository.Branch, util.RedactURL(repository.URL))
 	go analysis.StartAnalysis(RID, repository)
 	reply := map[string]interface{}{"success": true, "error": ""}
 	return c.JSON(http.StatusCreated, reply)

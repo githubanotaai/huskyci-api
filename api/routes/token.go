@@ -11,6 +11,7 @@ import (
 	"github.com/githubanotaai/huskyci-api/api/log"
 	"github.com/githubanotaai/huskyci-api/api/token"
 	"github.com/githubanotaai/huskyci-api/api/types"
+	"github.com/githubanotaai/huskyci-api/api/util"
 	"github.com/labstack/echo"
 )
 
@@ -34,7 +35,7 @@ func HandleToken(c echo.Context) error {
 		log.Error("HandleToken", "TOKEN", 1025, err)
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{"success": false, "error": "invalid token JSON"})
 	}
-	log.Info("HandleToken", "TOKEN", 24, repoRequest.RepositoryURL)
+	log.Info("HandleToken", "TOKEN", 24, util.RedactURL(repoRequest.RepositoryURL))
 	accessToken, err := tokenHandler.GenerateAccessToken(repoRequest)
 	if err != nil {
 		log.Error("HandleToken ", "TOKEN", 1026, err)

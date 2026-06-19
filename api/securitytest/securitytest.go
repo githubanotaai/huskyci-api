@@ -162,7 +162,7 @@ func (scanInfo *SecTestScanInfo) analyze() error {
 		} else {
 			errorMsg = errors.New("error cloning")
 		}
-		log.Error("analyze", "SECURITYTEST", 1031, scanInfo.URL, scanInfo.Branch, errorMsg)
+		log.Error("analyze", "SECURITYTEST", 1031, util.RedactURL(scanInfo.URL), scanInfo.Branch, errorMsg)
 		scanInfo.ErrorFound = errorMsg
 		return errorMsg
 	}

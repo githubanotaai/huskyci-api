@@ -5,6 +5,8 @@
 package auth
 
 import (
+	"crypto/subtle"
+
 	"github.com/labstack/echo"
 )
 
@@ -32,7 +34,7 @@ func (mB MongoBasic) IsValidUser(username, password string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if passDB != hashedPass {
+	if subtle.ConstantTimeCompare([]byte(passDB), []byte(hashedPass)) != 1 {
 		return false, nil
 	}
 	return true, nil

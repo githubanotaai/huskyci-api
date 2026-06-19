@@ -6,6 +6,7 @@ package token
 
 import (
 	"crypto/sha256"
+	"crypto/subtle"
 	"errors"
 	"fmt"
 	"strings"
@@ -89,7 +90,7 @@ func (tH *THandler) ValidateRandomData(rdata, hashdata, salt string) error {
 	keyLength := tH.HashGen.GetKeyLength()
 	iterations := tH.HashGen.GetIterations()
 	hashval := tH.HashGen.GenHashValue([]byte(rdata), bSalt, iterations, keyLength, h)
-	if hashval != hashdata {
+	if subtle.ConstantTimeCompare([]byte(hashval), []byte(hashdata)) != 1 {
 		return errors.New("Hash value from random data is different")
 	}
 	return nil
