@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/githubanotaai/huskyci-api/api/log"
 	"github.com/githubanotaai/huskyci-api/api/types"
 )
 
@@ -19,6 +20,238 @@ import (
 //
 // Tests use the existing mockRunner from runner.go so no real DB or container
 // runtime is involved.
+
+// TestStartAnalysis_HappyPath_MultiScanner verifies that when 3+ generic
+// scanners all report CResult="passed" and CStatus="finished", Start() returns
+// nil, FinalResult is "passed", and Status is "finished". This pins the
+// happy-path contract including the Status field which existing baseline tests
+// do not check.
+func TestStartAnalysis_HappyPath_MultiScanner(t *testing.T) {
+	t.Parallel()
+
+	tests := []types.SecurityTest{
+		{Name: "gitleaks"},
+		{Name: "gitauthors"},
+		{Name: "wizcli_secrets"},
+	}
+
+	runner := &mockRunner{
+		genericTests: tests,
+		newScanFunc: func(RID, URL, branch, name string, le map[string]bool, cf, dh string) (*SecTestScanInfo, error) {
+			return &SecTestScanInfo{
+				RID:              RID,
+				SecurityTestName: name,
+				Container: types.Container{
+					CID:     "cid-" + name,
+					CResult: "passed",
+					CStatus: "finished",
+				},
+			}, nil
+		},
+		startScanFunc: func(scan *SecTestScanInfo) error { return nil },
+	}
+
+	results := &RunAllInfo{runner: runner}
+	enryScan := SecTestScanInfo{
+		RID: "happy-multi-rid", URL: "https://example.com/repo", Branch: "main",
+	}
+
+	if err := results.Start(enryScan); err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	if results.FinalResult != "passed" {
+		t.Errorf("expected FinalResult=%q, got %q", "passed", results.FinalResult)
+	}
+	if results.Status != "finished" {
+		t.Errorf("expected Status=%q, got %q", "finished", results.Status)
+	}
+}
+
+// TestStartAnalysis_MixedResults verifies that when scanners return a mix of
+// results (one failed, one warning, one passed), FinalResult resolves to
+// "failed" because failed takes unconditional precedence over both warning
+// and passed. Start() must return nil (all scanners completed without error),
+// Status must be "finished". Per scope decision: test directly without #25
+// skip — current main's setToAnalysis already handles this.
+func TestStartAnalysis_MixedResults(t *testing.T) {
+	t.Parallel()
+
+	tests := []types.SecurityTest{
+		{Name: "gitleaks"},
+		{Name: "gitauthors"},
+		{Name: "wizcli_secrets"},
+	}
+
+	results := map[string]string{
+		"gitleaks":       "failed",
+		"gitauthors":     "warning",
+		"wizcli_secrets": "passed",
+	}
+
+	runner := &mockRunner{
+		genericTests: tests,
+		newScanFunc: func(RID, URL, branch, name string, le map[string]bool, cf, dh string) (*SecTestScanInfo, error) {
+			return &SecTestScanInfo{
+				RID:              RID,
+				SecurityTestName: name,
+				Container: types.Container{
+					CID:     "cid-" + name,
+					CResult: results[name],
+					CStatus: "finished",
+				},
+			}, nil
+		},
+		startScanFunc: func(scan *SecTestScanInfo) error { return nil },
+	}
+
+	run := &RunAllInfo{runner: runner}
+	enryScan := SecTestScanInfo{
+		RID: "mixed-rid", URL: "https://example.com/repo", Branch: "main",
+	}
+
+	if err := run.Start(enryScan); err != nil {
+		t.Fatalf("Start returned unexpected error: %v", err)
+	}
+	if run.FinalResult != "failed" {
+		t.Errorf("expected FinalResult=%q with mix of failed/warning/passed, got %q", "failed", run.FinalResult)
+	}
+	if run.Status != "finished" {
+		t.Errorf("expected Status=%q, got %q", "finished", run.Status)
+	}
+}
+
+// TestStartAnalysis_LanguageFanout verifies that when enry detects Go and
+// Python, the runLanguageScans path dispatches gosec for Go and bandit for
+// Python. It pins the language-to-scanner mapping contract and exercises the
+// runLanguageScans path which currently has zero coverage.
+func TestStartAnalysis_LanguageFanout(t *testing.T) {
+	t.Parallel()
+
+	languageTests := map[string][]types.SecurityTest{
+		"Go":     {{Name: "gosec"}},
+		"Python": {{Name: "bandit"}},
+	}
+
+	runner := &mockRunner{
+		genericTests: nil, // isolate language scan path
+		listLanguageTestsFunc: func(language string) ([]types.SecurityTest, error) {
+			return languageTests[language], nil
+		},
+		newScanFunc: func(RID, URL, branch, name string, le map[string]bool, cf, dh string) (*SecTestScanInfo, error) {
+			return &SecTestScanInfo{
+				RID:              RID,
+				SecurityTestName: name,
+				Container: types.Container{
+					CID:     "cid-" + name,
+					CResult: "passed",
+					CStatus: "finished",
+				},
+			}, nil
+		},
+		startScanFunc: func(scan *SecTestScanInfo) error { return nil },
+	}
+
+	results := &RunAllInfo{runner: runner}
+	enryScan := SecTestScanInfo{
+		RID: "lang-fanout-rid", URL: "https://example.com/repo", Branch: "main",
+		Codes: []types.Code{
+			{Language: "Go"},
+			{Language: "Python"},
+		},
+	}
+
+	if err := results.Start(enryScan); err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+
+	// Exactly 2 containers: one for gosec, one for bandit
+	if len(results.Containers) != 2 {
+		t.Fatalf("expected 2 containers, got %d", len(results.Containers))
+	}
+
+	found := make(map[string]bool)
+	for _, c := range results.Containers {
+		found[c.CID] = true
+	}
+	if !found["cid-gosec"] {
+		t.Errorf("gosec container not dispatched")
+	}
+	if !found["cid-bandit"] {
+		t.Errorf("bandit container not dispatched")
+	}
+
+	if results.FinalResult != "passed" {
+		t.Errorf("expected FinalResult=%q, got %q", "passed", results.FinalResult)
+	}
+	if results.Status != "finished" {
+		t.Errorf("expected Status=%q, got %q", "finished", results.Status)
+	}
+}
+
+// TestStartAnalysis_DisabledScanner verifies that setting
+// HUSKYCI_DISABLE_GITLEAKS=true prevents gitleaks from being dispatched
+// while other scanners continue to run. This pins the runtime-disabling
+// contract for the isTestDisabled integration within RunAllInfo.Start.
+func TestStartAnalysis_DisabledScanner(t *testing.T) {
+	log.InitLog(true, "", "", "test", "test")
+	t.Setenv("HUSKYCI_DISABLE_GITLEAKS", "true")
+
+	tests := []types.SecurityTest{
+		{Name: "gitleaks"},
+		{Name: "gitauthors"},
+	}
+
+	runner := &mockRunner{
+		genericTests: tests,
+		newScanFunc: func(RID, URL, branch, name string, le map[string]bool, cf, dh string) (*SecTestScanInfo, error) {
+			return &SecTestScanInfo{
+				RID:              RID,
+				SecurityTestName: name,
+				Container: types.Container{
+					CID:     "cid-" + name,
+					CResult: "passed",
+					CStatus: "finished",
+				},
+			}, nil
+		},
+		startScanFunc: func(scan *SecTestScanInfo) error { return nil },
+	}
+
+	results := &RunAllInfo{runner: runner}
+	enryScan := SecTestScanInfo{
+		RID: "disabled-rid", URL: "https://example.com/repo", Branch: "main",
+	}
+
+	if err := results.Start(enryScan); err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+
+	// Gitauthors must be present (only disabled scanner is skipped)
+	found := make(map[string]bool)
+	for _, c := range results.Containers {
+		found[c.CID] = true
+	}
+	if !found["cid-gitauthors"] {
+		t.Errorf("gitauthors container not dispatched — expected it to run even though gitleaks was disabled")
+	}
+
+	// Gitleaks must NOT be present (disabled via env var)
+	if found["cid-gitleaks"] {
+		t.Errorf("gitleaks container was dispatched but it should have been disabled by HUSKYCI_DISABLE_GITLEAKS=true")
+	}
+
+	// Exactly 1 container
+	if len(results.Containers) != 1 {
+		t.Fatalf("expected 1 container (gitauthors only), got %d", len(results.Containers))
+	}
+
+	if results.FinalResult != "passed" {
+		t.Errorf("expected FinalResult=%q, got %q", "passed", results.FinalResult)
+	}
+	if results.Status != "finished" {
+		t.Errorf("expected Status=%q, got %q", "finished", results.Status)
+	}
+}
 
 // TestStart_PassedWhenAllScannersPass is the baseline. Multiple scanners all
 // report CResult="passed" — Start() must return nil and FinalResult must be

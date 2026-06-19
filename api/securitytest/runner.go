@@ -33,10 +33,11 @@ func (realRunner) startScan(scan *SecTestScanInfo) error {
 
 // mockRunner returns preconfigured results for testing.
 type mockRunner struct {
-	genericTests  []types.SecurityTest
-	languageTests []types.SecurityTest
-	newScanFunc   func(RID, URL, branch, securityTestName string, languageExclusions map[string]bool, changedFiles, dockerHost string) (*SecTestScanInfo, error)
-	startScanFunc func(scan *SecTestScanInfo) error
+	genericTests          []types.SecurityTest
+	languageTests         []types.SecurityTest
+	listLanguageTestsFunc func(language string) ([]types.SecurityTest, error)
+	newScanFunc           func(RID, URL, branch, securityTestName string, languageExclusions map[string]bool, changedFiles, dockerHost string) (*SecTestScanInfo, error)
+	startScanFunc         func(scan *SecTestScanInfo) error
 }
 
 func (m *mockRunner) listGenericTests() ([]types.SecurityTest, error) {
@@ -44,6 +45,9 @@ func (m *mockRunner) listGenericTests() ([]types.SecurityTest, error) {
 }
 
 func (m *mockRunner) listLanguageTests(language string) ([]types.SecurityTest, error) {
+	if m.listLanguageTestsFunc != nil {
+		return m.listLanguageTestsFunc(language)
+	}
 	return m.languageTests, nil
 }
 
