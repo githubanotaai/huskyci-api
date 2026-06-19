@@ -3,7 +3,6 @@ package db
 import (
 	"time"
 
-	postgres "github.com/githubanotaai/huskyci-api/api/db/postgres"
 	"github.com/githubanotaai/huskyci-api/api/types"
 )
 
@@ -49,29 +48,6 @@ type JSON interface {
 	Unmarshal(data []byte, v interface{}) error
 }
 
-// DataGenerator defines the functions that will interact directly
-// with DB functions. It abstracts the database functions
-type DataGenerator interface {
-	Connect(address string, username string, password string, dbName string, maxOpenConns int, maxIdleConns int, connLT time.Duration) error
-	RetrieveFromDB(query string, response interface{}, arrayColumns []string, params ...interface{}) error
-	WriteInDB(query string, args ...interface{}) (int64, error)
-	PqArray(values []string) interface{}
-}
-
 // JSONCaller implements JSON interface calling functions
 // from encoding/json package.
 type JSONCaller struct{}
-
-// SQLJSONRetrieve implements DataGenerator that will interact with
-// the Postgres functions. This struct will DB data in JSON format.
-type SQLJSONRetrieve struct {
-	Psql        postgres.SQLGen
-	JSONHandler JSON
-}
-
-// PostgresRequests implements Requests
-// for Postgres, a relational DB.
-type PostgresRequests struct {
-	DataRetriever DataGenerator
-	JSONHandler   JSON
-}
