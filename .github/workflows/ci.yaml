@@ -56,6 +56,28 @@ jobs:
         run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
         working-directory: ${{ matrix.module }}
 
+  gosec:
+    name: Gosec (${{ matrix.module }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [api, client, cli]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          cache-dependency-path: ${{ matrix.module }}/go.sum
+
+      - name: Install gosec
+        run: go install github.com/securego/gosec/v2/cmd/gosec@latest
+
+      - name: Run gosec (HIGH severity only)
+        run: $(go env GOPATH)/bin/gosec -severity high -quiet ./...
+        working-directory: ${{ matrix.module }}
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
