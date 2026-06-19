@@ -1,0 +1,11 @@
+{
+  "findings": [
+    {
+      "dependency": "django",
+      "vulnerable_below": "3.2.25",
+      "installed_version": "3.2.24",
+      "description": "This data is under the 'findings' key, not 'issues', so json.Unmarshal ignores it and SafetyIssues stays nil.",
+      "id": "71234"
+    }
+  ]
+}
