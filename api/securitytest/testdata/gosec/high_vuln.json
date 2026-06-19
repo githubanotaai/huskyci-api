@@ -1,0 +1,28 @@
+{
+  "Issues": [
+    {
+      "severity": "HIGH",
+      "confidence": "HIGH",
+      "rule_id": "G401",
+      "details": "Use of weak cryptographic primitive",
+      "file": "/src/main.go",
+      "code": "md5.New()",
+      "line": "12"
+    },
+    {
+      "severity": "MEDIUM",
+      "confidence": "MEDIUM",
+      "rule_id": "G304",
+      "details": "File path provided as taint input",
+      "file": "/src/handler.go",
+      "code": "os.Open(userInput)",
+      "line": "47"
+    }
+  ],
+  "Stats": {
+    "files": 2,
+    "lines": 120,
+    "nosec": 0,
+    "found": 2
+  }
+}
