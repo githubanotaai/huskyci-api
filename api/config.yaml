@@ -802,65 +802,28 @@ wizcli_vulns:
     chmod 600 ~/.ssh/huskyci_id_rsa &&
     echo "IdentityFile ~/.ssh/huskyci_id_rsa" >> /etc/ssh/ssh_config &&
     echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config &&
-    if [ "$HUSKYCI_DELTA_SCAN" = "true" ] && [ -n "%CHANGED_FILES%" ]; then
-      GIT_TERMINAL_PROMPT=0 git clone --no-checkout -b "%GIT_BRANCH%" --single-branch --depth 1 "%GIT_REPO%" code --quiet 2>/tmp/errorGitClone
-      if [ $? -eq 0 ]; then
-        cd code
-        git sparse-checkout init --cone
-        echo "%CHANGED_FILES%" | while IFS= read -r f; do [ -n "$f" ] && git sparse-checkout add "$f"; done
-        git checkout -- 2>/tmp/errorSparseCheckout
-        if [ $? -ne 0 ]; then
-          echo "ERROR_SPARSE_CHECKOUT"
-          cat /tmp/errorSparseCheckout
-          exit 1
-        fi
-        cd ..
-        wizcli auth --id '%WIZ_CLIENT_ID%' --secret '%WIZ_CLIENT_SECRET%' > /tmp/errorWizAuth 2>&1
-        if [ $? -ne 0 ]; then
-          echo 'ERROR_AUTH_WIZCLI'
-          cat /tmp/errorWizAuth
-        else
-          wizcli scan dir ./code \
-            --disabled-scanners Secret,SensitiveData,Misconfiguration,SAST \
-            --by-policy-hits=DISABLED \
-            --json-output-file=/tmp/wizResult.json > /dev/null 2> /tmp/errorWizScan
-          SCAN_RC=$?
-          if [ $SCAN_RC -ge 2 ]; then
-            echo "ERROR_RUNNING_WIZCLI_SCAN"
-            cat /tmp/errorWizScan
-          else
-            cat /tmp/wizResult.json
-          fi
-        fi
+    GIT_TERMINAL_PROMPT=0 git clone -b "%GIT_BRANCH%" --single-branch --depth 1 "%GIT_REPO%" code --quiet 2>/tmp/errorGitCloneWiz
+    if [ $? -eq 0 ]; then
+      wizcli auth --id '%WIZ_CLIENT_ID%' --secret '%WIZ_CLIENT_SECRET%' > /tmp/errorWizAuth 2>&1
+      if [ $? -ne 0 ]; then
+        echo 'ERROR_AUTH_WIZCLI'
+        cat /tmp/errorWizAuth
       else
-        echo "ERROR_CLONING"
-        cat /tmp/errorGitClone
-        exit 1
+        wizcli scan dir ./code \
+          --disabled-scanners Secret,SensitiveData,Misconfiguration,SAST \
+          --by-policy-hits=DISABLED \
+          --json-output-file=/tmp/wizResult.json > /dev/null 2> /tmp/errorWizScan
+        SCAN_RC=$?
+        if [ $SCAN_RC -ge 2 ]; then
+          echo "ERROR_RUNNING_WIZCLI_SCAN"
+          cat /tmp/errorWizScan
+        else
+          cat /tmp/wizResult.json
+        fi
       fi
     else
-      GIT_TERMINAL_PROMPT=0 git clone -b "%GIT_BRANCH%" --single-branch --depth 1 "%GIT_REPO%" code --quiet 2>/tmp/errorGitCloneWiz
-      if [ $? -eq 0 ]; then
-        wizcli auth --id '%WIZ_CLIENT_ID%' --secret '%WIZ_CLIENT_SECRET%' > /tmp/errorWizAuth 2>&1
-        if [ $? -ne 0 ]; then
-            echo 'ERROR_AUTH_WIZCLI'
-            cat /tmp/errorWizAuth
-        else
-            wizcli scan dir ./code \
-              --disabled-scanners Secret,SensitiveData,Misconfiguration,SAST \
-              --by-policy-hits=DISABLED \
-              --json-output-file=/tmp/wizResult.json > /dev/null 2> /tmp/errorWizScan
-            SCAN_RC=$?
-            if [ $SCAN_RC -ge 2 ]; then
-              echo "ERROR_RUNNING_WIZCLI_SCAN"
-              cat /tmp/errorWizScan
-            else
-              cat /tmp/wizResult.json
-            fi
-        fi
-      else
-        echo "ERROR_CLONING"
-        cat /tmp/errorGitCloneWiz
-      fi
+      echo "ERROR_CLONING"
+      cat /tmp/errorGitCloneWiz
     fi
   type: Generic
   default: true
