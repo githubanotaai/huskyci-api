@@ -127,6 +127,10 @@ help:
 # generate-local-token has removed
 install: create-certs compose generate-passwords
 
+## Runs integration tests (requires Docker)
+integration-test:
+	cd api && $(GO) test -tags integration -count=1 -v ./integration/...
+
 ## Runs all huskyCI lint
 lint:
 	$(GO) install -u golang.org/x/lint/golint

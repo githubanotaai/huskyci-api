@@ -106,6 +106,24 @@ jobs:
           fi
           echo "$out" | jq -e 'type == "array" and (length == 1) and .[0].RuleID == "github-pat"'
 
+  # Non-gating integration test job — runs testcontainers-based integration
+  # tests against real MongoDB. Uses continue-on-error: true so failures
+  # won't block PRs while the suite stabilizes. Promote to gating once
+  # test reliability is proven.
+  integration-test:
+    name: Integration Tests (non-gating)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Run integration tests
+        run: make integration-test
+
   deployment-shell:
     name: Deployment shell (bash -n)
     runs-on: ubuntu-latest
