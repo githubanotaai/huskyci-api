@@ -1,0 +1,118 @@
+# Progress Log
+Run: 6eee193b-b1d5-4767-92e8-ad76621cf851
+Task: Implement performance benchmarks for huskyci-api (issue #61)
+Started: 2026-06-19
+
+## Codebase Patterns
+
+- Go 1.26.4 — `b.Loop()` is available for benchmarks (go.mod requires 1.25.0)
+- Each Go module (api/, client/, cli/) has independent go.mod — cd into module before running go commands
+- mockRunner in api/securitytest/runner.go is the standard test double for scan orchestration
+- Zero-value mockRunner (no func fields set) provides true no-op newScan/startScan — ideal for benchmarks that only care about coordination overhead
+- Errgroup.SetLimit is used in run.go with maxConcurrentScanners() (default 5)
+- Race detector is required by CI: go test -race -count=1 ./...
+- .gitignore already covers .env, *.pem, secrets, vendor/, build outputs
+- Benchmarks go in *_bench_test.go files alongside the package they test
+- b.Loop() automatically manages timer — do NOT call b.StopTimer() without matching b.StartTimer() before loop iteration ends
+- b.ReportAllocs() measures allocation overhead
+- errgroup.WithContext(ctx) pattern: create group, optionally SetLimit, g.Go for each unit, g.Wait()
+- //go:build integration tag excludes benchmarks/tests that require Docker, Kubernetes, or MongoDB from regular go test runs
+- Docker struct fields (client, CID) are accessible from same-package tests (package dockers)
+- Docker client (client.Client from docker/docker) is safe for concurrent use — share a single client across goroutines
+- NewDocker mutates process-wide env vars (DOCKER_HOST, DOCKER_CERT_PATH, DOCKER_TLS_VERIFY) — call once, share the client
+- Benchmark integration setup: check Docker availability (NewDocker + Ping), b.Skip() if unavailable, pre-pull image with ImageIsLoaded/PullImage
+- defer RemoveContainer() handles cleanup even on error; the method logs errors but doesn't return them for already-removed containers
+- Kubernetes struct methods are value receivers — can create minimal Kubernetes{client, Namespace} and call CreatePod/WaitPod/RemovePod directly
+- NewKubernetes() requires apiContext.DefaultConf.GetAPIConfig() to be initialized; benchmarks use direct clientcmd.BuildConfigFromFlags + kubernetes.NewForConfig instead
+- clientcmd.BuildConfigFromFlags("", kubeconfig) with empty masterURL honors KUBECONFIG env var and default ~/.kube/config
+- kubernetes.Interface is the interface type exported by k8s.io/client-go/kubernetes — use for testable helpers
+- Pod cleanup: Delete returns "not found" if pod is already gone — wrap in removePodGracefully for safe defer-based cleanup
+- Throttle detection: check error strings for "429", "TooManyRequests", "throttl" (covers client-go retry and API server responses)
+
+## Story Plan
+
+### US-001: Add BenchmarkScanGoroutineFanout to api/securitytest/run_bench_test.go
+
+**Description:** As a developer, I need to add a benchmark that measures goroutine fan-out behavior during scan orchestration so that we can quantify the overhead of concurrent scans and verify concurrency limits work correctly.
+
+**Acceptance Criteria:**
+- File api/securitytest/run_bench_test.go exists with package securitytest
+- BenchmarkScanGoroutineFanout function compiles and runs with go test -bench=BenchmarkScanGoroutineFanout -benchtime=1x ./api/securitytest/
+- Benchmark exercises concurrent_scans=1,10,50 and scanners_per_scan=1,6,16 via sub-benchmarks
+- Benchmark uses mockRunner (no Docker, Kubernetes, or MongoDB dependencies)
+- Benchmark uses runtime.NumGoroutine to report goroutine counts
+- Benchmark uses b.ReportAllocs() to measure allocations
+- Benchmark does not panic under any input combination
+- go vet ./api/securitytest/ passes
+- Typecheck passes
+
+### US-002: Add BenchmarkErrgroupFanout to api/securitytest/run_bench_test.go
+
+**Description:** As a developer, I need to add a benchmark that isolates errgroup fan-out coordination overhead so that we can confirm SetLimit adds negligible overhead at typical scanner counts.
+
+**Acceptance Criteria:**
+- BenchmarkErrgroupFanout function exists in api/securitytest/run_bench_test.go
+- Benchmark compiles and runs with go test -bench=BenchmarkErrgroupFanout -benchtime=1x ./api/securitytest/
+- Benchmark exercises N=1,2,5,10,15,20 scanners via sub-benchmarks
+- Benchmark includes variants with and without SetLimit for each N
+- Benchmark uses mockRunner with no-op startScanFunc
+- Benchmark uses b.ReportAllocs()
+- Benchmark does not panic under any input combination
+- go vet ./api/securitytest/ passes
+- Typecheck passes
+
+### US-003: Add BenchmarkDockerContainerStartBurst to api/dockers/api_bench_test.go
+
+### US-004: Add BenchmarkKubernetesPodCreateBurst to api/kubernetes/api_bench_test.go
+
+---
+## 2026-06-19 - US-001: Add BenchmarkScanGoroutineFanout
+- Created api/securitytest/run_bench_test.go with BenchmarkScanGoroutineFanout
+- Uses mockRunner with no-op startScanFunc (1ms sleep for goroutine accumulation)
+- Samples runtime.NumGoroutine at 50μs intervals via atomic peak tracking
+- Reports baseline-goroutines, peak-goroutines, final-goroutines metrics
+- Reports allocations via b.ReportAllocs()
+- 9 sub-benchmarks: concurrent={1,10,50} × scanners={1,6,16}
+- All pass: peak ranges from 7 (1×1) to 354 (50×16, bounded by SetLimit=5)
+- go vet passes, go build passes, go test -race passes
+- **Learnings:** RunAllInfo.Start uses errgroup.SetLimit(5) by default, which bounds scanner fan-out per scan. The benchmark confirms this: 50×16=800 theoretical scanners but peak is 354 goroutines.
+---
+## 2026-06-19 - US-002: Add BenchmarkErrgroupFanout to api/securitytest/run_bench_test.go
+- Appended BenchmarkErrgroupFanout to api/securitytest/run_bench_test.go (74 lines)
+- Uses zero-value mockRunner for true no-op newScan/startScan
+- 12 sub-benchmarks: N=1,2,5,10,15,20 × {withSetLimit, withoutSetLimit}
+- Uses b.ReportAllocs(); no Docker/K8s/Mongo dependencies
+- Replicates errgroup coordination pattern from run.go (runGenericScans/runLanguageScans)
+- SetLimit overhead (with-without)/without: ~92% at N=1 (15125 vs 7875 ns), ~29% at N=20 (23125 vs 17875 ns)
+- go vet passes, go build passes, go test -race passes
+- **Learnings:** b.Loop() automatically manages timer — b.StopTimer() without matching b.StartTimer() fails with "B.Loop called with timer stopped". Zero-value mockRunner (no func fields set) is a true no-op.
+---
+## 2026-06-19 - US-003: Add BenchmarkDockerContainerStartBurst to api/dockers/api_bench_test.go
+- Created api/dockers/api_bench_test.go with //go:build integration tag (186 lines)
+- BenchmarkDockerContainerStartBurst: measures CreateContainer+StartContainer+WaitContainer+ReadOutput latency under parallel fan-out
+- 5 sub-benchmarks at parallelism=1,5,10,20,50 using errgroup fan-out (no SetLimit)
+- Shares a single Docker client (Docker{client: d.client}) across goroutines — avoids NewDocker per-goroutine which would race on env var mutations
+- BenchmarkDockerContainerStartBurstSerial: single-container baseline with explicit cleanup (no defer b/c b.Loop() iterations)
+- Both benchmarks: b.Skip() if Docker unavailable, b.ReportAllocs(), defer RemoveContainer for cleanup
+- Image: busybox:stable, cmd: "echo ok", timeout: 30s per container
+- Compile check: go vet passes, go build passes, go test -tags=integration -list shows both benchmarks
+- Regular go test excludes the file (integration build tag) — confirms no impact on CI
+- **Learnings:** Docker struct fields (client, CID) are package-private but accessible from same-package test files. The Docker client from docker/docker is safe for concurrent use — share a single client across goroutines. NewDocker should only be called once (mutates process-wide env vars). RemoveContainer is safe to call even on already-removed containers (logs error but doesn't panic).
+---
+## 2026-06-19 - US-004: Add BenchmarkKubernetesPodCreateBurst to api/kubernetes/api_bench_test.go
+- Created api/kubernetes/api_bench_test.go with //go:build integration tag (165 lines)
+- BenchmarkKubernetesPodCreateBurst: measures CreatePod+WaitPod latency under parallel fan-out
+- 5 sub-benchmarks at parallelism=1,5,10,20,50 using errgroup fan-out (no SetLimit)
+- Uses direct clientcmd.BuildConfigFromFlags + kubernetes.NewForConfig (not NewKubernetes which requires apiContext init)
+- Creates minimal Kubernetes{client, Namespace} struct to reuse existing CreatePod/WaitPod methods
+- Atomic throttle-error counter: detects "429", "TooManyRequests", "throttl" in error strings
+- removePodGracefully: swallows "not found" errors for safe defer-based cleanup
+- Image: busybox:stable, cmd: "echo ok", scheduling timeout: 60s, test timeout: 30s
+- Cluster check: b.Skip() if kubeconfig missing, clientset creation fails, or cluster unreachable
+- Namespace: configurable via HUSKYCI_K8S_BENCH_NAMESPACE env var, defaults to "default"
+- Compile check: go vet passes, go build passes, go test -tags=integration -list shows BenchmarkKubernetesPodCreateBurst
+- Regular go test excludes the file (integration build tag) — confirms no impact on CI
+- go test -race passes on kubernetes package
+- gofmt -l shows no formatting issues
+- **Learnings:** Kubernetes struct methods are value receivers — minimal struct works. NewKubernetes() requires apiContext init; benchmarks use direct clientcmd loading. kubernetes.Interface is the exported interface type for testable helpers. Pod Delete returns "not found" for already-deleted pods — wrap in graceful handler for safe defer cleanup. Throttle detection via error string matching is the simplest portable approach.
+---
