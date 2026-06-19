@@ -1,12 +1,25 @@
-# Prompt — Implement GitHub issue `#{{ISSUE_NUMBER}}` in `githubanotaai/huskyci-api`
+# Prompt — Implement GitHub issue `#26` in `githubanotaai/huskyci-api`
 
-> **How to use this prompt:** Replace `{{ISSUE_NUMBER}}` with the issue number
+> **How to use this prompt:** Replace `26` with the issue number
 > you are implementing before running. This prompt is reusable across all issues
 > created from the gap analysis, performance assessment, and test suite reviews.
+>
+> **Two ways to run it:**
+>
+> - **Solo agent (interactive):** paste the substituted prompt into a single
+>   Claude/Codex/etc. session and let it work top to bottom.
+> - **Tamandua orchestration (recommended for batched issues):** hand the
+>   substituted prompt to `tamandua workflow run feature-dev-github-pr` and
+>   let the multi-agent pipeline (planner → setup → developer → verifier →
+>   tester → pr → reviewer) execute it. See **Appendix A — Operator runbook
+>   (Tamandua)** at the end of this file.
+>
+> The body below is written for the agent doing the work and is identical in
+> both modes. The runbook is for the human launching/monitoring the run.
 
 You are an agent with the GitHub CLI (`gh`) and the ability to check out
 `githubanotaai/huskyci-api`. Your task is to read, understand, implement,
-validate, and submit a change for issue **#{{ISSUE_NUMBER}}**.
+validate, and submit a change for issue **#26**.
 
 The finish line is a **reviewable pull request**, not a local commit or a
 comment on the issue.
@@ -40,7 +53,7 @@ If the issue is silent on or conflicts with either document, **stop and surface 
 or the gap analysis, **those documents win and you stop** rather than implementing
 either reading.
 
-**5. Confirm #{{ISSUE_NUMBER}} is actually implementable before doing anything.**
+**5. Confirm #26 is actually implementable before doing anything.**
 Stop if the issue does not exist, is closed, or is a tracking/epic issue
 (a meta-issue listing other work is not a code task).
 
@@ -49,10 +62,30 @@ If `CLAUDE.md` is not in the repo, stop and report. If the issue references a
 gap analysis finding that is not documented in the repo, stop and report.
 
 **7. Stay in scope.**
-Implement only what #{{ISSUE_NUMBER}} requires. No unrelated improvements,
+Implement only what #26 requires. No unrelated improvements,
 no architecture rewrites, no speculative additions. The confirmed bugs (#2, #7, #8)
 and the behavioral contracts below must not be worsened by any change,
 even incidentally.
+
+**8. Output contract — make the deliverable machine-readable.**
+The final line of your successful run MUST be exactly:
+
+```
+STATUS: done
+```
+
+Immediately preceded (within the last ~20 lines) by a line of the form:
+
+```
+PR: https://github.com/githubanotaai/huskyci-api/pull/<N>
+```
+
+On failure, the final line MUST be exactly `STATUS: failed` followed by a
+`REASON:` line. These markers are parsed by orchestrators (Tamandua's
+`pr` and `review` steps; CI scripts) — emitting a prose summary like
+"Done!" instead breaks the contract and triggers retries even when the
+work succeeded. Tamandua's `pr` step expects `PR:\s*https?://github\.com/[^/]+/[^/]+/pull/\d+`; the
+`review` step expects the `STATUS: done` literal.
 
 If `gh` is not authenticated, **stop** and tell the operator to run
 `gh auth login` (and `gh auth refresh -s repo` if needed), then re-run.
@@ -110,24 +143,27 @@ git rev-parse HEAD
 **Stop if `viewerPermission` is `READ` or `NONE`.** Tell the operator to grant
 write access — otherwise all the work fails at push time.
 
-Branch from the up-to-date default branch.
-Use the issue number in the branch name so it is traceable:
+Branch from the up-to-date default branch. The branch name MUST contain
+`issue-26` so it is traceable, but a descriptive suffix is
+encouraged (e.g. `issue-26-perf-concurrency-benchmarks`).
+Record the name you picked once and reuse it through Steps 9–11.
 
 ```bash
 git fetch origin
 DEFAULT=$(gh repo view githubanotaai/huskyci-api \
   --json defaultBranchRef --jq '.defaultBranchRef.name')
 
-git checkout issue-{{ISSUE_NUMBER}}-implementation 2>/dev/null || \
-  git checkout -b issue-{{ISSUE_NUMBER}}-implementation origin/$DEFAULT
+BRANCH="issue-26-<short-slug>"   # e.g. issue-61-perf-concurrency-benchmarks
+git checkout "$BRANCH" 2>/dev/null || \
+  git checkout -b "$BRANCH" "origin/$DEFAULT"
 ```
 
 ---
 
-## Step 2 — Confirm #{{ISSUE_NUMBER}} is actionable
+## Step 2 — Confirm #26 is actionable
 
 ```bash
-gh issue view {{ISSUE_NUMBER}} \
+gh issue view 26 \
   --repo githubanotaai/huskyci-api \
   --comments
 ```
@@ -138,6 +174,8 @@ gh issue view {{ISSUE_NUMBER}} \
 - is a tracking or epic issue (title contains "Track", "Epic", or "Backlog";
   body is a checklist of other issues with no implementation requirements of its own)
 - has no acceptance criteria and no clearly required behavior
+- declares `Depends on #X` for an issue that is still open (note the open
+  dependencies in your final report; do not implement around them)
 
 Do not infer requirements from the title alone. Read the full body, all comments,
 any linked files, and every acceptance criterion. Extract and record:
@@ -150,6 +188,7 @@ any linked files, and every acceptance criterion. Extract and record:
 - Files likely touched
 - Tests that must exist after the change
 - Risks or unclear points that need surfacing before implementation
+- Any `Depends on #X` lines and whether those deps are open or merged
 
 ---
 
@@ -278,7 +317,7 @@ function naming, log message wording.
 
 ---
 
-## Step 7 — Implement only what #{{ISSUE_NUMBER}} requires
+## Step 7 — Implement only what #26 requires
 
 Follow the existing project style. Read the file before editing it.
 Prefer simple, readable code over clever code.
@@ -432,7 +471,7 @@ Files changed:
 Tests added:
 - <TestFunctionName>: <what it covers>"
 
-git push -u origin issue-{{ISSUE_NUMBER}}-implementation
+git push -u origin "$BRANCH"
 ```
 
 Open the PR (idempotent — if a PR already exists for this branch, update it
@@ -440,11 +479,10 @@ rather than creating a second one):
 
 ```bash
 # Check for existing PR first
-gh pr list --repo githubanotaai/huskyci-api \
-  --head issue-{{ISSUE_NUMBER}}-implementation
+gh pr list --repo githubanotaai/huskyci-api --head "$BRANCH"
 
-# Create only if none exists
-gh pr create \
+# Create only if none exists, and CAPTURE THE URL
+PR_URL=$(gh pr create \
   --repo githubanotaai/huskyci-api \
   --title "<imperative summary matching the commit>" \
   --body "$(cat <<'PRBODY'
@@ -494,34 +532,56 @@ Pre-existing failures (if any): <list or "none">
 <List each criterion from the issue and the evidence that it is met.>
 <Do not tick the issue's checkboxes — leave that to review/merge.>
 
-Closes #{{ISSUE_NUMBER}}
+Closes #26
 PRBODY
-)"
+)")
+
+# Emit the PR URL on its own line — Tamandua's `pr` step regex matches this:
+echo "PR: $PR_URL"
+```
+
+If a PR already existed, recover its URL with:
+
+```bash
+PR_URL=$(gh pr list --repo githubanotaai/huskyci-api \
+  --head "$BRANCH" --json url --jq '.[0].url')
+echo "PR: $PR_URL"
 ```
 
 ---
 
-## Step 11 — Comment on the issue
+## Step 11 — Comment on the issue and verify
 
-Post a single comment on #{{ISSUE_NUMBER}} with the PR link and a one-line status.
+Post a single comment on #26 with the PR link and a one-line status.
 Do not check the issue's acceptance-criteria boxes.
 If you have already commented on a prior run, update or reply to the existing
 comment rather than posting a duplicate.
 
 ```bash
-gh issue comment {{ISSUE_NUMBER}} \
+gh issue comment 26 \
   --repo githubanotaai/huskyci-api \
-  --body "Implementation submitted for review: <PR URL>
+  --body "Implementation submitted for review: $PR_URL
 
 Status: PR open, validation passed against baseline. Acceptance criteria
 assessment is in the PR description — leaving checkbox confirmation to review."
+
+# Verify the comment landed and the PR is actually visible to GitHub:
+gh issue view 26 --repo githubanotaai/huskyci-api \
+  --comments --json comments --jq '.comments[-1].body' | head -5
+gh pr view "$PR_URL" --json state,headRefName,headRefOid \
+  | tee /tmp/pr-verify.json
 ```
+
+If `gh pr view` cannot find the PR, the push or PR creation silently failed —
+**emit `STATUS: failed` with a `REASON:` line and stop** rather than reporting
+success.
 
 ---
 
 ## Step 12 — Final report
 
-Return:
+Print your structured report, then end with the **machine-readable closing
+block** the output contract requires (hard rule #8):
 
 1. **Issue summary** — problem statement, required behavior, acceptance criteria,
    and confirmation it was actionable (not tracking/epic, not closed)
@@ -540,6 +600,132 @@ Return:
 10. **PR URL** and the issue-comment status
 11. **Commit hash** and branch (pushed, confirmed)
 
-Do not claim #{{ISSUE_NUMBER}} is complete.
+Closing block — MUST be the last lines of your output, exactly:
+
+```
+PR: <full https URL of the opened PR>
+BRANCH: <branch name pushed to origin>
+COMMIT: <head SHA pushed>
+STATUS: done
+```
+
+On failure, replace the closing block with:
+
+```
+REASON: <one-line root cause>
+STATUS: failed
+```
+
+Do not claim #26 is complete.
 State which acceptance criteria are implemented and validated with evidence,
 and leave the completion judgment to review and merge.
+
+---
+
+# Appendix A — Operator runbook (Tamandua)
+
+Use this when launching the prompt through Tamandua's
+`feature-dev-github-pr` workflow. Skip if you're running the prompt in a
+single interactive session.
+
+## A.1 Pre-flight
+
+```bash
+# Confirm Tamandua is healthy and no stale run will collide
+tamandua status
+
+# Bring up the dashboard so you can watch progress live
+tamandua dashboard start
+open -a "Google Chrome" http://localhost:3334
+
+# Confirm gh is authed in the target checkout — Tamandua's `pr` step needs it
+cd /path/to/huskyci-api
+gh auth status
+
+# Confirm the issue is open and actionable before spending tokens
+gh issue view 26 --repo githubanotaai/huskyci-api
+```
+
+## A.2 Launch the run
+
+Substitute `26` (and only that placeholder) in this file, then
+hand the full body to Tamandua as the task. Pin the working directory to the
+huskyci-api checkout so all agents share the same view.
+
+```bash
+TASK="$(sed 's/26/<N>/g' /path/to/huskyci-api/prompt.md)"
+
+cd /path/to/huskyci-api
+tamandua workflow run feature-dev-github-pr "$TASK" \
+  --working-directory-for-harness "$(pwd)"
+# -> Run: <RUN-ID>
+```
+
+Capture the `RUN-ID` printed by the launch command — every monitoring command
+below takes it.
+
+## A.3 Monitor on a 5-minute cycle
+
+Each tick:
+
+```bash
+tamandua status
+tamandua logs <RUN-ID> | tail -10
+tamandua step stories <RUN-ID>
+```
+
+Report a single line: `<RUN-ID>: <state> — done X / running Y / pending Z`.
+
+**Escalation rules (do not violate):**
+
+- **Never cancel, pause, or stop the run.** A pipeline retry is not a
+  failure — Tamandua's `pr` step retries on missing `PR:` URL, and the
+  `review` step retries on missing `STATUS: done`. Both are recoverable.
+- **Never implement code yourself.** If you spot a bug in agent output,
+  report it; do not fix it. Let the next agent or a human take it.
+- **Never spawn a new workflow unless the user asks.**
+- **If `tamandua status` shows the run as `failed`:** run
+  `tamandua workflow resume <RUN-ID>`.
+- **If `step stories` shows no progress for 10+ minutes:** run
+  `tamandua nudge` to wake the schedulers without restarting work.
+
+## A.4 Termination and verification
+
+When `tamandua status` shows the run as `completed`:
+
+```bash
+# Tamandua used whatever BRANCH the agent chose in Step 1 — it may not
+# match a fixed naming scheme. Search by issue number:
+gh pr list --repo githubanotaai/huskyci-api --state all \
+  --search "issue-26 in:head" \
+  --json number,url,state,title,headRefName,headRefOid
+
+# Confirm the agent's closing block matches reality:
+tamandua workflow status <RUN-ID> | tail -20    # look for STATUS: done
+
+# Stop the polling loop (CronDelete the monitoring job)
+# Leave the dashboard running unless you want to free port 3334.
+```
+
+Things worth eyeballing on the PR before merging (the agent is forbidden
+from self-certifying — verification is your job):
+
+- The PR description contains the behavioral-contracts checklist and the
+  baseline-vs-post-change validation matrix.
+- The issue has a single new comment linking the PR (no duplicates).
+- The branch name contains `issue-26` (slug suffix is fine).
+- The closing-block `COMMIT` SHA matches `gh pr view <URL> --json headRefOid`.
+
+## A.5 Known retry patterns (informational — do not act on these)
+
+The `feature-dev-github-pr` pipeline has two output-contract gates that
+retry on first attempt with high frequency. They are not failures:
+
+| Step | What it expects | Common first-attempt miss |
+|------|-----------------|---------------------------|
+| `pr` | `PR:\s*https?://github\.com/[^/]+/[^/]+/pull/\d+` | Agent prints "Opened PR <URL>" instead of `PR: <URL>` |
+| `review` | Literal `STATUS: done` as last line | Agent prints "Done." or trailing prose |
+
+The hard rule #8 closing block prevents both. If you see more than one
+retry on either step, that's worth surfacing — it means the agent is
+ignoring the output contract.

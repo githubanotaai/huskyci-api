@@ -1,0 +1,48 @@
+# Progress Log
+Run: 174f4f57-484b-4c30-ada5-8eef59b859e2
+Task: Implement GitHub issue #26 - Add integration test for WaitContainer timeout enforcement
+Started: 2026-06-19T12:38:00-03:00
+
+## Codebase Patterns
+- Docker integration tests use `//go:build integration` tag and `client.NewClientWithOpts(client.FromEnv, client.WithHost(dockerHost), client.WithAPIVersionNegotiation())` directly instead of `NewDocker` to avoid Viper config + GELF logger dependency.
+- Docker host detection pattern: `os.Getenv("DOCKER_HOST")` with default `unix:///var/run/docker.sock`, then `cli.Ping(ctx)` to verify connectivity.
+- Use `busybox:stable` as the lightweight test image, pre-pulled with `d.ImageIsLoaded()` + `d.PullImage()`.
+- Container cleanup: `t.Cleanup(func() { _ = docker.RemoveContainer() })`.
+- All subtests use `t.Parallel()` since each creates its own container with unique CID.
+- The `Docker` struct's `client` field is unexported (`client *client.Client`) but accessible within the `dockers` package.
+
+## Story Plan
+
+### US-001: Add integration test for WaitContainer timeout enforcement
+
+**Description:** As a developer, I need to add an integration test that verifies Docker.WaitContainer enforces its timeout parameter via context.WithTimeout, so that the fix for bug #2 (Docker timeout no-op) is covered by a verifiable test.
+
+Implementation notes:
+- Create api/dockers/timeout_test.go with //go:build integration build tag.
+- Use func TestDocker_WaitContainer_Timeout(t *testing.T) { t.Parallel() ... }.
+- Test 1 "timeout enforced on stuck container": CreateContainer with "sleep 30", call WaitContainer(1), assert error is context.DeadlineExceeded within ~3s.
+- Test 2 "no timeout when parameter is zero": CreateContainer with "sleep 2", call WaitContainer(0) (background context), assert no error.
+- Test 3 "container exits cleanly before timeout": CreateContainer with "echo ok", call WaitContainer(30), assert no error.
+- Check Docker daemon availability at test start (ping), call t.Skip if unavailable.
+- Always clean up containers with RemoveContainer (t.Cleanup or defer).
+- Follow existing test patterns in api_bench_test.go for Docker host detection.
+- The existing fix in WaitContainer (commit f98bf33) already uses context.WithTimeout and ctx.Done() case — this test validates that behavior end-to-end.
+
+**Acceptance Criteria:**
+- api/dockers/timeout_test.go exists with //go:build integration build tag
+- TestDocker_WaitContainer_Timeout passes when Docker is available, or is skipped cleanly when Docker is unavailable
+- Stuck container (sleep 30) with timeout=1 returns context.DeadlineExceeded within ~3s
+- Zero timeout parameter yields background context and waits for container normally
+- Test does not leak containers after completion
+- go vet ./dockers/... passes
+- Typecheck passes
+
+---
+## 2026-06-19T12:44:00-03:00 - US-001: Add integration test for WaitContainer timeout enforcement
+- Created api/dockers/timeout_test.go with //go:build integration tag
+- Three subtests: timeout enforced, zero timeout, clean exit before timeout
+- Used client.NewClientWithOpts directly to avoid Viper config dependency (NewDocker panics without config + log init)
+- Verified: go vet passes, go build passes, all existing tests pass, integration test skips cleanly when Docker unavailable
+- Committed as d5ef3d3, pushed to issue-26-docker-waitcontainer-timeout, PR #75 opened
+- **Learnings:** NewDocker can't be used in tests without full config — create Docker client directly within the dockers package. Docker{client: cli} works because client is the same package.
+---
