@@ -78,6 +78,30 @@ jobs:
         run: $(go env GOPATH)/bin/gosec -severity high -quiet ./...
         working-directory: ${{ matrix.module }}
 
+  trivy-scan:
+    name: Trivy Scan (${{ matrix.image }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - image: api
+            dockerfile: deployments/dockerfiles/api.Dockerfile
+          - image: client
+            dockerfile: deployments/dockerfiles/client.Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -f ${{ matrix.dockerfile }} -t huskyci/${{ matrix.image }}:ci .
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: huskyci/${{ matrix.image }}:ci
+          scan-type: image
+          severity: HIGH,CRITICAL
+          exit-code: 1
+
   lint:
     name: Lint
     runs-on: ubuntu-latest

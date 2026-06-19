@@ -72,12 +72,65 @@ func TestCIYAMLContainsGosecJob(t *testing.T) {
 	})
 }
 
+func TestCIYAMLContainsTrivyScanJob(t *testing.T) {
+	content := readCIYAML(t)
+
+	t.Run("trivy-scan job definition exists", func(t *testing.T) {
+		if !strings.Contains(content, "\n  trivy-scan:") {
+			t.Fatal("CI YAML does not contain trivy-scan job definition")
+		}
+	})
+
+	t.Run("trivy-scan job scans api and client images", func(t *testing.T) {
+		if !strings.Contains(content, "deployments/dockerfiles/api.Dockerfile") {
+			t.Fatal("trivy-scan job does not scan api.Dockerfile")
+		}
+		if !strings.Contains(content, "deployments/dockerfiles/client.Dockerfile") {
+			t.Fatal("trivy-scan job does not scan client.Dockerfile")
+		}
+	})
+
+	t.Run("trivy-scan step uses aquasecurity/trivy-action", func(t *testing.T) {
+		if !strings.Contains(content, "aquasecurity/trivy-action@master") {
+			t.Fatal("trivy-scan job does not use aquasecurity/trivy-action@master")
+		}
+	})
+
+	t.Run("trivy-scan configured for HIGH and CRITICAL severity", func(t *testing.T) {
+		if !strings.Contains(content, "severity: HIGH,CRITICAL") {
+			t.Fatal("trivy-scan not configured for severity: HIGH,CRITICAL")
+		}
+	})
+
+	t.Run("trivy-scan configured to fail on findings", func(t *testing.T) {
+		if !strings.Contains(content, "exit-code: 1") {
+			t.Fatal("trivy-scan not configured with exit-code: 1")
+		}
+	})
+
+	t.Run("trivy-scan does not include scanner Dockerfiles", func(t *testing.T) {
+		// Scanner Dockerfiles like gosec, bandit, gitleaks etc should not be scanned
+		// to keep CI runtime reasonable.
+		scannerFiles := []string{
+			"gosec.Dockerfile",
+			"bandit.Dockerfile",
+			"brakeman.Dockerfile",
+		}
+		for _, sf := range scannerFiles {
+			if strings.Contains(content, sf) {
+				t.Fatalf("trivy-scan should not include scanner Dockerfile: %s", sf)
+			}
+		}
+	})
+}
+
 func TestCIYAMLExistingJobsPreserved(t *testing.T) {
 	content := readCIYAML(t)
 
 	expectedJobs := []string{
 		"\n  build-and-test:",
 		"\n  govulncheck:",
+		"\n  gosec:",
 		"\n  lint:",
 		"\n  docker-build:",
 		"\n  gitleaks-contract:",
