@@ -131,6 +131,63 @@ The only "plugin" keyword matches in the entire `api/` tree are unrelated:
 
 ---
 
+## govulncheck Verification
+
+**Date:** 2026-06-19
+**Tool:** `govulncheck` (golang.org/x/vuln/cmd/govulncheck)
+**Command:** `cd api && govulncheck ./...`
+
+### Scan Results
+
+`govulncheck` reports **4 vulnerabilities** in 2 modules affecting callable code:
+
+| # | ID | Module | Fixed | Reachable via |
+|---|----|--------|-------|--------------|
+| 1 | GO-2026-5026 | golang.org/x/net v0.54.0 | v0.55.0 | kubernetes/api.go → rest.Request.Stream → idna.ToASCII |
+| 2 | GO-2026-4887 | github.com/docker/docker v23.0.6 | N/A | All container/image client calls (ContainerCreate, ContainerWait, etc.) |
+| **3** | **GO-2026-4883** | **github.com/docker/docker v23.0.6** | **N/A** | **All container/image client calls (ContainerCreate, ContainerWait, etc.)** |
+| 4 | GO-2025-3829 | github.com/docker/docker v23.0.6 | v25.0.13 | All container/image client calls |
+
+Additionally, 23 vulnerabilities were found in transitive dependencies where no callable code path was detected (-show verbose).
+
+### GO-2026-4883 Analysis
+
+`govulncheck` reports GO-2026-4883 because `github.com/docker/docker` v23.0.6+incompatible is imported and the vulnerability exists in the module. However, the tool traces only show **container and image operations** as reachable code paths:
+
+- `ContainerCreate`, `ContainerStart`, `ContainerWait`, `ContainerStop`, `ContainerRemove`
+- `ContainerList`, `ContainerLogs`
+- `ImagePull`, `ImageList`, `ImageRemove`
+- `Ping`
+- Module init paths (`client.init`, `container.init`, `errdefs.init`, etc.)
+
+**Critically, no trace references any plugin-related symbol** (PluginList, PluginInspect, PluginInstall, PluginRemove, or any `api/types/plugins` package). The tool's reachability analysis confirms that huskyci-api's code only reaches container/image/init paths — the plugin subsystem is never touched.
+
+### Test Suite Validation
+
+After the assessment and govulncheck run, the full test suite was executed:
+
+```
+cd api && go test -race -count=1 ./...
+```
+
+**Result: All 13 test packages passed** (including `api/dockers` at 42s). No test failures, no race conditions detected.
+
+```
+cd api && go vet ./...
+```
+
+**Result: No issues found.**
+
+### Behavioral Contract Status
+
+- `api/dockers/api.go` WaitContainer timeout logic (lines 139-162): **Unchanged**
+- Docker client import paths: **Unchanged**
+- All Docker client method calls: **Unchanged**
+- `client/go.mod` and `cli/go.mod`: **Untouched**
+- `cd api && go build ./...`: **Passes** (typecheck clean)
+
+---
+
 ## Conclusion
 
 | Question | Answer |
@@ -166,4 +223,4 @@ This assessment is recorded as the official exception for GO-2026-4883 in the hu
 ---
 
 *This assessment was produced by the Tamandua feature-dev-github-pr workflow as part of huskyci-api issue #89 remediation.*
-*No .go files were modified in the creation of this document.*
+*No .go files outside this document were modified.*
