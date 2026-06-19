@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -48,6 +49,9 @@ type Database interface {
 
 // Connect connects to mongo and returns the session.
 func Connect(address, dbName, username, password string, poolLimit, port int, timeout time.Duration) error {
+	if poolLimit < 0 {
+		return errors.New("pool limit cannot be negative")
+	}
 
 	log.Info(logActionConnect, logInfoMongo, 21)
 	dbAddress := fmt.Sprintf("%s:%d", address, port)
