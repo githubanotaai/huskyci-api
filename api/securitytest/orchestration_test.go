@@ -119,6 +119,74 @@ func TestStartAnalysis_MixedResults(t *testing.T) {
 	}
 }
 
+// TestStartAnalysis_LanguageFanout verifies that when enry detects Go and
+// Python, the runLanguageScans path dispatches gosec for Go and bandit for
+// Python. It pins the language-to-scanner mapping contract and exercises the
+// runLanguageScans path which currently has zero coverage.
+func TestStartAnalysis_LanguageFanout(t *testing.T) {
+	t.Parallel()
+
+	languageTests := map[string][]types.SecurityTest{
+		"Go":     {{Name: "gosec"}},
+		"Python": {{Name: "bandit"}},
+	}
+
+	runner := &mockRunner{
+		genericTests: nil, // isolate language scan path
+		listLanguageTestsFunc: func(language string) ([]types.SecurityTest, error) {
+			return languageTests[language], nil
+		},
+		newScanFunc: func(RID, URL, branch, name string, le map[string]bool, cf, dh string) (*SecTestScanInfo, error) {
+			return &SecTestScanInfo{
+				RID:              RID,
+				SecurityTestName: name,
+				Container: types.Container{
+					CID:     "cid-" + name,
+					CResult: "passed",
+					CStatus: "finished",
+				},
+			}, nil
+		},
+		startScanFunc: func(scan *SecTestScanInfo) error { return nil },
+	}
+
+	results := &RunAllInfo{runner: runner}
+	enryScan := SecTestScanInfo{
+		RID: "lang-fanout-rid", URL: "https://example.com/repo", Branch: "main",
+		Codes: []types.Code{
+			{Language: "Go"},
+			{Language: "Python"},
+		},
+	}
+
+	if err := results.Start(enryScan); err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+
+	// Exactly 2 containers: one for gosec, one for bandit
+	if len(results.Containers) != 2 {
+		t.Fatalf("expected 2 containers, got %d", len(results.Containers))
+	}
+
+	found := make(map[string]bool)
+	for _, c := range results.Containers {
+		found[c.CID] = true
+	}
+	if !found["cid-gosec"] {
+		t.Errorf("gosec container not dispatched")
+	}
+	if !found["cid-bandit"] {
+		t.Errorf("bandit container not dispatched")
+	}
+
+	if results.FinalResult != "passed" {
+		t.Errorf("expected FinalResult=%q, got %q", "passed", results.FinalResult)
+	}
+	if results.Status != "finished" {
+		t.Errorf("expected Status=%q, got %q", "finished", results.Status)
+	}
+}
+
 // TestStart_PassedWhenAllScannersPass is the baseline. Multiple scanners all
 // report CResult="passed" — Start() must return nil and FinalResult must be
 // "passed". This test must remain green on the current code; if it ever fails
