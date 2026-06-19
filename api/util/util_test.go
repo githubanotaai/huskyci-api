@@ -232,6 +232,41 @@ Line4`
 				Expect(util.RedactURL(raw)).To(Equal(raw))
 			})
 		})
+
+		Context("When URL is malformed", func() {
+			It("Should return [unparseable]", func() {
+				raw := ":not-a-url"
+				Expect(util.RedactURL(raw)).To(Equal("[unparseable]"))
+			})
+		})
+
+		Context("When URL has @ in path but not as userinfo", func() {
+			It("Should leave URL unchanged", func() {
+				raw := "https://host/path/@user"
+				Expect(util.RedactURL(raw)).To(Equal(raw))
+			})
+		})
+
+		Context("When input is an empty string", func() {
+			It("Should return [unparseable]", func() {
+				raw := ""
+				Expect(util.RedactURL(raw)).To(Equal("[unparseable]"))
+			})
+		})
+
+		Context("When URL has credentials and a non-standard port", func() {
+			It("Should strip credentials and preserve port", func() {
+				raw := "https://user:pass@host:8443/repo.git"
+				Expect(util.RedactURL(raw)).To(Equal("https://host:8443/repo.git"))
+			})
+		})
+
+		Context("When HTTP URL has no credentials", func() {
+			It("Should leave URL unchanged", func() {
+				raw := "https://github.com/org/repo.git"
+				Expect(util.RedactURL(raw)).To(Equal(raw))
+			})
+		})
 	})
 
 	Describe("CheckMaliciousRID", func() {

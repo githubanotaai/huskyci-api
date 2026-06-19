@@ -175,6 +175,9 @@ func boundedScannerOutput(output string) string {
 
 // RedactURL removes URL userinfo before values are written to logs.
 func RedactURL(raw string) string {
+	if raw == "" {
+		return "[unparseable]"
+	}
 	parsed, err := url.Parse(raw)
 	if err != nil {
 		if strings.HasPrefix(raw, "git@") || strings.HasPrefix(raw, "gitlab@") {
