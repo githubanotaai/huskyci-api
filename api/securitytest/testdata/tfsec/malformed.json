@@ -1,0 +1,16 @@
+{
+  "warnings": {},
+  "findings": [
+    {
+      "rule_id": "aws-s3-enable-bucket-logging",
+      "link": "https://aquasecurity.github.io/tfsec/latest/checks/aws/s3/enable-bucket-logging/",
+      "location": {
+        "filename": "main.tf",
+        "start_line": 15,
+        "end_line": 27
+      },
+      "description": "Resource 'aws_s3_bucket.data' passed.",
+      "severity": "HIGH"
+    }
+  ]
+}
