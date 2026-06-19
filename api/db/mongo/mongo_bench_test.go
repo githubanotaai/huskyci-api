@@ -10,6 +10,9 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"runtime"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -331,5 +334,181 @@ func BenchmarkMongoAnalysisQueries(b *testing.B) {
 
 		// Drop collection (and thus indexes) for the next doc-count tier.
 		_ = coll.Drop(context.TODO())
+	}
+}
+
+// BenchmarkMongoReconnectDuringScan measures MongoDB operation latency and
+// error behavior while the MongoDB connection is interrupted during active
+// scan-like DB operations (FindOne/Update). Goroutines issue concurrent
+// operations against a seeded collection while the client connection is
+// deliberately disrupted and then restored, simulating the auto-reconnect
+// loop in autoReconnect (mongo.go:77-94).
+//
+// Setup: connects to MongoDB via HUSKYCI_BENCH_MONGO_URI; skips if not set
+// or connection/ping fails. Uses a dedicated test database that is dropped on
+// cleanup (b.Cleanup).
+//
+// Input range: concurrent_operations={1,10,50} × interruption_duration={1s,5s}
+//
+// Reference: docs/assessments/performance-gap-assessment-01.md Phase 6,
+// reconnect latency spec; gap analysis finding #11.
+func BenchmarkMongoReconnectDuringScan(b *testing.B) {
+	uri := os.Getenv("HUSKYCI_BENCH_MONGO_URI")
+	if uri == "" {
+		b.Skip("HUSKYCI_BENCH_MONGO_URI not set")
+	}
+
+	// Connect to MongoDB using the same pattern as mongo.go.
+	clientOptions := options.Client().ApplyURI(uri).SetConnectTimeout(5 * time.Second)
+	client, err := mongo.Connect(context.TODO(), clientOptions)
+	if err != nil {
+		b.Skipf("MongoDB connection failed: %v", err)
+	}
+
+	if err := client.Ping(context.TODO(), readpref.Primary()); err != nil {
+		_ = client.Disconnect(context.TODO())
+		b.Skipf("MongoDB ping failed: %v", err)
+	}
+
+	// Use a dedicated test database to avoid contaminating real data.
+	testDB := client.Database("huskyci_bench_reconnect")
+	coll := testDB.Collection("analysis_reconnect")
+
+	b.Cleanup(func() {
+		_ = testDB.Drop(context.TODO())
+		_ = client.Disconnect(context.TODO())
+	})
+
+	// Drop and seed the collection with enough documents for read operations.
+	_ = coll.Drop(context.TODO())
+	seedAnalysisCollection(b, coll, 1000)
+
+	concurrencyLevels := []int{1, 10, 50}
+	interruptionDurations := []time.Duration{1 * time.Second, 5 * time.Second}
+
+	// Reference server selection timeout for blocked-operation detection.
+	referenceTimeout := 10 * time.Second
+
+	for _, concurrent := range concurrencyLevels {
+		for _, intrDuration := range interruptionDurations {
+			name := fmt.Sprintf("concurrent=%d/interruption=%s", concurrent, intrDuration)
+			b.Run(name, func(b *testing.B) {
+				b.ReportAllocs()
+
+				for b.Loop() {
+					initialGoroutines := runtime.NumGoroutine()
+
+					var (
+						successCount   atomic.Int64
+						errorCount     atomic.Int64
+						totalLatencyNs atomic.Int64
+						maxLatencyNs   atomic.Int64
+						blockedOps     atomic.Int64
+					)
+
+					var wg sync.WaitGroup
+					startCh := make(chan struct{})
+
+					for i := 0; i < concurrent; i++ {
+						wg.Add(1)
+						go func(goroutineID int) {
+							defer wg.Done()
+							<-startCh
+
+							var opErr error
+							start := time.Now()
+
+							if goroutineID%2 == 0 {
+								// FindOne operation
+								query := bson.M{"RID": fmt.Sprintf("bench-rid-%024d", goroutineID%1000)}
+								var result types.Analysis
+								opErr = coll.FindOne(context.TODO(), query).Decode(&result)
+							} else {
+								// UpdateOne operation
+								filter := bson.M{"RID": fmt.Sprintf("bench-rid-%024d", goroutineID%1000)}
+								update := bson.M{"$set": bson.M{"status": "finished"}}
+								_, opErr = coll.UpdateOne(context.TODO(), filter, update)
+							}
+
+							elapsed := time.Since(start)
+							elapsedNs := elapsed.Nanoseconds()
+
+							if opErr != nil {
+								errorCount.Add(1)
+							} else {
+								successCount.Add(1)
+							}
+							totalLatencyNs.Add(elapsedNs)
+
+							for {
+								old := maxLatencyNs.Load()
+								if elapsedNs <= old || maxLatencyNs.CompareAndSwap(old, elapsedNs) {
+									break
+								}
+							}
+
+							if elapsed > referenceTimeout {
+								blockedOps.Add(1)
+							}
+						}(i)
+					}
+
+					// Signal all goroutines to start.
+					close(startCh)
+
+					// Brief warm-up before interruption.
+					time.Sleep(100 * time.Millisecond)
+
+					// Trigger connection interruption (simulate network failure).
+					_ = client.Disconnect(context.TODO())
+
+					// Wait for the interruption duration.
+					time.Sleep(intrDuration)
+
+					// Reconnect (mimic autoReconnect reconnect cycle).
+					reconnectErr := client.Connect(context.TODO())
+					if reconnectErr != nil {
+						b.Logf("WARNING: reconnect failed: %v", reconnectErr)
+					}
+
+					// Wait for all operations to complete.
+					wg.Wait()
+
+					// Collect final goroutine count for leak detection.
+					finalGoroutines := runtime.NumGoroutine()
+
+					// Compute and report metrics.
+					successes := successCount.Load()
+					errors := errorCount.Load()
+					totalOps := successes + errors
+					avgLatencyNs := int64(0)
+					if totalOps > 0 {
+						avgLatencyNs = totalLatencyNs.Load() / totalOps
+					}
+
+					b.ReportMetric(float64(avgLatencyNs), "ns/op")
+					b.ReportMetric(float64(errors), "errors")
+					b.ReportMetric(float64(successes), "successes")
+					if totalOps > 0 {
+						errPct := float64(errors) / float64(totalOps) * 100
+						b.ReportMetric(errPct, "error_pct")
+					}
+					b.ReportMetric(float64(maxLatencyNs.Load()), "max_latency_ns")
+
+					// Goroutine leak detection.
+					expectedMax := initialGoroutines + concurrent
+					if finalGoroutines > expectedMax {
+						b.Logf("WARNING: goroutine leak detected: initial=%d final=%d expected_max=%d",
+							initialGoroutines, finalGoroutines, expectedMax)
+					}
+
+					// Blocked operation detection.
+					if blocked := blockedOps.Load(); blocked > 0 {
+						b.Logf("WARNING: %d operation(s) blocked beyond reference timeout (%v)",
+							blocked, referenceTimeout)
+					}
+				}
+			})
+		}
 	}
 }
