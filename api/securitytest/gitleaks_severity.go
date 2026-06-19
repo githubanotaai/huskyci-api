@@ -20,54 +20,54 @@ var gitleaksHighRules = map[string]struct{}{
 
 // Medium: former v7 human-readable names and common gitleaks v8 RuleIDs.
 var gitleaksMediumRules = map[string]struct{}{
-	"AWS Secret Key": {},
-	"aws-access-key":  {},
-	"aws-secret-key":  {},
-	"aws-session-token":  {},
+	"AWS Secret Key":    {},
+	"aws-access-key":    {},
+	"aws-secret-key":    {},
+	"aws-session-token": {},
 	"aws-access-token":  {},
 
-	"Facebook access token":  {},
-	"Facebook Secret Key":  {},
-	"facebook-access-token":  {},
-	"facebook-page-access-token":  {},
-	"facebook-secret":  {},
+	"Facebook access token":      {},
+	"Facebook Secret Key":        {},
+	"facebook-access-token":      {},
+	"facebook-page-access-token": {},
+	"facebook-secret":            {},
 
-	"Google OAuth access token": {},
+	"Google OAuth access token":     {},
 	"Google Cloud Platform API key": {},
-	"gcp-api-key":  {},
+	"gcp-api-key":                   {},
 
-	"Twitter API Key": {},
-	"Twitter Secret Key":  {},
+	"Twitter API Key":       {},
+	"Twitter Secret Key":    {},
 	"twitter-access-token":  {},
-	"twitter-api-key":  {},
-	"twitter-api-secret":  {},
-	"twitter-access-secret":  {},
+	"twitter-api-key":       {},
+	"twitter-api-secret":    {},
+	"twitter-access-secret": {},
 	"twitter-bearer-token":  {},
 
 	"LinkedIn Secret Key":    {},
-	"LinkedIn Client ID":  {},
-	"linkedin-client-id":  {},
-	"linkedin-client-secret":  {},
+	"LinkedIn Client ID":     {},
+	"linkedin-client-id":     {},
+	"linkedin-client-secret": {},
 
-	"Heroku API key":  {},
-	"heroku-api-key":  {},
-	"heroku-api-key-v2":  {},
+	"Heroku API key":    {},
+	"heroku-api-key":    {},
+	"heroku-api-key-v2": {},
 
-	"MailChimp API key":  {},
-	"mailchimp-api-key":  {},
+	"MailChimp API key": {},
+	"mailchimp-api-key": {},
 
-	"mailgun-pub-key":  {},
-	"mailgun-private-api-token":  {},
-	"mailgun-signing-key":  {},
+	"mailgun-pub-key":           {},
+	"mailgun-private-api-token": {},
+	"mailgun-signing-key":       {},
 
-	"PayPal Braintree access token":  {},
+	"PayPal Braintree access token": {},
 
-	"Picatic API key":  {},
+	"Picatic API key": {},
 
-	"Stripe API key":  {},
-	"stripe-access-token":  {},
+	"Stripe API key":      {},
+	"stripe-access-token": {},
 
-	"twilio-api-key":  {},
+	"twilio-api-key": {},
 }
 
 // gitleaksBucketSeverity returns HuskyCI severity: HIGH, MEDIUM, or LOW.

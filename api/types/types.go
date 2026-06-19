@@ -117,9 +117,9 @@ type PythonResults struct {
 
 // JavaScriptResults represents all JavaScript security tests results.
 type JavaScriptResults struct {
-	HuskyCINpmAuditOutput   HuskyCISecurityTestOutput `bson:"npmauditoutput,omitempty" json:"npmauditoutput,omitempty"`
-	HuskyCIYarnAuditOutput  HuskyCISecurityTestOutput `bson:"yarnauditoutput,omitempty" json:"yarnauditoutput,omitempty"`
-	HuskyCIPnpmAuditOutput  HuskyCISecurityTestOutput `bson:"pnpmauditoutput,omitempty" json:"pnpmauditoutput,omitempty"`
+	HuskyCINpmAuditOutput  HuskyCISecurityTestOutput `bson:"npmauditoutput,omitempty" json:"npmauditoutput,omitempty"`
+	HuskyCIYarnAuditOutput HuskyCISecurityTestOutput `bson:"yarnauditoutput,omitempty" json:"yarnauditoutput,omitempty"`
+	HuskyCIPnpmAuditOutput HuskyCISecurityTestOutput `bson:"pnpmauditoutput,omitempty" json:"pnpmauditoutput,omitempty"`
 }
 
 // JavaResults represents all Java security tests results.
@@ -134,7 +134,7 @@ type RubyResults struct {
 
 // GenericResults represents all generic securityTests results
 type GenericResults struct {
-	HuskyCIGitleaksOutput  HuskyCISecurityTestOutput `bson:"gitleaksoutput,omitempty" json:"gitleaksoutput,omitempty"`
+	HuskyCIGitleaksOutput      HuskyCISecurityTestOutput `bson:"gitleaksoutput,omitempty" json:"gitleaksoutput,omitempty"`
 	HuskyCIWizCLISecretsOutput HuskyCISecurityTestOutput `bson:"wizclisecretsoutput,omitempty" json:"wizclisecretsoutput,omitempty"`
 	HuskyCIIacOutput           HuskyCISecurityTestOutput `bson:"iacoutput,omitempty" json:"iacoutput,omitempty"`
 	HuskyCIWizCLISastOutput    HuskyCISecurityTestOutput `bson:"wizclisastoutput,omitempty" json:"wizclisastoutput,omitempty"`

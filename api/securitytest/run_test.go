@@ -9,17 +9,16 @@ import (
 	"os"
 	"testing"
 
-
 	"github.com/githubanotaai/huskyci-api/api/types"
 )
 
 func TestIsTestDisabled(t *testing.T) {
 	tests := []struct {
-		name      string
-		testName  string
-		envValue  string
-		want      bool
-		setEnv    bool
+		name     string
+		testName string
+		envValue string
+		want     bool
+		setEnv   bool
 	}{
 		{
 			name:     "disabled with 'true'",
