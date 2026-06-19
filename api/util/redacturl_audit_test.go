@@ -56,7 +56,7 @@ func checkFileForRedactURL(t *testing.T, path string) []string {
 	if err != nil {
 		t.Fatalf("failed to open %s: %v", path, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	var violations []string
 	scanner := bufio.NewScanner(f)
