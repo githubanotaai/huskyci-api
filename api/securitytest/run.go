@@ -357,24 +357,6 @@ func (results *RunAllInfo) coalesceJsLockfileErrors() {
 	)
 }
 
-func (results *RunAllInfo) setFinalResult() {
-	// Logic to determine the final result based on scan results.
-	// For example, if all scans passed, set FinalResult to "passed".
-	// If any critical scan failed, set FinalResult to "failed".
-	passed := true
-	for _, container := range results.Containers {
-		if container.CResult == "failed" {
-			passed = false
-			break
-		}
-	}
-	if passed {
-		results.FinalResult = "passed"
-	} else {
-		results.FinalResult = "failed"
-	}
-}
-
 func (results *RunAllInfo) getRunner() scanRunner {
 	if results.runner != nil {
 		return results.runner

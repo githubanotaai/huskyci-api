@@ -64,10 +64,10 @@ func TestStart_PassedWhenAllScannersPass(t *testing.T) {
 // for bug #8 (run.go:63-83 defer/return ordering): when any single scanner
 // returns CResult="failed", the final result must be "failed".
 //
-// Remove the Skip after the setToAnalysis/setFinalResult ordering bug is
-// resolved in run.go:65-81. When unskipped the test should pass green; if it
-// fails, the failure-propagation contract is broken and you should debug
-// setToAnalysis (run.go:243) and setFinalResult (run.go:324) before merging.
+// Remove the Skip after the setToAnalysis ordering bug is resolved in
+// run.go:65-81. When unskipped the test should pass green; if it fails, the
+// failure-propagation contract is broken and you should debug setToAnalysis
+// (run.go:279) before merging.
 func TestStart_FailedWhenAnyScannerFails(t *testing.T) {
 	tests := []types.SecurityTest{
 		{Name: "gitleaks"},
