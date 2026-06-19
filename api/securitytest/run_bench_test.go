@@ -5,6 +5,7 @@
 package securitytest
 
 import (
+	"context"
 	"fmt"
 	"runtime"
 	"sync"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/githubanotaai/huskyci-api/api/types"
+	"golang.org/x/sync/errgroup"
 )
 
 // BenchmarkScanGoroutineFanout measures goroutine fan-out behavior during scan
@@ -126,6 +128,78 @@ func BenchmarkScanGoroutineFanout(b *testing.B) {
 					b.ReportMetric(float64(runtime.NumGoroutine()), "final-goroutines")
 
 					b.StartTimer()
+				}
+			})
+		}
+	}
+}
+
+// BenchmarkErrgroupFanout isolates errgroup fan-out coordination overhead by
+// running N no-op scanners through a mockRunner, comparing variants with and
+// without errgroup.SetLimit.
+//
+// The benchmark replicates the errgroup coordination pattern from
+// runGenericScans / runLanguageScans but with a mockRunner whose
+// newScan/startScan return nil immediately — no Docker, Kubernetes, or
+// MongoDB dependencies.
+//
+// For each N, two sub-benchmarks run: one with SetLimit(5) (default
+// maxConcurrentScanners) and one without SetLimit. The SetLimit overhead is
+// defined as (with_limit_ns_per_op - without_limit_ns_per_op) /
+// without_limit_ns_per_op; the benchmark reports raw ns/op and leaves
+// threshold interpretation to CI/dashboard.
+//
+// Input range: N=1,2,5,10,15,20 scanners.
+// Reference: docs/assessments/performance-gap-assessment-01.md Phase 6,
+// BenchmarkErrgroupFanout spec; prior finding #3.
+func BenchmarkErrgroupFanout(b *testing.B) {
+	ns := []int{1, 2, 5, 10, 15, 20}
+	type variant struct {
+		name  string
+		limit int // 0 means SetLimit is not called
+	}
+	variants := []variant{
+		{"withSetLimit", 5},
+		{"withoutSetLimit", 0},
+	}
+
+	for _, n := range ns {
+		for _, v := range variants {
+			name := fmt.Sprintf("N=%d/%s", n, v.name)
+			b.Run(name, func(b *testing.B) {
+				b.ReportAllocs()
+
+				// Build N no-op scanners shared across iterations.
+				tests := make([]types.SecurityTest, n)
+				for i := range tests {
+					tests[i] = types.SecurityTest{
+						Name: fmt.Sprintf("scanner_%d", i),
+					}
+				}
+				runner := &mockRunner{}
+
+				for b.Loop() {
+					g, ctx := errgroup.WithContext(context.Background())
+					if v.limit > 0 {
+						g.SetLimit(v.limit)
+					}
+
+					for _, test := range tests {
+						g.Go(func() error {
+							select {
+							case <-ctx.Done():
+								return ctx.Err()
+							default:
+							}
+							scan, err := runner.newScan("rid", "url", "branch", test.Name, nil, "", "")
+							if err != nil {
+								return err
+							}
+							return runner.startScan(scan)
+						})
+					}
+
+					_ = g.Wait()
 				}
 			})
 		}
