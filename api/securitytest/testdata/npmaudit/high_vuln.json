@@ -1,0 +1,51 @@
+{
+  "vulnerabilities": {
+    "minimist": {
+      "name": "minimist",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        "https://npmjs.com/advisories/1179"
+      ],
+      "effects": [],
+      "range": "<0.2.4",
+      "nodes": [
+        "node_modules/minimist"
+      ],
+      "fixAvailable": {
+        "name": "minimist",
+        "version": "1.2.8",
+        "isSemVerMajor": false
+      },
+      "title": "Prototype Pollution in minimist"
+    },
+    "lodash": {
+      "name": "lodash",
+      "severity": "moderate",
+      "isDirect": true,
+      "via": [
+        "https://npmjs.com/advisories/1523"
+      ],
+      "effects": [],
+      "range": "<4.17.19",
+      "nodes": [
+        "node_modules/lodash"
+      ],
+      "fixAvailable": {
+        "name": "lodash",
+        "version": "4.17.21",
+        "isSemVerMajor": false
+      },
+      "title": "Prototype Pollution in lodash"
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 1,
+      "high": 1,
+      "critical": 0
+    }
+  }
+}
