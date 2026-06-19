@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<BugCollection>
+  <Project projectName="clean-java-app"/>
+  <Errors errors="0" missingClasses="0"/>
+</BugCollection>

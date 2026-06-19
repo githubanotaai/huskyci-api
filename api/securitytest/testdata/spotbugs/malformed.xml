@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<BugCollection>
+  <Project projectName="test-java-app">
+    <Jar>/path/to/app.jar</Jar>
+  </Project>
+  <BugInstance type="CROSS_SITE_SCRIPTING" priority="1" rank="HIGH" abbrev="XSS" category="SECURITY">
+    <SourceLine classname="com.example.Servlet" start="30" end="33" startBytecode="0" endBytecode="60" sourcefile="Servlet.java" sourcepath="/src/main/java/com/example/Servlet.java"/>
+    <ShortMessage>Reflected XSS in Servlet.java at line 30</ShortMessage>
+  </BugInstance>
+  <Errors errors="0" missingClasses="0"/>
+</BugCollection>
