@@ -174,9 +174,7 @@ func TestCompressFiles(t *testing.T) {
 		homeDir := t.TempDir()
 
 		// Override HOME so config.GetHuskyZipFilePath writes to a temp location.
-		oldHome := os.Getenv("HOME")
-		os.Setenv("HOME", homeDir)
-		defer os.Setenv("HOME", oldHome)
+		t.Setenv("HOME", homeDir)
 
 		// Create test files in the home directory.
 		createTempFiles(t, homeDir, map[string]string{
@@ -192,7 +190,11 @@ func TestCompressFiles(t *testing.T) {
 		if err := os.Chdir(homeDir); err != nil {
 			t.Fatalf("failed to chdir: %v", err)
 		}
-		defer os.Chdir(oldWd)
+		defer func() {
+			if err := os.Chdir(oldWd); err != nil {
+				t.Errorf("failed to restore cwd: %v", err)
+			}
+		}()
 
 		files, err := GetAllAllowedFilesAndDirsFromPath(homeDir)
 		if err != nil {
@@ -213,9 +215,7 @@ func TestCompressFiles(t *testing.T) {
 	t.Run("preserves directory structure", func(t *testing.T) {
 		homeDir := t.TempDir()
 
-		oldHome := os.Getenv("HOME")
-		os.Setenv("HOME", homeDir)
-		defer os.Setenv("HOME", oldHome)
+		t.Setenv("HOME", homeDir)
 
 		// Create nested directory structure.
 		subDir := filepath.Join(homeDir, "subpkg")
@@ -229,9 +229,18 @@ func TestCompressFiles(t *testing.T) {
 			"helper.go": "package subpkg",
 		})
 
-		oldWd, _ := os.Getwd()
-		os.Chdir(homeDir)
-		defer os.Chdir(oldWd)
+		oldWd, err := os.Getwd()
+		if err != nil {
+			t.Fatalf("failed to get cwd: %v", err)
+		}
+		if err := os.Chdir(homeDir); err != nil {
+			t.Fatalf("failed to chdir: %v", err)
+		}
+		defer func() {
+			if err := os.Chdir(oldWd); err != nil {
+				t.Errorf("failed to restore cwd: %v", err)
+			}
+		}()
 
 		files, err := GetAllAllowedFilesAndDirsFromPath(homeDir)
 		if err != nil {
@@ -250,9 +259,7 @@ func TestCompressFiles(t *testing.T) {
 	t.Run("handles empty input", func(t *testing.T) {
 		homeDir := t.TempDir()
 
-		oldHome := os.Getenv("HOME")
-		os.Setenv("HOME", homeDir)
-		defer os.Setenv("HOME", oldHome)
+		t.Setenv("HOME", homeDir)
 
 		zipPath, err := CompressFiles([]string{})
 		if err != nil {
