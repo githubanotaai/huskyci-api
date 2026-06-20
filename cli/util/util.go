@@ -45,7 +45,11 @@ func CompressFiles(allFilesAndDirNames []string) (string, error) {
 	if err != nil {
 		return fullFilePath, err
 	}
-	defer zipFile.Close()
+	defer func() {
+		if closeErr := zipFile.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
 
 	zipWriter := zip.NewWriter(zipFile)
 	defer func() {

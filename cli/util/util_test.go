@@ -30,7 +30,11 @@ func verifyZipContents(t *testing.T, zipPath string, expectedFiles []string) {
 	if err != nil {
 		t.Fatalf("failed to open zip: %v", err)
 	}
-	defer r.Close()
+	defer func() {
+		if closeErr := r.Close(); closeErr != nil {
+			t.Errorf("failed to close zip reader: %v", closeErr)
+		}
+	}()
 
 	found := make(map[string]bool)
 	for _, f := range r.File {
