@@ -1,8 +1,8 @@
 module github.com/githubanotaai/huskyci-api/client
 
-go 1.23.0
+go 1.26.0
 
-toolchain go1.23.7
+toolchain go1.26.4
 
 require (
 	github.com/onsi/ginkgo v1.12.1
