@@ -1,13 +1,13 @@
 package util
 
 import (
+	"archive/zip"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/githubanotaai/huskyci-api/cli/config"
 	"github.com/githubanotaai/huskyci-api/cli/errorcli"
-	"github.com/mholt/archiver"
 )
 
 // GetAllAllowedFilesAndDirsFromPath returns a list of all files and dirs allowed to be zipped
@@ -41,11 +41,96 @@ func CompressFiles(allFilesAndDirNames []string) (string, error) {
 		return fullFilePath, err
 	}
 
-	if err := archiver.Archive(allFilesAndDirNames, fullFilePath); err != nil {
+	zipFile, err := os.Create(fullFilePath)
+	if err != nil {
+		return fullFilePath, err
+	}
+	defer func() {
+		if closeErr := zipFile.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
+
+	zipWriter := zip.NewWriter(zipFile)
+	defer func() {
+		if closeErr := zipWriter.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
+
+	cwd, err := os.Getwd()
+	if err != nil {
 		return fullFilePath, err
 	}
 
+	for _, name := range allFilesAndDirNames {
+		absName, absErr := filepath.Abs(name)
+		if absErr != nil {
+			return fullFilePath, absErr
+		}
+
+		info, statErr := os.Stat(absName)
+		if statErr != nil {
+			return fullFilePath, statErr
+		}
+
+		if info.IsDir() {
+			walkErr := filepath.Walk(absName, func(path string, fi os.FileInfo, walkErr error) error {
+				if walkErr != nil {
+					return walkErr
+				}
+				if fi.IsDir() {
+					return nil
+				}
+				relPath, relErr := filepath.Rel(cwd, path)
+				if relErr != nil {
+					return relErr
+				}
+				return addFileToZip(zipWriter, path, relPath)
+			})
+			if walkErr != nil {
+				return fullFilePath, walkErr
+			}
+		} else {
+			relPath, relErr := filepath.Rel(cwd, absName)
+			if relErr != nil {
+				return fullFilePath, relErr
+			}
+			if addErr := addFileToZip(zipWriter, absName, relPath); addErr != nil {
+				return fullFilePath, addErr
+			}
+		}
+	}
+
 	return fullFilePath, nil
+}
+
+// addFileToZip adds a single file to the zip archive.
+func addFileToZip(zipWriter *zip.Writer, filePath, zipName string) error {
+	info, err := os.Stat(filePath)
+	if err != nil {
+		return err
+	}
+
+	header, err := zip.FileInfoHeader(info)
+	if err != nil {
+		return err
+	}
+	header.Name = filepath.ToSlash(zipName)
+	header.Method = zip.Deflate
+
+	writer, err := zipWriter.CreateHeader(header)
+	if err != nil {
+		return err
+	}
+
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return err
+	}
+
+	_, err = writer.Write(data)
+	return err
 }
 
 // GetZipFriendlySize returns the size of a friendly zip file size based on its destination
