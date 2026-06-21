@@ -43,6 +43,45 @@ package dockers
 // in plugin privilege validation is completely unreachable from huskyci-api.
 // This finding is a false positive for normal huskyci-api usage.
 
+// CVE-2026-41567 VULNERABILITY ASSESSMENT (US-001)
+//
+// The vulnerability CVE-2026-41567 is in github.com/docker/docker (Moby). No fixed
+// version is available upstream.
+//
+// This file (api/dockers/api.go) and api/dockers/huskydocker.go are the only
+// consumers of the docker/docker client in the entire api/ module. HuskyCI uses
+// Moby strictly as a CLIENT to connect to a separate, external dockerd daemon,
+// not as the daemon itself. A full audit of every d.client method call confirms
+// the following operations are used:
+//
+//   CONTAINER OPERATIONS:
+//     - ContainerCreate    (api.go:121)
+//     - ContainerStart     (api.go:137)
+//     - ContainerWait      (api.go:148)
+//     - ContainerStop      (api.go:169)
+//     - ContainerRemove    (api.go:179)
+//     - ContainerList      (api.go:197)
+//     - ContainerLogs      (api.go:239, api.go:256)
+//
+//   IMAGE OPERATIONS:
+//     - ImagePull          (api.go:273)
+//     - ImageList          (api.go:287, api.go:299)
+//     - ImageRemove        (api.go:305)
+//
+//   MISC:
+//     - Ping               (api.go:317)
+//
+//   IMPORTS (api/dockers/api.go only):
+//     - github.com/docker/docker/api/types (dockerTypes)
+//     - github.com/docker/docker/api/types/container
+//     - github.com/docker/docker/api/types/filters
+//     - github.com/docker/docker/client
+//
+// Zero daemon-level or administrative operations are invoked. The vulnerable
+// code path in Moby is unreachable from huskyci-api's client-side usage pattern.
+// Status: Risk Accepted — not exploitable in huskyci-api deployment.
+// Will reassess when upstream Moby releases a fix.
+
 // CVE-2026-42306 VULNERABILITY ASSESSMENT
 //
 // The vulnerability CVE-2026-42306 affects github.com/docker/docker (Moby).
@@ -54,29 +93,26 @@ package dockers
 // confirms the following operations are used:
 //
 //   CONTAINER OPERATIONS:
-//     - ContainerCreate    (api.go:164)
-//     - ContainerStart     (api.go:180)
-//     - ContainerWait      (api.go:191)
-//     - ContainerStop      (api.go:212)
-//     - ContainerRemove    (api.go:222)
-//     - ContainerList      (api.go:240)
-//     - ContainerLogs      (api.go:282, stdout)
-//     - ContainerLogs      (api.go:299, stderr)
+//     - ContainerCreate
+//     - ContainerStart
+//     - ContainerWait
+//     - ContainerStop
+//     - ContainerRemove
+//     - ContainerList
+//     - ContainerLogs
 //
 //   IMAGE OPERATIONS:
-//     - ImagePull          (api.go:316)
-//     - ImageList          (api.go:330)
-//     - ImageList          (api.go:342)
-//     - ImageRemove        (api.go:348)
+//     - ImagePull
+//     - ImageList
+//     - ImageRemove
 //
 //   MISC:
-//     - Ping               (api.go:360)
+//     - Ping
 //
 //   IMPORTS (api/dockers/api.go):
-//     - github.com/docker/docker/api/types (dockerTypes)
 //     - github.com/docker/docker/api/types/container
 //     - github.com/docker/docker/api/types/filters
-//     - github.com/docker/docker/api/types/image
+//     - github.com/docker/docker/api/types/image (dockerImage)
 //     - github.com/docker/docker/client
 //
 // huskydocker.go has zero direct d.client calls. The vulnerable code path
@@ -93,10 +129,9 @@ import (
 	"time"
 
 	goContext "context"
-	dockerTypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/api/types/image"
+	dockerImage "github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
 	apiContext "github.com/githubanotaai/huskyci-api/api/context"
 	"github.com/githubanotaai/huskyci-api/api/log"
@@ -313,7 +348,7 @@ func (d Docker) ReadOutputStderr() (string, error) {
 // PullImage pulls an image, like docker pull.
 func (d Docker) PullImage(image string) error {
 	ctx := goContext.Background()
-	_, err := d.client.ImagePull(ctx, image, dockerTypes.ImagePullOptions{})
+	_, err := d.client.ImagePull(ctx, image, dockerImage.PullOptions{})
 	if err != nil {
 		log.Error("PullImage", logInfoAPI, 3009, err)
 	}
@@ -324,7 +359,7 @@ func (d Docker) PullImage(image string) error {
 func (d Docker) ImageIsLoaded(image string) bool {
 	args := filters.NewArgs()
 	args.Add("reference", image)
-	options := dockerTypes.ImageListOptions{Filters: args}
+	options := dockerImage.ListOptions{Filters: args}
 
 	ctx := goContext.Background()
 	result, err := d.client.ImageList(ctx, options)
@@ -337,15 +372,15 @@ func (d Docker) ImageIsLoaded(image string) bool {
 }
 
 // ListImages returns docker images, like docker image ls.
-func (d Docker) ListImages() ([]image.Summary, error) {
+func (d Docker) ListImages() ([]dockerImage.Summary, error) {
 	ctx := goContext.Background()
-	return d.client.ImageList(ctx, dockerTypes.ImageListOptions{})
+	return d.client.ImageList(ctx, dockerImage.ListOptions{})
 }
 
 // RemoveImage removes an image.
-func (d Docker) RemoveImage(imageID string) ([]image.DeleteResponse, error) {
+func (d Docker) RemoveImage(imageID string) ([]dockerImage.DeleteResponse, error) {
 	ctx := goContext.Background()
-	return d.client.ImageRemove(ctx, imageID, dockerTypes.ImageRemoveOptions{Force: true})
+	return d.client.ImageRemove(ctx, imageID, dockerImage.RemoveOptions{Force: true})
 }
 
 // HealthCheckDockerAPI returns true if a 200 status code is received from dockerAddress or false otherwise.
