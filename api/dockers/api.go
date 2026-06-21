@@ -89,10 +89,9 @@ import (
 	"time"
 
 	goContext "context"
-	dockerTypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/api/types/image"
+	dockerImage "github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
 	apiContext "github.com/githubanotaai/huskyci-api/api/context"
 	"github.com/githubanotaai/huskyci-api/api/log"
@@ -309,7 +308,7 @@ func (d Docker) ReadOutputStderr() (string, error) {
 // PullImage pulls an image, like docker pull.
 func (d Docker) PullImage(image string) error {
 	ctx := goContext.Background()
-	_, err := d.client.ImagePull(ctx, image, dockerTypes.ImagePullOptions{})
+	_, err := d.client.ImagePull(ctx, image, dockerImage.PullOptions{})
 	if err != nil {
 		log.Error("PullImage", logInfoAPI, 3009, err)
 	}
@@ -320,7 +319,7 @@ func (d Docker) PullImage(image string) error {
 func (d Docker) ImageIsLoaded(image string) bool {
 	args := filters.NewArgs()
 	args.Add("reference", image)
-	options := dockerTypes.ImageListOptions{Filters: args}
+	options := dockerImage.ListOptions{Filters: args}
 
 	ctx := goContext.Background()
 	result, err := d.client.ImageList(ctx, options)
@@ -333,15 +332,15 @@ func (d Docker) ImageIsLoaded(image string) bool {
 }
 
 // ListImages returns docker images, like docker image ls.
-func (d Docker) ListImages() ([]image.Summary, error) {
+func (d Docker) ListImages() ([]dockerImage.Summary, error) {
 	ctx := goContext.Background()
-	return d.client.ImageList(ctx, dockerTypes.ImageListOptions{})
+	return d.client.ImageList(ctx, dockerImage.ListOptions{})
 }
 
 // RemoveImage removes an image.
-func (d Docker) RemoveImage(imageID string) ([]image.DeleteResponse, error) {
+func (d Docker) RemoveImage(imageID string) ([]dockerImage.DeleteResponse, error) {
 	ctx := goContext.Background()
-	return d.client.ImageRemove(ctx, imageID, dockerTypes.ImageRemoveOptions{Force: true})
+	return d.client.ImageRemove(ctx, imageID, dockerImage.RemoveOptions{Force: true})
 }
 
 // HealthCheckDockerAPI returns true if a 200 status code is received from dockerAddress or false otherwise.
