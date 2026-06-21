@@ -18,9 +18,9 @@ jobs:
       matrix:
         module: [api, client, cli]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: "1.26"
           cache-dependency-path: ${{ matrix.module }}/go.sum
@@ -45,9 +45,9 @@ jobs:
       matrix:
         module: [api, client, cli]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: "1.23"
           cache-dependency-path: ${{ matrix.module }}/go.sum
@@ -64,9 +64,9 @@ jobs:
       matrix:
         module: [api, client, cli]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: "1.23"
           cache-dependency-path: ${{ matrix.module }}/go.sum
@@ -89,7 +89,7 @@ jobs:
           - image: client
             dockerfile: deployments/dockerfiles/client.Dockerfile
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Build image
         run: docker build -f ${{ matrix.dockerfile }} -t huskyci/${{ matrix.image }}:ci .
@@ -106,9 +106,9 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: "1.26"
 
@@ -138,7 +138,7 @@ jobs:
           - image: client
             dockerfile: deployments/dockerfiles/client.Dockerfile
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Build image
         run: docker build -f ${{ matrix.dockerfile }} .
@@ -147,7 +147,7 @@ jobs:
     name: Gitleaks image & contract
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Build Gitleaks image
         run: docker build -f deployments/dockerfiles/gitleaks/Dockerfile -t huskyci/gitleaks:ci .
@@ -175,7 +175,7 @@ jobs:
     name: Deployment shell (bash -n)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: verify-depl-scripts
         run: bash deployments/scripts/verify-depl-scripts.sh
