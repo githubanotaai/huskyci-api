@@ -43,6 +43,45 @@ package dockers
 // in plugin privilege validation is completely unreachable from huskyci-api.
 // This finding is a false positive for normal huskyci-api usage.
 
+// CVE-2026-41567 VULNERABILITY ASSESSMENT (US-001)
+//
+// The vulnerability CVE-2026-41567 is in github.com/docker/docker (Moby). No fixed
+// version is available upstream.
+//
+// This file (api/dockers/api.go) and api/dockers/huskydocker.go are the only
+// consumers of the docker/docker client in the entire api/ module. HuskyCI uses
+// Moby strictly as a CLIENT to connect to a separate, external dockerd daemon,
+// not as the daemon itself. A full audit of every d.client method call confirms
+// the following operations are used:
+//
+//   CONTAINER OPERATIONS:
+//     - ContainerCreate    (api.go:121)
+//     - ContainerStart     (api.go:137)
+//     - ContainerWait      (api.go:148)
+//     - ContainerStop      (api.go:169)
+//     - ContainerRemove    (api.go:179)
+//     - ContainerList      (api.go:197)
+//     - ContainerLogs      (api.go:239, api.go:256)
+//
+//   IMAGE OPERATIONS:
+//     - ImagePull          (api.go:273)
+//     - ImageList          (api.go:287, api.go:299)
+//     - ImageRemove        (api.go:305)
+//
+//   MISC:
+//     - Ping               (api.go:317)
+//
+//   IMPORTS (api/dockers/api.go only):
+//     - github.com/docker/docker/api/types (dockerTypes)
+//     - github.com/docker/docker/api/types/container
+//     - github.com/docker/docker/api/types/filters
+//     - github.com/docker/docker/client
+//
+// Zero daemon-level or administrative operations are invoked. The vulnerable
+// code path in Moby is unreachable from huskyci-api's client-side usage pattern.
+// Status: Risk Accepted — not exploitable in huskyci-api deployment.
+// Will reassess when upstream Moby releases a fix.
+
 import (
 	"fmt"
 	"os"
