@@ -3,7 +3,7 @@ module github.com/githubanotaai/huskyci-api/api
 go 1.25.0
 
 require (
-	github.com/docker/docker v23.0.6+incompatible
+	github.com/docker/docker v23.0.18+incompatible
 	github.com/globocom/glbgelf v0.0.0-20190310030100-36e52796d86a
 	github.com/google/uuid v1.3.0
 	github.com/labstack/echo v3.3.10+incompatible
