@@ -14,6 +14,7 @@ import (
 	dockerTypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
 	apiContext "github.com/githubanotaai/huskyci-api/api/context"
 	"github.com/githubanotaai/huskyci-api/api/log"
@@ -94,7 +95,7 @@ func (d Docker) CreateContainer(image, cmd string) (string, error) {
 // StartContainer starts a container and returns its error.
 func (d Docker) StartContainer() error {
 	ctx := goContext.Background()
-	return d.client.ContainerStart(ctx, d.CID, dockerTypes.ContainerStartOptions{})
+	return d.client.ContainerStart(ctx, d.CID, container.StartOptions{})
 }
 
 // WaitContainer returns when container finishes executing cmd.
@@ -136,7 +137,7 @@ func (d Docker) StopContainer() error {
 // RemoveContainer removes a container by it's CID
 func (d Docker) RemoveContainer() error {
 	ctx := goContext.Background()
-	err := d.client.ContainerRemove(ctx, d.CID, dockerTypes.ContainerRemoveOptions{})
+	err := d.client.ContainerRemove(ctx, d.CID, container.RemoveOptions{})
 	if err != nil {
 		log.Error("RemoveContainer", logInfoAPI, 3023, err)
 	}
@@ -149,7 +150,7 @@ func (d Docker) ListStoppedContainers() ([]Docker, error) {
 	ctx := goContext.Background()
 	dockerFilters := filters.NewArgs()
 	dockerFilters.Add("status", "exited")
-	options := dockerTypes.ContainerListOptions{
+	options := container.ListOptions{
 		All:     true,
 		Filters: dockerFilters,
 	}
@@ -196,7 +197,7 @@ func (d Docker) DieContainers() error {
 // ReadOutput returns STDOUT of a given containerID.
 func (d Docker) ReadOutput() (string, error) {
 	ctx := goContext.Background()
-	out, err := d.client.ContainerLogs(ctx, d.CID, dockerTypes.ContainerLogsOptions{ShowStdout: true})
+	out, err := d.client.ContainerLogs(ctx, d.CID, container.LogsOptions{ShowStdout: true})
 	if err != nil {
 		log.Error("ReadOutput", logInfoAPI, 3006, err)
 		return "", nil
@@ -213,7 +214,7 @@ func (d Docker) ReadOutput() (string, error) {
 // ReadOutputStderr returns STDERR of a given containerID.
 func (d Docker) ReadOutputStderr() (string, error) {
 	ctx := goContext.Background()
-	out, err := d.client.ContainerLogs(ctx, d.CID, dockerTypes.ContainerLogsOptions{ShowStderr: true})
+	out, err := d.client.ContainerLogs(ctx, d.CID, container.LogsOptions{ShowStderr: true})
 	if err != nil {
 		log.Error("ReadOutputStderr", logInfoAPI, 3006, err)
 		return "", nil
@@ -254,13 +255,13 @@ func (d Docker) ImageIsLoaded(image string) bool {
 }
 
 // ListImages returns docker images, like docker image ls.
-func (d Docker) ListImages() ([]dockerTypes.ImageSummary, error) {
+func (d Docker) ListImages() ([]image.Summary, error) {
 	ctx := goContext.Background()
 	return d.client.ImageList(ctx, dockerTypes.ImageListOptions{})
 }
 
 // RemoveImage removes an image.
-func (d Docker) RemoveImage(imageID string) ([]dockerTypes.ImageDeleteResponseItem, error) {
+func (d Docker) RemoveImage(imageID string) ([]image.DeleteResponse, error) {
 	ctx := goContext.Background()
 	return d.client.ImageRemove(ctx, imageID, dockerTypes.ImageRemoveOptions{Force: true})
 }
