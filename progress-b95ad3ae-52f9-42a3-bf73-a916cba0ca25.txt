@@ -9,6 +9,7 @@ Started: 2026-06-21
 - **Test command:** `cd api && go test -race -count=1 ./...` — 15 packages, dockers tests take ~33s
 - **Lint/build:** `cd api && go vet ./... && go build ./...`
 - **Go module layout:** Three independent modules — `api/`, `client/`, `cli/` — each with own go.mod
+- **Vulnerability assessment docs:** Located in `docs/assessments/` with naming convention `go-XXXX-XXXX-<component>.md`
 
 ## Story Plan
 
@@ -68,6 +69,7 @@ Implementation notes:
 - All test packages pass identically to baseline
 - Typecheck passes
 
+
 ---
 ## 2026-06-21T00:00:00Z - US-001: Re-audit api/ module for Plugin* calls and confirm continued non-exploitability at docker/docker v25.0.13
 - **Implemented:** Full re-audit of api/ module for Plugin* symbols
@@ -82,4 +84,32 @@ Implementation notes:
   - Full test suite passes: 15 packages ok, dockers package at 32.9s
   - `go vet` and `go build` clean
   - **Conclusion:** Plugin code path remains completely unreachable. GO-2026-4883 is still a false positive.
+---
+## 2026-06-21T00:00:00Z - US-002: Update GO-2026-4883 vulnerability assessment document with current version re-assessment
+- **Implemented:** Updated docs/assessments/go-2026-4883-docker-plugin.md with current version re-assessment
+- **Files changed:** docs/assessments/go-2026-4883-docker-plugin.md (+40, -3)
+- **Changes:**
+  - Date updated from 2026-06-19 to 2026-06-21
+  - Affected Package version updated from v23.0.6+incompatible to v25.0.13+incompatible
+  - Added "Re-assessment (v25.0.13)" section with version upgrade context, re-audit findings, confirmation table, and conclusion
+  - Govulncheck section preserved as historical (original scan at v23.0.6)
+- **No .go files modified** (documentation only)
+- **Tests:** Full suite passes — 15 packages ok, dockers at 33.9s; go vet clean; go build clean
+- **Learnings:**
+  - The assessment doc uses the govulncheck section as a historical record of the original scan; version references there should NOT be updated
+  - Re-assessment section lives between Conclusion and References
+---
+## 2026-06-21 - US-003: Run full test suite and vet to validate no regressions from documentation changes
+- **Implemented:** Full validation suite — no code changes, verification only
+- **Files changed:** progress-b95ad3ae-52f9-42a3-bf73-a916cba0ca25.txt (this file, progress update only)
+- **Results:**
+  - `go vet ./...`: clean, zero warnings
+  - `go build ./...`: clean, all packages compile
+  - `go test -race -count=1 ./...`: 17 packages total, 12 with tests (all ok), 3 without test files
+    - dockers: 32.8s (consistent with baseline of 32.9s and 33.9s from prior runs)
+    - All other packages pass identically to US-001 and US-002 baselines
+  - Zero regressions from documentation-only changes
+- **Learnings:**
+  - dockers package test timing is stable at ~33s across all three runs, confirming no hidden overhead introduced
+  - Documentation-only changes have zero impact on build or test results
 ---
