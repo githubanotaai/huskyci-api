@@ -1,6 +1,6 @@
 # GO-2026-4883 Vulnerability Assessment
 
-**Date:** 2026-06-19
+**Date:** 2026-06-21
 **Assessor:** Tamandua Developer Agent (feature-dev-github-pr workflow)
 **Status:** Accepted Exception (False Positive for huskyci-api)
 
@@ -12,7 +12,7 @@
 |-------|--------|
 | **CVE/Advisory** | GO-2026-4883 |
 | **Description** | Off-by-one error in Moby plugin privilege validation |
-| **Affected Package** | `github.com/docker/docker` v23.0.6+incompatible |
+| **Affected Package** | `github.com/docker/docker` v25.0.13+incompatible |
 | **Vulnerable Component** | Docker plugin system privilege validation |
 | **Fixed Version** | None available upstream |
 | **Severity** | Medium |
@@ -27,7 +27,7 @@ The vulnerability exists in Moby's (Docker Engine) plugin privilege validation l
 | Field | Detail |
 |-------|--------|
 | **Module** | `github.com/docker/docker` |
-| **Version** | `v23.0.6+incompatible` |
+| **Version** | `v25.0.13+incompatible` |
 | **Dependency Type** | Direct (declared in `api/go.mod`) |
 | **Import Path** | `github.com/docker/docker/client` (and types packages) |
 | **Used In** | `api/dockers/api.go`, `api/dockers/huskydocker.go` |
@@ -209,6 +209,43 @@ The finding is a false positive for huskyci-api because:
 - The vulnerable code path is unreachable by construction
 
 This assessment is recorded as the official exception for GO-2026-4883 in the huskyci-api project.
+
+---
+
+## Re-assessment (v25.0.13)
+
+**Date:** 2026-06-21
+**Context:** Dependency upgrade from v23.0.6 to v25.0.13 (via PR #118)
+
+### Version Upgrade
+
+The `github.com/docker/docker` dependency in `api/go.mod` was upgraded from `v23.0.6+incompatible` to `v25.0.13+incompatible` as part of PR #118. This upgrade bumps the Moby (Docker Engine) version by two major releases but does **not** include a fix for GO-2026-4883 — the vulnerability remains unresolved upstream.
+
+### Re-audit at v25.0.13
+
+A full re-audit of the `api/` module was conducted at version v25.0.13:
+
+- **`rg 'Plugin' api/ --type go`**: Returns exactly 2 non-overlapping match groups:
+  1. The existing comment block in `api/dockers/api.go` (lines 48-50) documenting that no Plugin* calls exist
+  2. `api/securitytest/spotbugs.go:37` — `Plugin string \`xml:"Plugin"\`` field in the SpotBugs XML Project struct (domain-level XML parsing, unrelated to Docker plugin subsystem)
+- **Zero Plugin* method calls or type imports** exist in the entire `api/` module
+- All Docker client calls remain container/image lifecycle operations only (ContainerCreate, ContainerStart, ContainerLogs, ImagePull, ImageRemove, etc.)
+- `api/dockers/huskydocker.go` contains no plugin-related code
+
+### Confirmations
+
+| Check | Result |
+|-------|--------|
+| Plugin API calls in api/ | **0** |
+| Plugin type imports in api/ | **0** |
+| Plugin code path reachable | **No** |
+| Full test suite (15 packages, `-race`) | **Pass** |
+| `go vet ./...` | **Clean** |
+| `go build ./...` | **Clean** |
+
+### Conclusion
+
+The plugin privilege validation code path remains **completely unreachable** from huskyci-api at docker/docker v25.0.13+incompatible. The GO-2026-4883 finding continues to be a **false positive — accepted exception**. No code changes are required or planned.
 
 ---
 
