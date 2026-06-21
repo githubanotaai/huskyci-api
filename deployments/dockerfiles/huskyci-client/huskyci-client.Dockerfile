@@ -3,7 +3,7 @@
 
 ARG COMPOSE_VERSION=2.32.0
 
-FROM golang:1.23-alpine AS builder
+FROM golang:1.26-alpine AS builder
 
 RUN apk update && apk upgrade \
 	&& apk add --no-cache git
