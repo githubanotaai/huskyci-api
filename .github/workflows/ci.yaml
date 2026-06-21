@@ -95,7 +95,7 @@ jobs:
         run: docker build -f ${{ matrix.dockerfile }} -t huskyci/${{ matrix.image }}:ci .
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: huskyci/${{ matrix.image }}:ci
           scan-type: image
@@ -112,17 +112,17 @@ jobs:
         with:
           go-version: "1.26"
 
-      - uses: golangci/golangci-lint-action@v7
+      - uses: golangci/golangci-lint-action@v9.2.1
         with:
           version: v2.11.4
           working-directory: api
 
-      - uses: golangci/golangci-lint-action@v7
+      - uses: golangci/golangci-lint-action@v9.2.1
         with:
           version: v2.11.4
           working-directory: client
 
-      - uses: golangci/golangci-lint-action@v7
+      - uses: golangci/golangci-lint-action@v9.2.1
         with:
           version: v2.11.4
           working-directory: cli
