@@ -4,6 +4,45 @@
 
 package dockers
 
+// GO-2026-4883 VULNERABILITY ASSESSMENT (US-001)
+//
+// The vulnerability GO-2026-4883 is an off-by-one error in Moby's plugin privilege
+// validation in github.com/docker/docker@v23.0.6+incompatible. No fixed version
+// is available upstream.
+//
+// This file (api/dockers/api.go) and api/dockers/huskydocker.go are the only
+// consumers of the docker/docker client in the entire api/ module. A full audit
+// of every d.client method call confirms the following operations are used:
+//
+//   CONTAINER OPERATIONS:
+//     - ContainerCreate    (api.go:86)
+//     - ContainerStart     (api.go:99)
+//     - ContainerWait      (api.go:104)
+//     - ContainerStop      (api.go:121)
+//     - ContainerRemove    (api.go:129)
+//     - ContainerList      (api.go:149)
+//     - ContainerLogs      (api.go:180, api.go:194)
+//
+//   IMAGE OPERATIONS:
+//     - ImagePull          (api.go:206)
+//     - ImageList          (api.go:214, api.go:228)
+//     - ImageRemove        (api.go:234)
+//
+//   MISC:
+//     - Ping               (api.go:244)
+//
+//   IMPORTS (api/dockers/api.go only):
+//     - github.com/docker/docker/api/types (dockerTypes)
+//     - github.com/docker/docker/api/types/container
+//     - github.com/docker/docker/api/types/filters
+//     - github.com/docker/docker/client
+//
+// Zero plugin-related method calls (PluginList, PluginInstall, PluginInspect,
+// PluginRemove, PluginSet, PluginEnable, PluginDisable, PluginUpgrade, etc.)
+// or Plugin* types exist anywhere in the api/ module. The vulnerable code path
+// in plugin privilege validation is completely unreachable from huskyci-api.
+// This finding is a false positive for normal huskyci-api usage.
+
 import (
 	"fmt"
 	"os"
