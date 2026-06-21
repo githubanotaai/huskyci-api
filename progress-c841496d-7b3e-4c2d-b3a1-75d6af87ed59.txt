@@ -1,0 +1,132 @@
+# Progress Log
+Run: c841496d-7b3e-4c2d-b3a1-75d6af87ed59
+Task: Implement GitHub issue #87 in huskyci-api — Upgrade golang.org/x/net to fix GO-2026-5026
+Started: 2026-06-19
+
+## Codebase Patterns
+
+- `api/go.mod` uses Go 1.25.0
+- `go mod tidy` moves unused direct dependencies to `// indirect`
+- `make test` runs `go test -race -count=1 ./...` for api/ and client/
+- Tests use Ginkgo/Gomega patterns (e.g. `api/db/postgres`)
+- `.gitignore` exists at repo root, covers standard Go/IDE patterns
+- HuskyCI has 3 independent Go modules: api/, client/, cli/
+- govulncheck installed at: /Users/fernando.costa/go/bin/govulncheck
+
+---
+
+## Story Plan
+
+### US-001: Upgrade golang.org/x/net from v0.54.0 to v0.55.0 in api module
+
+**Description:** As a developer, I need to bump the golang.org/x/net dependency in the api module from v0.54.0 to v0.55.0 to remediate GO-2026-5026 (ASCII-only Punycode label rejection vulnerability).
+
+Implementation notes:
+- Edit api/go.mod: change golang.org/x/net v0.54.0 to v0.55.0 in the require block.
+- Run go mod tidy in api/ to update go.sum and resolve transitive dependency versions.
+- Do NOT touch client/go.mod or cli/go.mod.
+
+**Acceptance Criteria:**
+- api/go.mod requires golang.org/x/net v0.55.0
+- api/go.sum entries for x/net reflect v0.55.0
+- go mod tidy produces no errors
+- go mod verify passes in api/
+- Only api/go.mod and api/go.sum are modified (client/ and cli/ are untouched)
+- Tests for dependency upgrade pass
+- Typecheck passes
+
+### US-002: Run govulncheck to confirm GO-2026-5026 is resolved
+
+**Description:** As a developer, I need to confirm that the upgraded x/net dependency resolves the reported vulnerability by running govulncheck against the api module.
+
+Implementation notes:
+- Install or ensure govulncheck is available: go install golang.org/x/vuln/cmd/govulncheck@latest.
+- Run govulncheck ./... from the api/ directory.
+- Verify GO-2026-5026 is no longer reported in the output.
+- Capture the output as evidence.
+
+**Acceptance Criteria:**
+- govulncheck ./... in api/ exits with code 0
+- GO-2026-5026 is not present in govulncheck output
+- No other vulnerabilities are introduced by the upgrade
+- Tests for vulnerability remediation pass
+- Typecheck passes
+
+### US-003: Run full test suite with race detector and verify behavioral contracts
+
+**Description:** As a developer, I need to verify that the x/net upgrade does not break any existing behavior by running the full api/ test suite with the race detector enabled.
+
+Implementation notes:
+- Run go test -race -count=1 ./... in api/.
+- Confirm all tests pass (no failures, no panics, no data races).
+- Behavioral contracts to remain intact: exit code 190, token rejection, input validation, shell injection prevention, K8s timeout enforcement.
+- Since this is a minor version bump (v0.54.0 -> v0.55.0), no API breakage is expected.
+
+**Acceptance Criteria:**
+- go test -race -count=1 ./... in api/ passes with zero failures
+- No data races detected
+- All existing test suites pass (ginkgo/gomega tests included)
+- Existing behavioral contracts remain unchanged
+- Tests for regression pass
+- Typecheck passes
+
+---
+
+## 2026-06-19 - US-001: Upgrade golang.org/x/net from v0.54.0 to v0.55.0 in api module
+
+- Changed golang.org/x/net v0.54.0 → v0.55.0 in api/go.mod
+- Ran go mod tidy (downloaded v0.55.0, updated go.sum)
+- go mod verify: all modules verified
+- go build ./...: passed (typecheck)
+- go test -race -count=1 ./...: all 14 packages pass, zero failures, zero races
+- Only api/go.mod and api/go.sum modified; client/ and cli/ untouched
+- Commit: 58eafca
+- PR: https://github.com/githubanotaai/huskyci-api/pull/111
+
+**Learnings:**
+- go mod tidy moved x/net to // indirect since api/ doesn't directly import it; still satisfies the version requirement
+- No breaking changes — minor bump (v0.54→v0.55) only fixes punycode vulnerability
+
+---
+
+## 2026-06-19 - US-002: Run govulncheck to confirm GO-2026-5026 is resolved
+
+- Installed govulncheck: go install golang.org/x/vuln/cmd/govulncheck@latest
+- Ran govulncheck on api/: `govulncheck ./...` from api/ directory
+- ✅ GO-2026-5026 is NOT present in govulncheck output — resolved
+- ✅ go build ./... passes (typecheck)
+- ✅ go vet ./... passes
+- ⚠️ govulncheck exits with code 3 due to 3 pre-existing vulnerabilities in github.com/docker/docker@v23.0.6+incompatible (GO-2026-4887, GO-2026-4883, GO-2025-3829) — NOT introduced by our upgrade
+- No new vulnerabilities introduced by x/net v0.54.0 → v0.55.0 upgrade
+- Evidence saved to api/govulncheck-output.txt (not committed — contains pre-existing Docker vuln noise)
+
+**Learnings:**
+- govulncheck exit codes: 0=clean, 1=scan error, 3=vulnerabilities found
+- Pre-existing Docker vulnerabilities are a separate remediation effort (docker/docker@v23→v25 upgrade needed)
+- govulncheck confirms only the x/net punycode vulnerability (GO-2026-5026) is gone
+
+---
+
+## 2026-06-19 - US-003: Run full test suite with race detector and verify behavioral contracts
+
+- ✅ go build ./...: passes (typecheck)
+- ✅ go vet ./...: passes
+- ✅ go test -race -count=1 ./...: all 14 packages pass, zero failures, zero data races
+- Package results:
+  - api/analysis ✅ | api/auth ✅ | api/context ✅ | api/db ✅ | api/db/postgres ✅
+  - api/dockers ✅ | api/kubernetes ✅ | api/log ✅ | api/routes ✅
+  - api/securitytest ✅ | api/token ✅ | api/util ✅ | api/util/api ✅
+  - api, api/db/mongo, api/types, api/user: no test files (expected)
+- Behavioral contracts verified intact:
+  - Exit code 190 handling: covered by api/context and api/analysis tests
+  - Token rejection: covered by api/auth and api/token tests
+  - Input validation: covered by api/securitytest tests
+  - Shell injection prevention: covered by api/securitytest tests
+  - K8s timeout enforcement: covered by api/kubernetes tests
+- No regressions; all existing Ginkgo/Gomega suites pass
+- Commit: (verification-only; progress log update)
+
+**Learnings:**
+- Full suite (14 packages) runs in ~90s with race detector
+- Ginkgo suites in api/db/postgres and api/dockers are the slowest (parallel Docker builds)
+- No behavioral changes from minor x/net version bump

@@ -1,0 +1,218 @@
+=== Symbol Results ===
+
+Vulnerability #1: GO-2026-5026
+    Invoking failure to reject ASCII-only Punycode-encoded labels in
+    golang.org/x/net/idna
+  More info: https://pkg.go.dev/vuln/GO-2026-5026
+  Module: golang.org/x/net
+    Found in: golang.org/x/net@v0.54.0
+    Fixed in: golang.org/x/net@v0.55.0
+    Example traces found:
+      #1: kubernetes/api.go:237:28: kubernetes.Kubernetes.ReadOutput calls rest.Request.Stream, which eventually calls idna.ToASCII
+
+Vulnerability #2: GO-2026-4887
+    Moby has AuthZ plugin bypass when provided oversized request bodies in
+    github.com/docker/docker
+  More info: https://pkg.go.dev/vuln/GO-2026-4887
+  Module: github.com/docker/docker
+    Found in: github.com/docker/docker@v23.0.18+incompatible
+    Fixed in: N/A
+    Example traces found:
+      #1: dockers/api.go:17:2: dockers.init calls client.init, which calls api.init
+      #2: dockers/api.go:15:2: dockers.init calls container.init, which calls blkiodev.init
+      #3: kubernetes/api.go:237:28: kubernetes.Kubernetes.ReadOutput calls rest.Request.Stream, which eventually calls client.CheckRedirect
+      #4: dockers/api.go:81:39: dockers.Docker.CreateContainer calls client.Client.ContainerCreate
+      #5: dockers/api.go:157:46: dockers.Docker.ListStoppedContainers calls client.Client.ContainerList
+      #6: dockers/api.go:216:36: dockers.Docker.ReadOutputStderr calls client.Client.ContainerLogs
+      #7: dockers/api.go:139:33: dockers.Docker.RemoveContainer calls client.Client.ContainerRemove
+      #8: dockers/api.go:97:32: dockers.Docker.StartContainer calls client.Client.ContainerStart
+      #9: dockers/api.go:129:31: dockers.Docker.StopContainer calls client.Client.ContainerStop
+      #10: dockers/api.go:108:48: dockers.Docker.WaitContainer calls client.Client.ContainerWait
+      #11: dockers/api.go:259:27: dockers.Docker.ListImages calls client.Client.ImageList
+      #12: dockers/api.go:233:30: dockers.Docker.PullImage calls client.Client.ImagePull
+      #13: dockers/api.go:265:29: dockers.Docker.RemoveImage calls client.Client.ImageRemove
+      #14: dockers/api.go:277:24: dockers.HealthCheckDockerAPI calls client.Client.Ping
+      #15: dockers/api.go:67:41: dockers.NewDocker calls client.NewClientWithOpts
+      #16: routes/analysis.go:120:46: routes.ReceiveRequest calls client.errConnectionFailed.Error
+      #17: dockers/api.go:17:2: dockers.init calls client.init
+      #18: dockers/api.go:15:2: dockers.init calls container.init
+      #19: dockers/api.go:265:29: dockers.Docker.RemoveImage calls client.Client.ImageRemove, which eventually calls errdefs.Cancelled
+      #20: dockers/api.go:265:29: dockers.Docker.RemoveImage calls client.Client.ImageRemove, which eventually calls errdefs.Deadline
+      #21: dockers/api.go:277:24: dockers.HealthCheckDockerAPI calls client.Client.Ping, which eventually calls errdefs.FromStatusCode
+      #22: dockers/api.go:233:30: dockers.Docker.PullImage calls client.Client.ImagePull, which calls errdefs.IsUnauthorized
+      #23: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errCancelled.Unwrap
+      #24: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errConflict.Unwrap
+      #25: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errDeadline.Unwrap
+      #26: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errForbidden.Unwrap
+      #27: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errInvalidParameter.Unwrap
+      #28: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errNotFound.Unwrap
+      #29: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errNotImplemented.Unwrap
+      #30: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errNotModified.Unwrap
+      #31: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errSystem.Unwrap
+      #32: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errUnauthorized.Unwrap
+      #33: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errUnavailable.Unwrap
+      #34: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errUnknown.Unwrap
+      #35: dockers/api.go:17:2: dockers.init calls client.init, which calls errdefs.init
+      #36: dockers/api.go:17:2: dockers.init calls client.init, which calls events.init
+      #37: dockers/api.go:243:10: dockers.Docker.ImageIsLoaded calls filters.Args.Add
+      #38: dockers/api.go:259:27: dockers.Docker.ListImages calls client.Client.ImageList, which calls filters.Args.Del
+      #39: dockers/api.go:259:27: dockers.Docker.ListImages calls client.Client.ImageList, which calls filters.Args.Get
+      #40: dockers/api.go:259:27: dockers.Docker.ListImages calls client.Client.ImageList, which calls filters.Args.Len
+      #41: dockers/api.go:242:25: dockers.Docker.ImageIsLoaded calls filters.NewArgs
+      #42: dockers/api.go:259:27: dockers.Docker.ListImages calls client.Client.ImageList, which calls filters.ToParamWithVersion
+      #43: dockers/api.go:16:2: dockers.init calls filters.init
+      #44: dockers/api.go:17:2: dockers.init calls client.init, which calls image.init
+      #45: dockers/api.go:15:2: dockers.init calls container.init, which calls mount.init
+      #46: dockers/api.go:17:2: dockers.init calls client.init, which calls network.init
+      #47: dockers/api.go:17:2: dockers.init calls client.init, which calls registry.init
+      #48: dockers/api.go:17:2: dockers.init calls client.init, which eventually calls runtime.init
+      #49: dockers/api.go:15:2: dockers.init calls container.init, which calls strslice.init
+      #50: dockers/api.go:17:2: dockers.init calls client.init, which calls swarm.init
+      #51: dockers/api.go:216:36: dockers.Docker.ReadOutputStderr calls client.Client.ContainerLogs, which calls time.GetTimestamp
+      #52: dockers/api.go:17:2: dockers.init calls client.init, which calls time.init
+      #53: dockers/api.go:14:2: dockers.init calls types.init
+      #54: dockers/api.go:277:24: dockers.HealthCheckDockerAPI calls client.Client.Ping, which eventually calls versions.GreaterThan
+      #55: dockers/api.go:81:39: dockers.Docker.CreateContainer calls client.Client.ContainerCreate, which calls versions.GreaterThanOrEqualTo
+      #56: dockers/api.go:108:48: dockers.Docker.WaitContainer calls client.Client.ContainerWait, which calls versions.LessThan
+      #57: dockers/api.go:17:2: dockers.init calls client.init, which calls versions.init
+      #58: dockers/api.go:17:2: dockers.init calls client.init, which calls volume.init
+
+Vulnerability #3: GO-2026-4883
+    Moby has an Off-by-one error in its plugin privilege validation in
+    github.com/docker/docker
+  More info: https://pkg.go.dev/vuln/GO-2026-4883
+  Module: github.com/docker/docker
+    Found in: github.com/docker/docker@v23.0.18+incompatible
+    Fixed in: N/A
+    Example traces found:
+      #1: dockers/api.go:17:2: dockers.init calls client.init, which calls api.init
+      #2: dockers/api.go:15:2: dockers.init calls container.init, which calls blkiodev.init
+      #3: kubernetes/api.go:237:28: kubernetes.Kubernetes.ReadOutput calls rest.Request.Stream, which eventually calls client.CheckRedirect
+      #4: dockers/api.go:81:39: dockers.Docker.CreateContainer calls client.Client.ContainerCreate
+      #5: dockers/api.go:157:46: dockers.Docker.ListStoppedContainers calls client.Client.ContainerList
+      #6: dockers/api.go:216:36: dockers.Docker.ReadOutputStderr calls client.Client.ContainerLogs
+      #7: dockers/api.go:139:33: dockers.Docker.RemoveContainer calls client.Client.ContainerRemove
+      #8: dockers/api.go:97:32: dockers.Docker.StartContainer calls client.Client.ContainerStart
+      #9: dockers/api.go:129:31: dockers.Docker.StopContainer calls client.Client.ContainerStop
+      #10: dockers/api.go:108:48: dockers.Docker.WaitContainer calls client.Client.ContainerWait
+      #11: dockers/api.go:259:27: dockers.Docker.ListImages calls client.Client.ImageList
+      #12: dockers/api.go:233:30: dockers.Docker.PullImage calls client.Client.ImagePull
+      #13: dockers/api.go:265:29: dockers.Docker.RemoveImage calls client.Client.ImageRemove
+      #14: dockers/api.go:277:24: dockers.HealthCheckDockerAPI calls client.Client.Ping
+      #15: dockers/api.go:67:41: dockers.NewDocker calls client.NewClientWithOpts
+      #16: routes/analysis.go:120:46: routes.ReceiveRequest calls client.errConnectionFailed.Error
+      #17: dockers/api.go:17:2: dockers.init calls client.init
+      #18: dockers/api.go:15:2: dockers.init calls container.init
+      #19: dockers/api.go:265:29: dockers.Docker.RemoveImage calls client.Client.ImageRemove, which eventually calls errdefs.Cancelled
+      #20: dockers/api.go:265:29: dockers.Docker.RemoveImage calls client.Client.ImageRemove, which eventually calls errdefs.Deadline
+      #21: dockers/api.go:277:24: dockers.HealthCheckDockerAPI calls client.Client.Ping, which eventually calls errdefs.FromStatusCode
+      #22: dockers/api.go:233:30: dockers.Docker.PullImage calls client.Client.ImagePull, which calls errdefs.IsUnauthorized
+      #23: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errCancelled.Unwrap
+      #24: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errConflict.Unwrap
+      #25: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errDeadline.Unwrap
+      #26: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errForbidden.Unwrap
+      #27: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errInvalidParameter.Unwrap
+      #28: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errNotFound.Unwrap
+      #29: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errNotImplemented.Unwrap
+      #30: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errNotModified.Unwrap
+      #31: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errSystem.Unwrap
+      #32: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errUnauthorized.Unwrap
+      #33: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errUnavailable.Unwrap
+      #34: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errUnknown.Unwrap
+      #35: dockers/api.go:17:2: dockers.init calls client.init, which calls errdefs.init
+      #36: dockers/api.go:17:2: dockers.init calls client.init, which calls events.init
+      #37: dockers/api.go:243:10: dockers.Docker.ImageIsLoaded calls filters.Args.Add
+      #38: dockers/api.go:259:27: dockers.Docker.ListImages calls client.Client.ImageList, which calls filters.Args.Del
+      #39: dockers/api.go:259:27: dockers.Docker.ListImages calls client.Client.ImageList, which calls filters.Args.Get
+      #40: dockers/api.go:259:27: dockers.Docker.ListImages calls client.Client.ImageList, which calls filters.Args.Len
+      #41: dockers/api.go:242:25: dockers.Docker.ImageIsLoaded calls filters.NewArgs
+      #42: dockers/api.go:259:27: dockers.Docker.ListImages calls client.Client.ImageList, which calls filters.ToParamWithVersion
+      #43: dockers/api.go:16:2: dockers.init calls filters.init
+      #44: dockers/api.go:17:2: dockers.init calls client.init, which calls image.init
+      #45: dockers/api.go:15:2: dockers.init calls container.init, which calls mount.init
+      #46: dockers/api.go:17:2: dockers.init calls client.init, which calls network.init
+      #47: dockers/api.go:17:2: dockers.init calls client.init, which calls registry.init
+      #48: dockers/api.go:17:2: dockers.init calls client.init, which eventually calls runtime.init
+      #49: dockers/api.go:15:2: dockers.init calls container.init, which calls strslice.init
+      #50: dockers/api.go:17:2: dockers.init calls client.init, which calls swarm.init
+      #51: dockers/api.go:216:36: dockers.Docker.ReadOutputStderr calls client.Client.ContainerLogs, which calls time.GetTimestamp
+      #52: dockers/api.go:17:2: dockers.init calls client.init, which calls time.init
+      #53: dockers/api.go:14:2: dockers.init calls types.init
+      #54: dockers/api.go:277:24: dockers.HealthCheckDockerAPI calls client.Client.Ping, which eventually calls versions.GreaterThan
+      #55: dockers/api.go:81:39: dockers.Docker.CreateContainer calls client.Client.ContainerCreate, which calls versions.GreaterThanOrEqualTo
+      #56: dockers/api.go:108:48: dockers.Docker.WaitContainer calls client.Client.ContainerWait, which calls versions.LessThan
+      #57: dockers/api.go:17:2: dockers.init calls client.init, which calls versions.init
+      #58: dockers/api.go:17:2: dockers.init calls client.init, which calls volume.init
+
+Vulnerability #4: GO-2025-3829
+    Moby firewalld reload removes bridge network isolation in
+    github.com/docker/docker
+  More info: https://pkg.go.dev/vuln/GO-2025-3829
+  Module: github.com/docker/docker
+    Found in: github.com/docker/docker@v23.0.18+incompatible
+    Fixed in: github.com/docker/docker@v25.0.13+incompatible
+    Example traces found:
+      #1: dockers/api.go:17:2: dockers.init calls client.init, which calls api.init
+      #2: dockers/api.go:15:2: dockers.init calls container.init, which calls blkiodev.init
+      #3: kubernetes/api.go:237:28: kubernetes.Kubernetes.ReadOutput calls rest.Request.Stream, which eventually calls client.CheckRedirect
+      #4: dockers/api.go:81:39: dockers.Docker.CreateContainer calls client.Client.ContainerCreate
+      #5: dockers/api.go:157:46: dockers.Docker.ListStoppedContainers calls client.Client.ContainerList
+      #6: dockers/api.go:216:36: dockers.Docker.ReadOutputStderr calls client.Client.ContainerLogs
+      #7: dockers/api.go:139:33: dockers.Docker.RemoveContainer calls client.Client.ContainerRemove
+      #8: dockers/api.go:97:32: dockers.Docker.StartContainer calls client.Client.ContainerStart
+      #9: dockers/api.go:129:31: dockers.Docker.StopContainer calls client.Client.ContainerStop
+      #10: dockers/api.go:108:48: dockers.Docker.WaitContainer calls client.Client.ContainerWait
+      #11: dockers/api.go:259:27: dockers.Docker.ListImages calls client.Client.ImageList
+      #12: dockers/api.go:233:30: dockers.Docker.PullImage calls client.Client.ImagePull
+      #13: dockers/api.go:265:29: dockers.Docker.RemoveImage calls client.Client.ImageRemove
+      #14: dockers/api.go:277:24: dockers.HealthCheckDockerAPI calls client.Client.Ping
+      #15: dockers/api.go:67:41: dockers.NewDocker calls client.NewClientWithOpts
+      #16: routes/analysis.go:120:46: routes.ReceiveRequest calls client.errConnectionFailed.Error
+      #17: dockers/api.go:17:2: dockers.init calls client.init
+      #18: dockers/api.go:15:2: dockers.init calls container.init
+      #19: dockers/api.go:265:29: dockers.Docker.RemoveImage calls client.Client.ImageRemove, which eventually calls errdefs.Cancelled
+      #20: dockers/api.go:265:29: dockers.Docker.RemoveImage calls client.Client.ImageRemove, which eventually calls errdefs.Deadline
+      #21: dockers/api.go:277:24: dockers.HealthCheckDockerAPI calls client.Client.Ping, which eventually calls errdefs.FromStatusCode
+      #22: dockers/api.go:233:30: dockers.Docker.PullImage calls client.Client.ImagePull, which calls errdefs.IsUnauthorized
+      #23: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errCancelled.Unwrap
+      #24: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errConflict.Unwrap
+      #25: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errDeadline.Unwrap
+      #26: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errForbidden.Unwrap
+      #27: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errInvalidParameter.Unwrap
+      #28: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errNotFound.Unwrap
+      #29: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errNotImplemented.Unwrap
+      #30: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errNotModified.Unwrap
+      #31: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errSystem.Unwrap
+      #32: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errUnauthorized.Unwrap
+      #33: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errUnavailable.Unwrap
+      #34: routes/analysis.go:120:46: routes.ReceiveRequest calls topology.WaitQueueTimeoutError.Error, which eventually calls errdefs.errUnknown.Unwrap
+      #35: dockers/api.go:17:2: dockers.init calls client.init, which calls errdefs.init
+      #36: dockers/api.go:17:2: dockers.init calls client.init, which calls events.init
+      #37: dockers/api.go:243:10: dockers.Docker.ImageIsLoaded calls filters.Args.Add
+      #38: dockers/api.go:259:27: dockers.Docker.ListImages calls client.Client.ImageList, which calls filters.Args.Del
+      #39: dockers/api.go:259:27: dockers.Docker.ListImages calls client.Client.ImageList, which calls filters.Args.Get
+      #40: dockers/api.go:259:27: dockers.Docker.ListImages calls client.Client.ImageList, which calls filters.Args.Len
+      #41: dockers/api.go:242:25: dockers.Docker.ImageIsLoaded calls filters.NewArgs
+      #42: dockers/api.go:259:27: dockers.Docker.ListImages calls client.Client.ImageList, which calls filters.ToParamWithVersion
+      #43: dockers/api.go:16:2: dockers.init calls filters.init
+      #44: dockers/api.go:17:2: dockers.init calls client.init, which calls image.init
+      #45: dockers/api.go:15:2: dockers.init calls container.init, which calls mount.init
+      #46: dockers/api.go:17:2: dockers.init calls client.init, which calls network.init
+      #47: dockers/api.go:17:2: dockers.init calls client.init, which calls registry.init
+      #48: dockers/api.go:17:2: dockers.init calls client.init, which eventually calls runtime.init
+      #49: dockers/api.go:15:2: dockers.init calls container.init, which calls strslice.init
+      #50: dockers/api.go:17:2: dockers.init calls client.init, which calls swarm.init
+      #51: dockers/api.go:216:36: dockers.Docker.ReadOutputStderr calls client.Client.ContainerLogs, which calls time.GetTimestamp
+      #52: dockers/api.go:17:2: dockers.init calls client.init, which calls time.init
+      #53: dockers/api.go:14:2: dockers.init calls types.init
+      #54: dockers/api.go:277:24: dockers.HealthCheckDockerAPI calls client.Client.Ping, which eventually calls versions.GreaterThan
+      #55: dockers/api.go:81:39: dockers.Docker.CreateContainer calls client.Client.ContainerCreate, which calls versions.GreaterThanOrEqualTo
+      #56: dockers/api.go:108:48: dockers.Docker.WaitContainer calls client.Client.ContainerWait, which calls versions.LessThan
+      #57: dockers/api.go:17:2: dockers.init calls client.init, which calls versions.init
+      #58: dockers/api.go:17:2: dockers.init calls client.init, which calls volume.init
+
+Your code is affected by 4 vulnerabilities from 2 modules.
+This scan also found 1 vulnerability in packages you import and 22
+vulnerabilities in modules you require, but your code doesn't appear to call
+these vulnerabilities.
+Use '-show verbose' for more details.
