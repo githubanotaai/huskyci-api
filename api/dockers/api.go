@@ -43,6 +43,49 @@ package dockers
 // in plugin privilege validation is completely unreachable from huskyci-api.
 // This finding is a false positive for normal huskyci-api usage.
 
+// CVE-2026-42306 VULNERABILITY ASSESSMENT
+//
+// The vulnerability CVE-2026-42306 affects github.com/docker/docker (Moby).
+// No fix is available upstream as of this assessment.
+//
+// HuskyCI uses Moby strictly as a CLIENT to an external dockerd daemon, not as
+// the daemon itself. The API surface is limited to container lifecycle and
+// image management operations. A full audit of every d.client method call
+// confirms the following operations are used:
+//
+//   CONTAINER OPERATIONS:
+//     - ContainerCreate    (api.go:164)
+//     - ContainerStart     (api.go:180)
+//     - ContainerWait      (api.go:191)
+//     - ContainerStop      (api.go:212)
+//     - ContainerRemove    (api.go:222)
+//     - ContainerList      (api.go:240)
+//     - ContainerLogs      (api.go:282, stdout)
+//     - ContainerLogs      (api.go:299, stderr)
+//
+//   IMAGE OPERATIONS:
+//     - ImagePull          (api.go:316)
+//     - ImageList          (api.go:330)
+//     - ImageList          (api.go:342)
+//     - ImageRemove        (api.go:348)
+//
+//   MISC:
+//     - Ping               (api.go:360)
+//
+//   IMPORTS (api/dockers/api.go):
+//     - github.com/docker/docker/api/types (dockerTypes)
+//     - github.com/docker/docker/api/types/container
+//     - github.com/docker/docker/api/types/filters
+//     - github.com/docker/docker/api/types/image
+//     - github.com/docker/docker/client
+//
+// huskydocker.go has zero direct d.client calls. The vulnerable code path
+// related to CVE-2026-42306 is not reachable through the client API surface
+// used by huskyci-api.
+//
+// Status: Risk Accepted — not exploitable in huskyci-api deployment.
+// Will reassess when upstream Moby releases a fix.
+
 import (
 	"fmt"
 	"os"
