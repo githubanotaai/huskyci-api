@@ -1,0 +1,81 @@
+# Progress Log
+Run: ac08eb3e-b41e-464d-8566-3bf505c2f8b0
+Task: Implement issue #88: GO-2026-4887 govulncheck advisory on github.com/docker/docker
+Started: 2026-06-21
+
+## Codebase Patterns
+- Docker client SDK usage is in `api/dockers/api.go` using `github.com/docker/docker/client`
+- Imports: `api/types`, `api/types/container`, `api/types/filters`, `api/types/image`, `client`
+- No AuthZ plugin imports anywhere in the codebase
+- Security advisories are in `docs/advisories/` as markdown files
+- go.mod dependency: `github.com/docker/docker v25.0.13+incompatible`
+
+## Story Plan
+
+### US-001: Verify current docker/docker version and non-exploitability at v25.0.13
+
+**Description:** As a developer, I need to verify the current state of the GO-2026-4887 advisory against docker/docker v25.0.13 so that the advisory document can be accurately updated.
+
+Implementation notes:
+- Confirm api/go.mod references github.com/docker/docker v25.0.13+incompatible
+- Check pkg.go.dev/vuln/GO-2026-4887 for any upstream fix since last assessment
+- Run go test -race ./... and go vet ./... in api/ to confirm project health
+- Verify the non-exploitability rationale (client SDK only, no AuthZ plugin usage) still holds for v25.0.13
+- The analysis is purely investigative; no file changes in this story
+
+**Acceptance Criteria:**
+- go.mod contains github.com/docker/docker v25.0.13+incompatible
+- go test -race -count=1 ./... passes in api/
+- go vet ./... passes in api/
+- Confirmation recorded in progress log that non-exploitability rationale still applies at v25.0.13
+- Typecheck passes
+
+### US-002: Update GO-2026-4887 advisory document to reflect v25.0.13
+
+**Description:** As a developer, I need to update docs/advisories/GO-2026-4887.md to reassess exploitability against the current v25.0.13 docker/docker version so that the advisory accurately reflects the project's current dependency.
+
+Implementation notes:
+- Update Section 1 date from 2026-06-19 to current date (2026-06-21)
+- Update Section 2 Affected Version from v23.0.6 to v25.0.13
+- Update Section 5 to remove v23.x upgrade details and add v25.0.13 upgrade summary (PR #118 already performed the upgrade)
+- Preserve the non-exploitability conclusion; HuskyCI still uses only Docker client SDK
+- Reference current Moby v25.0.13 version
+- Update the accepted risk rationale section if needed
+- Do NOT change any Go source code; documentation only
+- Run go test -race ./... and go vet ./... to confirm no regressions
+
+**Acceptance Criteria:**
+- Section 2 Affected Version shows v25.0.13+incompatible instead of v23.0.6+incompatible
+- Date in header is updated to 2026-06-21
+- Section 5 remediation reflects the v25.0.13 upgrade (no v23.0.18 reference)
+- Non-exploitability conclusion remains unchanged
+- Section 6 references v25.0.13 as current version
+- go test -race -count=1 ./... passes in api/
+- go vet ./... passes in api/
+- No Go source files modified (only docs/advisories/GO-2026-4887.md changed)
+- Typecheck passes
+
+---
+
+## 2026-06-21 - US-001: Verify current docker/docker version and non-exploitability at v25.0.13
+- **What was implemented:** Investigative analysis — verified the GO-2026-4887 non-exploitability rationale still applies with docker/docker v25.0.13+incompatible. No code changes required.
+- **Files changed:** None (purely investigative story)
+- **Verification results:**
+  1. ✅ api/go.mod contains `github.com/docker/docker v25.0.13+incompatible`
+  2. ✅ `go test -race -count=1 ./...` — all 16 packages pass in api/
+  3. ✅ `go vet ./...` — no warnings in api/
+  4. ✅ `go build ./...` — builds cleanly in api/
+  5. ✅ Non-exploitability rationale verified at v25.0.13:
+     - GO-2026-4887 still shows "all versions, no known fixed" on pkg.go.dev
+     - CVE-2026-34040 assigned; no fix published for github.com/docker/docker
+     - HuskyCI imports only client SDK types: `api/types`, `api/types/container`, `api/types/filters`, `api/types/image`, `client`
+     - Zero AuthZ plugin-related method calls or imports anywhere in api/
+     - `client.NewEnvClient` provides no mechanism to configure daemon-side AuthZ plugins
+     - The vulnerability is in the Docker daemon's authorization middleware — unreachable from the client SDK
+  6. ✅ `api/types/image` import (new in v25.x, not present in original v23.x audit) is a standard image types package, not AuthZ-related
+- **Learnings:**
+  - PR #118 upgraded from v23.0.6 to v25.0.13 successfully
+  - The advisory doc (docs/advisories/GO-2026-4887.md) still references v23.0.6/v23.0.18 — needs update in US-002
+  - Docker v25.x added `api/types/image` sub-package but no AuthZ types
+  - The non-exploitability rationale is even stronger at v25.0.13 (more mature client SDK, same AuthZ isolation)
+---
