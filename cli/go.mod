@@ -32,7 +32,7 @@ require (
 	github.com/src-d/go-oniguruma v1.1.0 // indirect
 	github.com/subosito/gotenv v1.4.2 // indirect
 	github.com/toqueteos/trie v1.0.0 // indirect
-	golang.org/x/net v0.37.0 // indirect
+	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/text v0.23.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
