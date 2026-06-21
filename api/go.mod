@@ -12,7 +12,7 @@ require (
 	github.com/onsi/gomega v1.27.4
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/spf13/viper v1.15.0
-	go.mongodb.org/mongo-driver v1.17.2
+	go.mongodb.org/mongo-driver v1.17.7
 	golang.org/x/crypto v0.51.0
 	golang.org/x/sync v0.20.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22
