@@ -122,6 +122,46 @@ package dockers
 // Status: Risk Accepted — not exploitable in huskyci-api deployment.
 // Will reassess when upstream Moby releases a fix.
 
+// GO-2026-4887 VULNERABILITY ASSESSMENT
+//
+// The vulnerability GO-2026-4887 is a Moby AuthZ plugin bypass in
+// github.com/docker/docker. No fixed version is available upstream.
+//
+// HuskyCI uses the Docker client SDK strictly for scanner container management.
+// A full audit of every d.client method call confirms the following operations
+// are used:
+//
+//   CONTAINER OPERATIONS:
+//     - ContainerCreate
+//     - ContainerStart
+//     - ContainerWait
+//     - ContainerStop
+//     - ContainerRemove
+//     - ContainerList
+//     - ContainerLogs
+//
+//   IMAGE OPERATIONS:
+//     - ImagePull
+//     - ImageList
+//     - ImageRemove
+//
+//   MISC:
+//     - Ping
+//
+//   IMPORTS (api/dockers/api.go):
+//     - github.com/docker/docker/api/types/container
+//     - github.com/docker/docker/api/types/filters
+//     - github.com/docker/docker/api/types/image (dockerImage)
+//     - github.com/docker/docker/client
+//
+// Zero AuthZ plugin-related method calls (PluginList, PluginInstall, PluginInspect,
+// PluginRemove, PluginSet, PluginEnable, PluginDisable, PluginUpgrade, etc.)
+// or Plugin* types exist anywhere in the api/ module. The AuthZ plugin code path
+// is completely unreachable from the Docker client SDK operations used by huskyci-api.
+//
+// Status: Risk Accepted — false positive in huskyci-api deployment.
+// Will reassess when upstream Moby releases a fix.
+
 import (
 	"fmt"
 	"os"
