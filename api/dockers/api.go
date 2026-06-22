@@ -129,8 +129,8 @@ import (
 	"time"
 
 	goContext "context"
+	_ "github.com/docker/docker" // anchor require directive for v29 upgrade
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
 	dockerImage "github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
 	apiContext "github.com/githubanotaai/huskyci-api/api/context"
@@ -196,11 +196,13 @@ func NewDocker(dockerHost string) (*Docker, error) {
 // CreateContainer creates a new container and return its CID and an error
 func (d Docker) CreateContainer(image, cmd string) (string, error) {
 	ctx := goContext.Background()
-	resp, err := d.client.ContainerCreate(ctx, &container.Config{
-		Image: image,
-		Tty:   true,
-		Cmd:   []string{"/bin/sh", "-c", cmd},
-	}, nil, nil, nil, "")
+	resp, err := d.client.ContainerCreate(ctx, client.ContainerCreateOptions{
+		Config: &container.Config{
+			Image: image,
+			Tty:   true,
+			Cmd:   []string{"/bin/sh", "-c", cmd},
+		},
+	})
 
 	if err != nil {
 		log.Error("CreateContainer", logInfoAPI, 3005, err)
@@ -212,7 +214,8 @@ func (d Docker) CreateContainer(image, cmd string) (string, error) {
 // StartContainer starts a container and returns its error.
 func (d Docker) StartContainer() error {
 	ctx := goContext.Background()
-	return d.client.ContainerStart(ctx, d.CID, container.StartOptions{})
+	_, err := d.client.ContainerStart(ctx, d.CID, client.ContainerStartOptions{})
+	return err
 }
 
 // WaitContainer returns when container finishes executing cmd.
@@ -223,14 +226,14 @@ func (d Docker) WaitContainer(timeOutInSeconds int) error {
 		ctx, cancel = goContext.WithTimeout(ctx, time.Duration(timeOutInSeconds)*time.Second)
 		defer cancel()
 	}
-	containerWaitC, errC := d.client.ContainerWait(ctx, d.CID, container.WaitConditionNotRunning)
+	waitResult := d.client.ContainerWait(ctx, d.CID, client.ContainerWaitOptions{Condition: container.WaitConditionNotRunning})
 
 	select {
-	case err := <-errC:
+	case err := <-waitResult.Error:
 		if err != nil {
 			return err
 		}
-	case containerWait := <-containerWaitC:
+	case containerWait := <-waitResult.Result:
 		if containerWait.StatusCode != 0 {
 			return fmt.Errorf("Error in POST to wait the container with statusCode %d", containerWait.StatusCode)
 		}
@@ -244,7 +247,7 @@ func (d Docker) WaitContainer(timeOutInSeconds int) error {
 // StopContainer stops an active container by it's CID
 func (d Docker) StopContainer() error {
 	ctx := goContext.Background()
-	err := d.client.ContainerStop(ctx, d.CID, container.StopOptions{})
+	_, err := d.client.ContainerStop(ctx, d.CID, client.ContainerStopOptions{})
 	if err != nil {
 		log.Error("StopContainer", logInfoAPI, 3022, err)
 	}
@@ -254,7 +257,7 @@ func (d Docker) StopContainer() error {
 // RemoveContainer removes a container by it's CID
 func (d Docker) RemoveContainer() error {
 	ctx := goContext.Background()
-	err := d.client.ContainerRemove(ctx, d.CID, container.RemoveOptions{})
+	_, err := d.client.ContainerRemove(ctx, d.CID, client.ContainerRemoveOptions{})
 	if err != nil {
 		log.Error("RemoveContainer", logInfoAPI, 3023, err)
 	}
@@ -265,11 +268,9 @@ func (d Docker) RemoveContainer() error {
 func (d Docker) ListStoppedContainers() ([]Docker, error) {
 
 	ctx := goContext.Background()
-	dockerFilters := filters.NewArgs()
-	dockerFilters.Add("status", "exited")
-	options := container.ListOptions{
+	options := client.ContainerListOptions{
 		All:     true,
-		Filters: dockerFilters,
+		Filters: make(client.Filters).Add("status", "exited"),
 	}
 
 	containerList, err := d.client.ContainerList(ctx, options)
@@ -279,7 +280,7 @@ func (d Docker) ListStoppedContainers() ([]Docker, error) {
 	}
 
 	var dockerList []Docker
-	for _, c := range containerList {
+	for _, c := range containerList.Items {
 		docker := Docker{
 			CID:    c.ID,
 			client: d.client,
@@ -314,7 +315,7 @@ func (d Docker) DieContainers() error {
 // ReadOutput returns STDOUT of a given containerID.
 func (d Docker) ReadOutput() (string, error) {
 	ctx := goContext.Background()
-	out, err := d.client.ContainerLogs(ctx, d.CID, container.LogsOptions{ShowStdout: true})
+	out, err := d.client.ContainerLogs(ctx, d.CID, client.ContainerLogsOptions{ShowStdout: true})
 	if err != nil {
 		log.Error("ReadOutput", logInfoAPI, 3006, err)
 		return "", nil
@@ -331,7 +332,7 @@ func (d Docker) ReadOutput() (string, error) {
 // ReadOutputStderr returns STDERR of a given containerID.
 func (d Docker) ReadOutputStderr() (string, error) {
 	ctx := goContext.Background()
-	out, err := d.client.ContainerLogs(ctx, d.CID, container.LogsOptions{ShowStderr: true})
+	out, err := d.client.ContainerLogs(ctx, d.CID, client.ContainerLogsOptions{ShowStderr: true})
 	if err != nil {
 		log.Error("ReadOutputStderr", logInfoAPI, 3006, err)
 		return "", nil
@@ -348,7 +349,7 @@ func (d Docker) ReadOutputStderr() (string, error) {
 // PullImage pulls an image, like docker pull.
 func (d Docker) PullImage(image string) error {
 	ctx := goContext.Background()
-	_, err := d.client.ImagePull(ctx, image, dockerImage.PullOptions{})
+	_, err := d.client.ImagePull(ctx, image, client.ImagePullOptions{})
 	if err != nil {
 		log.Error("PullImage", logInfoAPI, 3009, err)
 	}
@@ -357,9 +358,7 @@ func (d Docker) PullImage(image string) error {
 
 // ImageIsLoaded returns a bool if a a docker image is loaded or not.
 func (d Docker) ImageIsLoaded(image string) bool {
-	args := filters.NewArgs()
-	args.Add("reference", image)
-	options := dockerImage.ListOptions{Filters: args}
+	options := client.ImageListOptions{Filters: make(client.Filters).Add("reference", image)}
 
 	ctx := goContext.Background()
 	result, err := d.client.ImageList(ctx, options)
@@ -368,19 +367,27 @@ func (d Docker) ImageIsLoaded(image string) bool {
 		panic(err)
 	}
 
-	return len(result) != 0
+	return len(result.Items) != 0
 }
 
 // ListImages returns docker images, like docker image ls.
 func (d Docker) ListImages() ([]dockerImage.Summary, error) {
 	ctx := goContext.Background()
-	return d.client.ImageList(ctx, dockerImage.ListOptions{})
+	result, err := d.client.ImageList(ctx, client.ImageListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return result.Items, nil
 }
 
 // RemoveImage removes an image.
 func (d Docker) RemoveImage(imageID string) ([]dockerImage.DeleteResponse, error) {
 	ctx := goContext.Background()
-	return d.client.ImageRemove(ctx, imageID, dockerImage.RemoveOptions{Force: true})
+	result, err := d.client.ImageRemove(ctx, imageID, client.ImageRemoveOptions{Force: true})
+	if err != nil {
+		return nil, err
+	}
+	return result.Items, nil
 }
 
 // HealthCheckDockerAPI returns true if a 200 status code is received from dockerAddress or false otherwise.
@@ -392,6 +399,6 @@ func HealthCheckDockerAPI(dockerHost string) error {
 	}
 
 	ctx := goContext.Background()
-	_, err = d.client.Ping(ctx)
+	_, err = d.client.Ping(ctx, client.PingOptions{})
 	return err
 }
