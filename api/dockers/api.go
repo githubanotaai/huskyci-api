@@ -82,34 +82,35 @@ package dockers
 // Status: Risk Accepted — not exploitable in huskyci-api deployment.
 // Will reassess when upstream Moby releases a fix.
 
-// CVE-2026-42306 VULNERABILITY ASSESSMENT
+// CVE-2026-42306 VULNERABILITY ASSESSMENT (US-001)
 //
-// The vulnerability CVE-2026-42306 affects github.com/docker/docker (Moby).
-// No fix is available upstream as of this assessment.
+// The vulnerability CVE-2026-42306 is in github.com/docker/docker (Moby). No fixed
+// version is available upstream.
 //
-// HuskyCI uses Moby strictly as a CLIENT to an external dockerd daemon, not as
-// the daemon itself. The API surface is limited to container lifecycle and
-// image management operations. A full audit of every d.client method call
-// confirms the following operations are used:
+// This file (api/dockers/api.go) and api/dockers/huskydocker.go are the only
+// consumers of the docker/docker client in the entire api/ module. HuskyCI uses
+// Moby strictly as a CLIENT to connect to a separate, external dockerd daemon,
+// not as the daemon itself. A full audit of every d.client method call confirms
+// the following operations are used:
 //
 //   CONTAINER OPERATIONS:
-//     - ContainerCreate
-//     - ContainerStart
-//     - ContainerWait
-//     - ContainerStop
-//     - ContainerRemove
-//     - ContainerList
-//     - ContainerLogs
+//     - ContainerCreate    (api.go:199)
+//     - ContainerStart     (api.go:215)
+//     - ContainerWait      (api.go:226)
+//     - ContainerStop      (api.go:247)
+//     - ContainerRemove    (api.go:257)
+//     - ContainerList      (api.go:275)
+//     - ContainerLogs      (api.go:317, api.go:334)
 //
 //   IMAGE OPERATIONS:
-//     - ImagePull
-//     - ImageList
-//     - ImageRemove
+//     - ImagePull          (api.go:351)
+//     - ImageList          (api.go:365, api.go:377)
+//     - ImageRemove        (api.go:383)
 //
 //   MISC:
-//     - Ping
+//     - Ping               (api.go:395)
 //
-//   IMPORTS (api/dockers/api.go):
+//   IMPORTS (api/dockers/api.go only):
 //     - github.com/docker/docker/api/types/container
 //     - github.com/docker/docker/api/types/filters
 //     - github.com/docker/docker/api/types/image (dockerImage)
