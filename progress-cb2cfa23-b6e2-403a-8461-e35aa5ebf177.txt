@@ -1,0 +1,60 @@
+# Progress Log
+Run: cb2cfa23-b6e2-403a-8461-e35aa5ebf177
+Task: Investigate CVE-2025-30204 in golang-jwt/jwt/v4 (indirect dep at v4.5.2). Research fix version. Bump, migrate to v5, or document as not reachable. Run go test -race. Issue #139.
+Started: 2026-06-21
+
+## Codebase Patterns
+
+- **Go modules dual-path limitation**: When a `replace` directive maps `dgrijalva/jwt-go` → `golang-jwt/jwt/v4`, and `dgrijalva/jwt-go`'s test files also import `golang-jwt/jwt/v4` directly, Go 1.26 rejects the same module version under two import paths (`go mod tidy` fails with "used for two different module paths"). Workaround: remove the direct `require` line and keep only the `replace` directive. The build and tests still work.
+- **Dependency chain**: `huskyci-api` → `labstack/echo v3` → `dgrijalva/jwt-go` (replaced with `golang-jwt/jwt/v4`). The `dgrijalva/jwt-go` test files import `golang-jwt/jwt/v4` directly, creating a test-only transitive dependency.
+- **No direct JWT usage**: The huskyci-api codebase has zero Go files that import any JWT library. JWT is only pulled in transitively through the labstack/echo middleware dependency.
+
+---
+
+## Story Plan
+
+### US-001: Research CVE-2025-30204 and bump replace directive to v4.5.2
+
+**Description:** As a developer, I need to research CVE-2025-30204 in golang-jwt/jwt/v4, confirm that v4.5.2 is the fixing version, and bump the replace directive from v4.5.0 to v4.5.2 so that the effective dependency is fully patched.
+
+**Acceptance Criteria:**
+- rg 'jwt' api/ --include='*.go' confirms zero direct import statements (only go.mod/go.sum entries)
+- api/go.mod replace directive updated from v4.5.0 to v4.5.2
+- cd api && go mod tidy succeeds
+- api/go.sum no longer contains golang-jwt/jwt/v4 v4.5.0 hash (only v4.5.2 remains)
+- Research confirms CVE-2025-30204 is fixed in v4.5.2 (not v4.5.0)
+- Typecheck passes
+
+### US-002: Create vulnerability assessment document for CVE-2025-30204
+
+**Description:** As a developer, I need to create docs/assessments/cve-2025-30204-jwt.md documenting the CVE investigation, dependency chain analysis, fix applied (replace directive bump to v4.5.2), and conclusion that the vulnerability is not exploitable.
+
+### US-003: Run full test suite with race detection and static analysis verification
+
+**Description:** As a developer, I need to run the full test suite with race detection, go vet, and go build across all three modules to confirm the replace directive bump causes zero regressions.
+
+---
+
+## 2026-06-21 - US-001: Research CVE-2025-30204 and bump replace directive to v4.5.2
+
+### What was implemented
+- Researched CVE-2025-30204 via OSV API: excessive memory allocation in ParseUnverified, fixed in golang-jwt/jwt v4.5.2 and v5.2.2
+- Confirmed zero direct JWT imports in huskyci-api codebase (grep returned empty)
+- Mapped dependency chain: huskyci-api → labstack/echo v3 → dgrijalva/jwt-go (replaced → golang-jwt/jwt/v4)
+- Bumped replace directive in api/go.mod from v4.5.0 to v4.5.2
+- Removed direct require line for golang-jwt/jwt/v4 (needed due to Go modules dual-path limitation)
+- Removed v4.5.0 hashes from api/go.sum (only v4.5.2 remains)
+- All 14 test packages pass with -race; go vet clean; go build clean
+
+### Files changed
+- api/go.mod: replace directive bumped v4.5.0 → v4.5.2; removed direct require golang-jwt/jwt/v4
+- api/go.sum: removed v4.5.0 hashes
+
+### Known issue with go mod tidy
+`go mod tidy` fails because `dgrijalva/jwt-go` test files import `golang-jwt/jwt/v4` directly, and the replace directive also maps to `golang-jwt/jwt/v4 v4.5.2`. Go 1.26 rejects the same module version under two different import paths. The build and tests pass without the direct require line — only the replace directive is needed.
+
+### Learnings
+- Go modules dual-path limitation documented in Codebase Patterns
+- The CVE is not exploitable in this codebase (zero JWT code paths)
+- v4.5.2 IS the fixing version for CVE-2025-30204 (confirmed via OSV API)
+---
