@@ -6,6 +6,8 @@
 .scannerwork/
 .vscode/
 
+progress-*.txt
+
 *.zip
 .env
 *.pem
