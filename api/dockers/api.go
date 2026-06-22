@@ -43,6 +43,32 @@ package dockers
 // in plugin privilege validation is completely unreachable from huskyci-api.
 // This finding is a false positive for normal huskyci-api usage.
 
+// CVE-2026-34040 VULNERABILITY ASSESSMENT
+//
+// Trivy scan on huskyci-api-bin (go binary) reports CVE-2026-34040
+// (Moby authorization bypass) in github.com/docker/docker. Trivy lists
+// the fixed version as v29.3.1.
+//
+// INVESTIGATION: The github.com/docker/docker Go module currently maxes
+// out at v28.5.2+incompatible on the Go module proxy. Version v29.3.1
+// does not exist as a Go module tag. The Trivy-reported version refers
+// to the Docker Engine (daemon) release, not the Go client SDK module.
+//
+// HuskyCI uses the Docker client SDK (api/dockers/api.go) strictly for
+// container lifecycle management against an external dockerd. A full
+// audit confirms zero AuthZ plugin-related method calls (Plugin*) exist
+// in the api/ module. The vulnerable code path is unreachable from
+// huskyci-api's client-side usage.
+//
+// REMEDIATION: The Go module dependency cannot be bumped past v28.5.2
+// because no v29.x Go module tags exist on the Go module proxy. When
+// upstream Moby publishes v29.x Go module tags, this assessment should
+// be revisited.
+//
+// Status: Risk Accepted — Go module fix unavailable; vulnerability not
+// exploitable in huskyci-api deployment. Will reassess when upstream
+// publishes v29.x Go module tags.
+
 // CVE-2026-41567 VULNERABILITY ASSESSMENT (US-001)
 //
 // The vulnerability CVE-2026-41567 is in github.com/docker/docker (Moby). No fixed
