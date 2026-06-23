@@ -178,3 +178,25 @@ test:
 
 ## Builds and push securityTest containers with the latest tags
 update-containers: build-containers push-containers
+
+## Installs QEMU binfmt for cross-platform Docker builds (needed on ARM Macs)
+setup-qemu:
+	@echo "Installing QEMU binfmt for cross-platform Docker builds..."
+	docker run --privileged --rm tonistiigi/binfmt --install all
+	@echo "Done. Supported platforms:"
+	@docker buildx inspect default 2>/dev/null | grep -m1 Platforms || true
+
+## Builds and pushes huskyci-client Docker image for linux/amd64
+build-amd64:
+	@[ -n "$$ECR_REGISTRY" ] || ( \
+		echo "ERROR: ECR_REGISTRY is not set." >&2; \
+		echo "  export ECR_REGISTRY=<account_id>.dkr.ecr.<region>.amazonaws.com" >&2; \
+		exit 1 \
+	)
+	@echo "Building huskyci-client for linux/amd64..."
+	chmod +x deployments/scripts/push-huskyci-client-ecr.sh
+	IMAGE_TAG=$${IMAGE_TAG:-$(shell git rev-parse --short HEAD)-amd64} \
+		./deployments/scripts/push-huskyci-client-ecr.sh $${IMAGE_TAG}
+
+## Builds and pushes huskyci-client Docker image for linux/amd64 (alias: require QEMU first)
+amd64: setup-qemu build-amd64
