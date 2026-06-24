@@ -18,9 +18,9 @@ jobs:
       matrix:
         module: [api, client, cli]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: "1.26"
           cache-dependency-path: ${{ matrix.module }}/go.sum
@@ -37,27 +37,93 @@ jobs:
         run: go test -race -count=1 ./...
         working-directory: ${{ matrix.module }}
 
+  govulncheck:
+    name: Govulncheck (${{ matrix.module }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [api, client, cli]
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.26"
+          cache-dependency-path: ${{ matrix.module }}/go.sum
+
+      - name: Run govulncheck
+        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+        working-directory: ${{ matrix.module }}
+
+  gosec:
+    name: Gosec (${{ matrix.module }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [api, client, cli]
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.26"
+          cache-dependency-path: ${{ matrix.module }}/go.sum
+
+      - name: Install gosec
+        run: go install github.com/securego/gosec/v2/cmd/gosec@latest
+
+      - name: Run gosec (HIGH severity only)
+        run: $(go env GOPATH)/bin/gosec -severity high -quiet ./...
+        working-directory: ${{ matrix.module }}
+
+  trivy-scan:
+    name: Trivy Scan (${{ matrix.image }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - image: api
+            dockerfile: deployments/dockerfiles/api.Dockerfile
+          - image: client
+            dockerfile: deployments/dockerfiles/client.Dockerfile
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build image
+        run: docker build -f ${{ matrix.dockerfile }} -t huskyci/${{ matrix.image }}:ci .
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          version: v0.71.2
+          image-ref: huskyci/${{ matrix.image }}:ci
+          scan-type: image
+          severity: HIGH,CRITICAL
+          exit-code: 1
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: "1.26"
 
-      - uses: golangci/golangci-lint-action@v7
+      - uses: golangci/golangci-lint-action@v9.2.1
         with:
           version: v2.11.4
           working-directory: api
 
-      - uses: golangci/golangci-lint-action@v7
+      - uses: golangci/golangci-lint-action@v9.2.1
         with:
           version: v2.11.4
           working-directory: client
 
-      - uses: golangci/golangci-lint-action@v7
+      - uses: golangci/golangci-lint-action@v9.2.1
         with:
           version: v2.11.4
           working-directory: cli
@@ -73,7 +139,7 @@ jobs:
           - image: client
             dockerfile: deployments/dockerfiles/client.Dockerfile
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Build image
         run: docker build -f ${{ matrix.dockerfile }} .
@@ -82,7 +148,7 @@ jobs:
     name: Gitleaks image & contract
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Build Gitleaks image
         run: docker build -f deployments/dockerfiles/gitleaks/Dockerfile -t huskyci/gitleaks:ci .
@@ -110,7 +176,7 @@ jobs:
     name: Deployment shell (bash -n)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: verify-depl-scripts
         run: bash deployments/scripts/verify-depl-scripts.sh

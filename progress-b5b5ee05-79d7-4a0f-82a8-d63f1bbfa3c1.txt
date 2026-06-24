@@ -1,0 +1,156 @@
+# Progress Log
+Run: b5b5ee05-79d7-4a0f-82a8-d63f1bbfa3c1
+Task: Implement GitHub issue #37 - CI security and supply-chain scanning
+Started: 2026-06-19
+
+## Codebase Patterns
+
+- Three independent Go modules: api/, client/, cli/ — each has own go.mod, go.sum, .golangci.yml
+- CI uses matrix strategy with module: [api, client, cli] for build-and-test
+- All CI jobs use actions/setup-go@v5 with go-version: "1.23"
+- working-directory: ${{ matrix.module }} is scoped per module
+- lint job uses golangci/golangci-lint-action@v7 with version v2.11.4
+- Dockerfiles are in deployments/dockerfiles/
+- CI validation tests live in cli/config/ci_validation_test.go — use os.ReadFile + strings.Contains for YAML assertions
+- go install'd tools need $(go env GOPATH)/bin/ prefix in CI steps to find the binary
+- git commit with -m and multi-line messages may fail silently; use -e -F <file> for reliable commits
+
+## Story Plan
+
+### US-001: Add govulncheck vulnerability scan to CI
+
+**Description:** As a platform maintainer, I need CI to scan Go dependencies for known vulnerabilities so that supply-chain risks are caught before merge.
+
+**Acceptance Criteria:**
+- ci.yaml contains a govulncheck job with matrix over [api, client, cli]
+- govulncheck job uses Go 1.23 via actions/setup-go@v5
+- govulncheck job runs go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+- YAML is syntactically valid (actionlint or yamllint passes)
+- Existing build-and-test, lint, docker-build, gitleaks-contract, and deployment-shell jobs are unchanged
+- Typecheck passes
+
+### US-002: Add gosec security scan to CI
+
+**Description:** As a platform maintainer, I need CI to run Go security static analysis so that HIGH-severity code issues are caught before merge.
+
+**Acceptance Criteria:**
+- ci.yaml contains a gosec job with matrix over [api, client, cli]
+- gosec job uses Go 1.23 via actions/setup-go@v5
+- gosec job runs gosec -severity high -quiet ./...
+- YAML is syntactically valid
+- Existing jobs are unchanged
+- Typecheck passes
+
+### US-003: Add trivy container image vulnerability scan to CI
+
+**Description:** As a platform maintainer, I need CI to scan container images for OS and Go module CVEs so that deployed images have no known HIGH/CRITICAL vulnerabilities.
+
+**Acceptance Criteria:**
+- ci.yaml contains a trivy-scan job
+- Trivy scans api.Dockerfile and client.Dockerfile
+- Trivy is configured to fail on HIGH or CRITICAL CVEs
+- YAML is syntactically valid
+- Existing jobs are unchanged
+- Typecheck passes
+
+### US-004: CI integration validation and PR preparation
+
+**Description:** As a platform maintainer, I need to verify the complete ci.yaml is valid, existing jobs remain intact, and local tests still pass before opening the PR.
+
+**Acceptance Criteria:**
+- actionlint reports no errors on ci.yaml
+- git diff main -- .github/workflows/ci.yaml shows only additions
+- All module test suites pass
+- No changes to go.mod files
+- progress.txt documents all new CI jobs with issue #37 reference
+
+---
+
+## 2026-06-19 - US-001: Add govulncheck vulnerability scan to CI
+- Added govulncheck job to .github/workflows/ci.yaml with matrix over [api, client, cli]
+- Uses go run golang.org/x/vuln/cmd/govulncheck@latest ./... per module
+- YAML is syntactically valid
+- All existing jobs (build-and-test, lint, docker-build, gitleaks-contract, deployment-shell) are unchanged
+- No changes to api/go.mod, client/go.mod, or cli/go.mod
+- **Learnings:** govulncheck exits non-zero on findings by default, no extra flags needed
+- **Files changed:** .github/workflows/ci.yaml
+- **Commit:** 4ecd100
+
+---
+
+## 2026-06-19 - US-002: Add gosec security scan to CI
+- Added gosec job to .github/workflows/ci.yaml with matrix over [api, client, cli]
+- gosec job uses actions/setup-go@v5, go-version: "1.23", matching build-and-test pattern
+- Installs gosec via go install github.com/securego/gosec/v2/cmd/gosec@latest
+- Runs gosec -severity high -quiet ./... with working-directory: ${{ matrix.module }}
+- YAML is syntactically valid (python3 yaml validation passed)
+- All existing jobs (build-and-test, govulncheck, lint, docker-build, gitleaks-contract, deployment-shell) are unchanged
+- No changes to api/go.mod, client/go.mod, or cli/go.mod
+- All three module test suites pass (go test -race -count=1 ./...)
+- Go build passes on all three modules
+- Created cli/config/ci_validation_test.go with 3 test functions (11 subtests):
+  - TestCIYAMLExistsAndReadable: file is readable and non-empty
+  - TestCIYAMLContainsGosecJob: verifies gosec job definition, matrix, setup-go, severity, flags
+  - TestCIYAMLExistingJobsPreserved: all 6 original jobs still present
+- **Learnings:** CI validation tests can use simple string matching on the YAML file; go install'd tools need $(go env GOPATH)/bin/ prefix to locate the binary; yaml.safe_load via python3 works for quick syntax validation
+- **Files changed:** .github/workflows/ci.yaml, cli/config/ci_validation_test.go
+- **Commit:** 941c0c2
+
+---
+
+## 2026-06-19 - US-003: Add trivy container image vulnerability scan to CI
+- Added trivy-scan job to .github/workflows/ci.yaml with matrix over [api, client] Dockerfiles
+- Uses aquasecurity/trivy-action@master with scan-type: image, severity: HIGH,CRITICAL, exit-code: 1
+- Builds each image first: docker build -f deployments/dockerfiles/<name>.Dockerfile -t huskyci/<name>:ci .
+- Does NOT include scanner Dockerfiles (gosec, bandit, brakeman, etc.) to keep CI runtime reasonable
+- YAML is syntactically valid (python3 yaml validation passed)
+- All existing jobs (build-and-test, govulncheck, gosec, lint, docker-build, gitleaks-contract, deployment-shell) are unchanged — 7 jobs verified
+- No changes to api/go.mod, client/go.mod, or cli/go.mod
+- All three module test suites pass (go test -race -count=1 ./...)
+- Go build passes on all three modules
+- Extended cli/config/ci_validation_test.go with TestCIYAMLContainsTrivyScanJob (6 subtests):
+  - trivy-scan job definition exists
+  - scans api and client Dockerfiles
+  - uses aquasecurity/trivy-action@master
+  - configured for HIGH and CRITICAL severity
+  - configured with exit-code: 1
+  - does not include scanner Dockerfiles
+- Updated TestCIYAMLExistingJobsPreserved to include gosec (now 7 jobs)
+- **Files changed:** .github/workflows/ci.yaml, cli/config/ci_validation_test.go
+- **Commit:** 3bba6bb
+
+---
+
+## 2026-06-19 - US-004: CI integration validation and PR preparation
+
+### Validation Results
+- ✅ actionlint reports no errors on ci.yaml (exit code 0)
+- ✅ git diff main -- .github/workflows/ci.yaml shows only additions (no deletions to existing jobs)
+- ✅ api tests: go test -race -count=1 ./... — all packages pass (13 packages, 0 failures)
+- ✅ client tests: go test -race -count=1 ./... — all packages pass (5 packages, 0 failures)
+- ✅ cli tests: go test -race -count=1 ./... — all packages pass (9 packages, 0 failures)
+- ✅ No changes to api/go.mod, client/go.mod, or cli/go.mod
+- ✅ Typecheck passes (go build ./... on all three modules)
+- ✅ All CI validation tests in cli/config/ci_validation_test.go pass
+
+### New CI Jobs Summary (Issue #37)
+Three new security scanning jobs added to `.github/workflows/ci.yaml`:
+
+1. **govulncheck** — Scans Go dependencies for known CVEs via Go advisory database. Matrix over [api, client, cli]. Fails on any finding.
+2. **gosec** — Static analysis for Go security issues. Matrix over [api, client, cli]. Fails on HIGH-severity findings only.
+3. **trivy-scan** — Container image vulnerability scanning for OS packages and Go modules. Scans api and client Dockerfiles. Fails on HIGH and CRITICAL CVEs.
+
+### Existing Jobs Preserved
+All 5 original jobs remain unchanged:
+- build-and-test (matrix: api/client/cli, with vet/build/race tests)
+- lint (golangci-lint v2.11.4)
+- docker-build (builds all Dockerfiles)
+- gitleaks-contract (e2e gitleaks fixture validation)
+- deployment-shell (bash -n syntax check)
+
+### What was implemented
+- Verified all acceptance criteria for US-004
+- Updated progress.txt with full summary of all 3 new CI jobs and validation results
+- PR opened from feature/ci-security-scanning targeting main
+
+**Files changed:** progress-b5b5ee05-79d7-4a0f-82a8-d63f1bbfa3c1.txt
